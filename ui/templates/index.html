@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldMiner AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-sidebar: #16162a;
+            --text-primary: #ffffff;
+            --text-secondary: #8b8b9e;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --user-msg: #4f46e5;
+            --border: #2d2d44;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            width: 220px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+        }
+        
+        .logo {
+            padding: 0 20px 20px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent);
+        }
+        
+        .nav-item i { font-size: 1.1rem; }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+            scroll-behavior: smooth;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            text-align: right;
+        }
+        
+        .message-bubble {
+            display: inline-block;
+            max-width: 75%;
+            padding: 14px 20px;
+            border-radius: 18px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            text-align: left;
+        }
+        
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+        
+        .message.assistant .message-bubble {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message pre {
+            background: #0d0d14;
+            padding: 12px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            margin: 10px 0;
+            border: 1px solid var(--border);
+        }
+        
+        .message code {
+            background: rgba(99, 102, 241, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .message table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.85rem;
+        }
+        
+        .message th, .message td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .message th {
+            background: rgba(99, 102, 241, 0.15);
+        }
+        
+        .input-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        #user-input {
+            flex: 1;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        #user-input:focus {
+            border-color: var(--accent);
+        }
+        
+        #interrupt-input {
+            flex: 1;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+        }
+        
+        #interrupt-input::placeholder {
+            color: var(--warning);
+        }
+        
+        .btn-send {
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .btn-send:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        
+        .btn-interrupt {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: var(--warning);
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-interrupt:hover {
+            background: rgba(245, 158, 11, 0.3);
+        }
+        
+        .progress-message {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .progress-header {
+            padding: 14px 20px;
+            background: rgba(99, 102, 241, 0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: var(--accent);
+            transition: background 0.2s;
+        }
+        
+        .progress-header:hover {
+            background: rgba(99, 102, 241, 0.15);
+        }
+        
+        .progress-icon {
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+        
+        .progress-content {
+            padding: 16px 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .progress-step {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-step:last-child { border-bottom: none; }
+        
+        .progress-step .icon { flex-shrink: 0; width: 20px; }
+        .progress-step.note .icon { color: #a78bfa; }
+        .progress-step.action .icon { color: var(--accent); }
+        .progress-step.error .icon { color: var(--error); }
+        .progress-step.success .icon { color: var(--success); }
+        
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        .skill-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .skill-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .skill-name {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+        
+        .skill-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .content-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+            padding: 10px;
+        }
+        
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="logo">💎 GoldMiner</div>
+            <div class="nav-item active" onclick="switchPage('chat')">
+                <i class="bi bi-chat-dots"></i> 对话
+            </div>
+            <div class="nav-item" onclick="switchPage('skills')">
+                <i class="bi bi-lightning"></i> 技能
+            </div>
+            <div class="nav-item" onclick="switchPage('memory')">
+                <i class="bi bi-memory"></i> 记忆
+            </div>
+            <div class="nav-item" onclick="switchPage('learnings')">
+                <i class="bi bi-book"></i> 学习
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div id="page-chat" class="page chat-container active">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message assistant">
+                        <div class="message-bubble">你好！我是 GoldMiner 数据分析助手 🤖
+
+我可以帮你：
+• 分析 MaxCompute (ODPS) 数据
+• 执行 SQL 查询
+• 进行 CTR/CVR 模型偏差分析
+• 智能总结和分析数据
+
+有什么数据分析需求尽管问我！</div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <div class="input-row mb-2">
+                        <input type="text" id="user-input" placeholder="输入你的数据分析需求..." 
+                               onkeypress="handleKeyPress(event)">
+                        <button class="btn-send" onclick="sendMessage()">发送</button>
+                    </div>
+                    <div class="input-row">
+                        <input type="text" id="interrupt-input" placeholder="💡 在Agent工作时输入提示词插话..." 
+                               onkeypress="handleInterruptKeyPress(event)">
+                        <button class="btn-interrupt" onclick="interruptAgent()" title="发送插话">
+                            <i class="bi bi-chat-dots"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="page-skills" class="page" style="padding: 20px;">
+                <h4 style="margin-bottom: 20px;">🛠️ 可用技能</h4>
+                <div id="skills-list"></div>
+            </div>
+            
+            <div id="page-memory" class="page" style="padding: 20px;">
+                <h4 style="margin-bottom: 20px;">🧠 记忆</h4>
+                <div class="content-card" id="memory-content"></div>
+            </div>
+            
+            <div id="page-learnings" class="page" style="padding: 20px;">
+                <h4 style="margin-bottom: 20px;">📚 学习记录</h4>
+                <div class="content-card" id="learnings-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <script>
+        let isProcessing = false;
+        
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            event.target.closest('.nav-item').classList.add('active');
+            
+            if (page === 'skills') loadSkills();
+            if (page === 'memory') loadMemory();
+            if (page === 'learnings') loadLearnings();
+        }
+        
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function handleInterruptKeyPress(e) {
+            if (e.key === 'Enter') {
+                interruptAgent();
+            }
+        }
+        
+        function addMessage(content, role) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            div.innerHTML = `<div class="message-bubble">${content}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return div;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            if (!message || isProcessing) return;
+            
+            isProcessing = true;
+            addMessage(message, 'user');
+            input.value = '';
+            
+            const container = document.getElementById('chat-messages');
+            
+            const progressDiv = document.createElement('div');
+            progressDiv.className = 'progress-message';
+            progressDiv.innerHTML = `
+                <div class="progress-header" onclick="toggleProgress(this)">
+                    <span class="progress-icon">▶</span>
+                    <span>执行过程</span>
+                </div>
+                <div class="progress-content" style="display: none;"></div>
+            `;
+            container.appendChild(progressDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, stream: true})
+                });
+                
+                if (!response.ok) throw new Error('请求失败');
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, {stream: true});
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                handleStreamData(data, progressDiv);
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (e) {
+                addMessage('请求失败: ' + e.message, 'assistant');
+            } finally {
+                isProcessing = false;
+            }
+        }
+        
+        function handleStreamData(data, progressDiv) {
+            const contentDiv = progressDiv.querySelector('.progress-content');
+            const headerIcon = progressDiv.querySelector('.progress-icon');
+            
+            if (data.type === 'note') {
+                contentDiv.innerHTML += `<div class="progress-step note"><span class="icon">📝</span>${escapeHtml(data.content)}</div>`;
+            }
+            else if (data.type === 'action') {
+                contentDiv.innerHTML += `<div class="progress-step action"><span class="icon">⚡</span>${escapeHtml(data.content)}</div>`;
+            }
+            else if (data.type === 'error') {
+                contentDiv.innerHTML += `<div class="progress-step error"><span class="icon">❌</span>${escapeHtml(data.content)}</div>`;
+            }
+            else if (data.type === 'sql_result' || data.type === 'skill_result') {
+                contentDiv.innerHTML += `<div class="progress-step success"><span class="icon">✅</span>${escapeHtml(data.content)}</div>`;
+            }
+            else if (data.type === 'status') {
+                contentDiv.innerHTML += `<div class="progress-step"><span class="icon">📌</span>${escapeHtml(data.content)}</div>`;
+            }
+            else if (data.type === 'message' && data.role === 'assistant') {
+                progressDiv.remove();
+                addMessage(data.content, 'assistant');
+            }
+            
+            contentDiv.style.display = 'block';
+            headerIcon.textContent = '▼';
+            
+            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+        }
+        
+        function toggleProgress(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.progress-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+        
+        async function interruptAgent() {
+            const input = document.getElementById('interrupt-input');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            try {
+                const response = await fetch('/interrupt', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    addMessage(`💡 [插话]: ${message}`, 'user');
+                    input.value = '';
+                }
+            } catch (e) {
+                alert('发送失败: ' + e);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        async function loadSkills() {
+            try {
+                const res = await fetch('/skills');
+                const data = await res.json();
+                const container = document.getElementById('skills-list');
+                if (data.success) {
+                    container.innerHTML = data.skills.map(s => `
+                        <div class="skill-card">
+                            <div class="skill-name">${s.name}</div>
+                            <div class="skill-desc">${s.description || '暂无描述'}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                document.getElementById('skills-list').innerHTML = '<div class="text-danger">加载失败</div>';
+            }
+        }
+        
+        async function loadMemory() {
+            try {
+                const res = await fetch('/memory');
+                const data = await res.json();
+                const container = document.getElementById('memory-content');
+                if (data.success) {
+                    const mem = data.memory;
+                    container.innerHTML = `
+                        <h6>总结</h6>
+                        <p class="text-secondary">${mem.summary || '暂无'}</p>
+                        <h6 class="mt-3">最近对话 (${mem.recent_steps?.length || 0}条)</h6>
+                        ${(mem.recent_steps || []).map(s => `
+                            <div class="mb-2"><strong>${s.role}:</strong> ${s.content.substring(0, 100)}...</div>
+                        `).join('')}
+                    `;
+                }
+            } catch (e) {
+                document.getElementById('memory-content').innerHTML = '<div class="text-danger">加载失败</div>';
+            }
+        }
+        
+        async function loadLearnings() {
+            try {
+                const res = await fetch('/learnings');
+                const data = await res.json();
+                const container = document.getElementById('learnings-content');
+                if (data.success) {
+                    container.innerHTML = data.learnings.length ? 
+                        data.learnings.map(l => `<div class="mb-3 p-3 border rounded">${escapeHtml(l)}</div>`).join('') :
+                        '<div class="text-secondary">暂无学习记录</div>';
+                }
+            } catch (e) {
+                document.getElementById('learnings-content').innerHTML = '<div class="text-danger">加载失败</div>';
+            }
+        }
+    </script>
+</body>
+</html>
