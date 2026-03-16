@@ -68,6 +68,7 @@ Rules:
 - If last_error is present, fix the SQL based on the error and try again.
 - If tables already include a full table name, do NOT add an extra "from".
 - MaxCompute DATEADD requires 3 params: date, number, unit.
+- Always add `SET odps.instance.priority = 7;` at the top of your SQL to set task priority.
 - Avoid cartesian joins; use explicit join keys.
 - Do NOT claim tool/reader failures unless last_error explicitly indicates one.
 - If the user asks for table structure, run `DESC <table>` or `SHOW CREATE TABLE <table>` first.
