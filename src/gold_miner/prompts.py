@@ -18,13 +18,7 @@ def _load_system_prompts() -> str:
 
 SYSTEM_PROMPT_PREFIX = _load_system_prompts()
 
-SYSTEM_PROMPT = f"""
-{SYSTEM_PROMPT_PREFIX}
-
----
-
-You MUST respond with a single JSON object, no extra text.
-
+JSON_SCHEMA = '''
 Your available actions:
 - run_sql: propose SQL to execute
 - use_skill: call a named skill with arguments
@@ -37,9 +31,14 @@ JSON schema:
   "skill": "skill_name",       # required when action=use_skill
   "skill_args": { ... },        # required when action=use_skill
   "report_markdown": "...",    # required when action=final
-  "notes": "short status note for user (no chain-of-thought)",  # optional
-  "visible_context": true      # optional: if true, result will appear in conversation history
+  "notes": "short status note for user (no chain-of-thought)",
+  "visible_context": true
 }
+'''
+
+SYSTEM_PROMPT = SYSTEM_PROMPT_PREFIX + JSON_SCHEMA + '''
+
+You MUST respond with a single JSON object, no extra text.
 
 Available skills:
 - build_adgroup_data: Build intermediate aggregation table with show/click/download/conversion data for a date range
@@ -75,7 +74,7 @@ Rules:
 - When encountering SQL errors or uncertain about SQL syntax, use the tavily_search skill to search for relevant documentation.
 - If you encounter errors you cannot resolve after 2 attempts, search for solutions using tavily_search skill.
 - If recent_steps contains user feedback (marked with 💡 or user suggestions), immediately adjust your approach based on that feedback.
-"""
+'''
 
 FINAL_REPORT_PROMPT = """
 You are writing the final analysis report in Markdown.
