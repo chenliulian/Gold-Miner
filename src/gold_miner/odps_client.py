@@ -14,6 +14,15 @@ class OdpsConfig:
     project: str
     endpoint: str
 
+    @classmethod
+    def from_config(cls, config: "Config") -> "OdpsConfig":
+        return cls(
+            access_id=config.odps_access_id,
+            access_key=config.odps_access_key,
+            project=config.odps_project,
+            endpoint=config.odps_endpoint,
+        )
+
 
 class OdpsClient:
     def __init__(self, config: OdpsConfig):
@@ -37,7 +46,8 @@ class OdpsClient:
                 return df
 
     def run_script(self, sql: str, limit: int = 2000) -> pd.DataFrame:
-        instance = self.odps.execute_sql(f"SET odps.sql.submit.mode=script; {sql}")
+        hints = {"odps.sql.submit.mode": "script"}
+        instance = self.odps.execute_sql(sql, hints=hints)
         with instance.open_reader() as reader:
             try:
                 return reader.to_pandas(n=limit)
