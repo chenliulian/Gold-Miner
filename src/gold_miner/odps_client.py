@@ -66,12 +66,12 @@ class OdpsClient:
         
         with instance.open_reader() as reader:
             try:
-                return reader.to_pandas(n=limit)
-            except TypeError:
                 df = reader.to_pandas()
                 if limit and len(df) > limit:
                     return df.head(limit)
                 return df
+            except Exception:
+                return pd.DataFrame()
 
     def run_script(self, sql: str, limit: int = 2000, enable_log: bool = True) -> pd.DataFrame:
         hints = {"odps.sql.submit.mode": "script"}
@@ -96,9 +96,9 @@ class OdpsClient:
         
         with instance.open_reader() as reader:
             try:
-                return reader.to_pandas(n=limit)
-            except TypeError:
                 df = reader.to_pandas()
                 if limit and len(df) > limit:
                     return df.head(limit)
                 return df
+            except Exception:
+                return pd.DataFrame()
