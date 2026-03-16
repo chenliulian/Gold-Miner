@@ -65,11 +65,23 @@ class SqlAgent:
         output_path: Optional[str] = None,
         cancel_event: Optional[Any] = None,
         status_cb: Optional[Any] = None,
+        heartbeat_cb: Optional[Any] = None,
     ) -> str:
         max_steps = max_steps or self.config.agent_max_steps
         if status_cb:
             status_cb("starting")
+        
+        step_count = 0
         for step in range(max_steps):
+            step_count += 1
+            
+            if heartbeat_cb and step_count % 3 == 0:
+                heartbeat_cb({
+                    "step": step_count,
+                    "max_steps": max_steps,
+                    "progress": f"{step_count}/{max_steps}",
+                })
+            
             if cancel_event is not None and cancel_event.is_set():
                 if status_cb:
                     status_cb("cancelled")

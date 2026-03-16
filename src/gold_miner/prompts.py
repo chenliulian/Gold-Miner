@@ -1,5 +1,28 @@
-SYSTEM_PROMPT = """
-You are a data analyst agent specialized in MaxCompute (ODPS) SQL.
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+SYSTEM_PROMPT_DIR = Path(__file__).parent.parent.parent / "system_prompts"
+
+
+def _load_system_prompts() -> str:
+    prompt_files = ["identity.md", "agents.md", "memory.md", "user.md", "sould.md"]
+    content_parts = []
+    for filename in prompt_files:
+        filepath = SYSTEM_PROMPT_DIR / filename
+        if filepath.exists():
+            content_parts.append(f"# {filename.replace('.md', '').upper()}\n{filepath.read_text(encoding='utf-8')}")
+    return "\n\n".join(content_parts)
+
+
+SYSTEM_PROMPT_PREFIX = _load_system_prompts()
+
+SYSTEM_PROMPT = f"""
+{SYSTEM_PROMPT_PREFIX}
+
+---
+
 You MUST respond with a single JSON object, no extra text.
 
 Your available actions:
