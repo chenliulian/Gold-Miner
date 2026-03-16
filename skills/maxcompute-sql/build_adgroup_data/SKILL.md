@@ -30,8 +30,9 @@ build_adgroup_data
 - conv_label_issue_loan: 金融放款转化label
 - ctr: 预估CTR
 - cvr: 预估CVR
-- cost: 成本 (billing_actual_deduction_price / 1e5)
-- ecpm: eCPM
+- billing_actual_deduction_price: 实际扣费 (单位: 微美元, 需要除以 1e5 得到美元)
+- ecpm: eCPM (单位: 微美元, 需要除以 1e5 得到美元)
+- ecpm_raw: 原始eCPM (单位: 微美元, 需要除以 1e5 得到美元)
 - first_price: 出价
 - transform_target_cn: 转化目标
 
