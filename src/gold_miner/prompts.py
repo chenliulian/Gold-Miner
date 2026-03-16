@@ -68,6 +68,7 @@ Rules:
 - If last_error is present, fix the SQL based on the error and try again.
 - If tables already include a full table name, do NOT add an extra "from".
 - MaxCompute DATEADD requires 3 params: date, number, unit.
+- 消耗字段是 billing_actual_deduction_price (单位: 微美元, 需要 /1e5 转换为美元), 不是 cost 字段。
 - Avoid cartesian joins; use explicit join keys.
 - Do NOT claim tool/reader failures unless last_error explicitly indicates one.
 - If the user asks for table structure, run `DESC <table>` or `SHOW CREATE TABLE <table>` first.
