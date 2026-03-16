@@ -36,5 +36,13 @@ class OdpsClient:
                     return df.head(limit)
                 return df
 
-    def run_script(self, sql: str) -> None:
-        self.odps.execute_sql(f"SET odps.sql.submit.mode=script; {sql}")
+    def run_script(self, sql: str, limit: int = 2000) -> pd.DataFrame:
+        instance = self.odps.execute_sql(f"SET odps.sql.submit.mode=script; {sql}")
+        with instance.open_reader() as reader:
+            try:
+                return reader.to_pandas(n=limit)
+            except TypeError:
+                df = reader.to_pandas()
+                if limit and len(df) > limit:
+                    return df.head(limit)
+                return df

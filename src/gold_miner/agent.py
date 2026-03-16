@@ -173,8 +173,10 @@ class SqlAgent:
         self.state.last_sql = sql
         self.state.last_error = None
         try:
+            if "SET odps.instance.priority" not in sql:
+                sql = "SET odps.instance.priority = 7;\n" + sql
             print("\n[SQL] Executing:\n" + sql)
-            df = self.odps.run_sql(sql)
+            df = self.odps.run_script(sql)
         except Exception as exc:  # noqa: BLE001
             err = str(exc)
             self.state.last_error = err
