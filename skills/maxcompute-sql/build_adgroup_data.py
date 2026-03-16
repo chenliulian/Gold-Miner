@@ -160,4 +160,6 @@ SKILL = {
         "config": "dict (可选) - ODPS 配置，默认从环境变量读取",
     },
     "run": run,
+    "invisible_context": True,
+    "hooks": ["basic_stats"],
 }

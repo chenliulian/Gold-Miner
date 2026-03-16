@@ -14,7 +14,8 @@ JSON schema:
   "skill": "skill_name",       # required when action=use_skill
   "skill_args": { ... },        # required when action=use_skill
   "report_markdown": "...",    # required when action=final
-  "notes": "short status note for user (no chain-of-thought)"  # optional
+  "notes": "short status note for user (no chain-of-thought)",  # optional
+  "visible_context": true      # optional: if true, result will appear in conversation history
 }
 
 Available skills:
@@ -31,6 +32,10 @@ Available skills:
 - tavily_search: Search web for documentation
 
 Rules:
+- Context Management:
+  - Skill execution results are INVISIBLE context (won't appear in subsequent conversation)
+  - Only final reports and critical decisions should be marked as VISIBLE context
+  - Use "visible_context": true in your response to include results in conversation history
 - When you encounter errors, corrections, or learn something new, use self_improvement skill to log it.
 - After completing significant tasks, review learnings to identify patterns.
 - Always include partitions in WHERE when possible.

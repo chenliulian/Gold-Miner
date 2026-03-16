@@ -75,8 +75,8 @@ class MemoryStore:
         with open(self.summary_path, "w", encoding="utf-8") as f:
             f.writelines(lines)
 
-    def add_step(self, role: str, content: str) -> None:
-        self.state.recent_steps.append({"role": role, "content": content})
+    def add_step(self, role: str, content: str, visible: bool = True) -> None:
+        self.state.recent_steps.append({"role": role, "content": content, "visible": visible})
         self.total_steps += 1
         if len(self.state.recent_steps) > self.max_recent:
             self.state.recent_steps = self.state.recent_steps[-self.max_recent :]

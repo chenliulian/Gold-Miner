@@ -127,6 +127,9 @@ class SqlAgent:
         context = self.memory.get_context()
         results_summary = self._results_summary()
         skill_list = self.skills.list()
+        
+        visible_steps = [s for s in context["recent_steps"] if s.get("visible", True)]
+        
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -136,7 +139,7 @@ class SqlAgent:
                         "question": question,
                         "tables": tables,
                         "memory_summary": context["summary"],
-                        "recent_steps": context["recent_steps"],
+                        "recent_steps": visible_steps,
                         "results_summary": results_summary,
                         "last_sql": self.state.last_sql,
                         "last_error": self.state.last_error,
@@ -148,7 +151,10 @@ class SqlAgent:
         ]
         content = self.llm.chat(messages, enforce_json=True)
         action = _parse_json(content)
-        self.memory.add_step("assistant", content)
+        
+        visible_context = action.get("visible_context", True)
+        self.memory.add_step("assistant", content, visible=visible_context)
+        
         return action
 
     def _handle_sql(self, sql: str) -> None:
@@ -171,18 +177,24 @@ class SqlAgent:
         self.memory.add_step("tool", f"SQL executed. Rows={len(df)}\n{preview}")
 
     def _handle_skill(self, skill: str, skill_args: Dict[str, Any]) -> None:
+        skill_def = self.skills.get(skill)
+        is_invisible = skill_def.invisible_context if skill_def else True
+        
         if self.state.last_df is not None and "dataframe" not in skill_args:
             skill_args = dict(skill_args)
             skill_args["dataframe"] = self.state.last_df
         try:
             result = self.skills.call(skill, **skill_args)
             self.state.notes.append(f"Skill {skill} result: {result}")
-            self.memory.add_step("tool", f"Skill {skill} result: {result}")
+            self.memory.add_step("tool", f"Skill {skill} result: {result}", visible=not is_invisible)
+            
+            if skill_def and skill_def.hooks:
+                self._run_hooks(skill, result, skill_def.hooks)
         except Exception as exc:
             err = str(exc)
             self.state.last_error = f"Skill '{skill}' error: {err}"
             self.state.notes.append(f"Skill {skill} error: {err}")
-            self.memory.add_step("tool", f"Skill {skill} error: {err}\nSkill args: {skill_args}")
+            self.memory.add_step("tool", f"Skill {skill} error: {err}\nSkill args: {skill_args}", visible=True)
 
     def _final_report_via_llm(self, question: str) -> str:
         results_summary = self._results_summary()
@@ -200,6 +212,22 @@ class SqlAgent:
 
     def _finalize(self, report_markdown: str, output_path: Optional[str]) -> str:
         return write_report(report_markdown, self.config.reports_dir, output_path)
+
+    def _run_hooks(self, skill_name: str, result: Any, hooks: List[str]) -> None:
+        print(f"\n[Hooks] Running hooks for skill '{skill_name}': {hooks}")
+        for hook in hooks:
+            try:
+                if hook == "basic_stats":
+                    self._handle_skill("basic_stats", {"dataframe": self.state.last_df})
+                elif hook == "self_improvement":
+                    self._handle_skill("self_improvement", {
+                        "content": f"Skill {skill_name} executed successfully",
+                        "notes": f"Result: {str(result)[:200]}"
+                    })
+                elif hook == "feishu_notify":
+                    pass
+            except Exception as e:
+                print(f"[Hooks] Error running hook '{hook}': {e}")
 
     def _maybe_update_memory_summary(self) -> None:
         context = self.memory.get_context()
