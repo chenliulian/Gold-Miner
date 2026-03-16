@@ -98,6 +98,9 @@ def main() -> None:
                             content = f.read()
                         print("\n" + content)
                         print(f"\nReport saved to: {report_path}")
+                        print("\n" + "="*50)
+                        print("You can continue asking questions or type 'exit' to quit.")
+                        print("="*50)
                         with status_lock:
                             state["last_report"] = report_path
                 except LLMError as exc:
