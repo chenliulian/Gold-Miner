@@ -7,6 +7,12 @@ import threading
 import queue
 import time
 
+def safe_input(prompt=""):
+    try:
+        return input(prompt)
+    except UnicodeDecodeError:
+        return input(prompt.encode('utf-8', errors='replace').decode('utf-8'))
+
 if __package__ is None or __package__ == "":
     # Allow running as a script: `python3 src/gold_miner/cli.py`
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -108,7 +114,7 @@ def main() -> None:
         thread.start()
         while True:
             try:
-                question = input("\nQuestion> ").strip()
+                question = safe_input("\nQuestion> ").strip()
             except (EOFError, KeyboardInterrupt):
                 print("\nBye.")
                 break
@@ -141,7 +147,7 @@ def main() -> None:
                     cancel_event.set()
                     print("Cancel requested. It will stop after the current step.")
                 continue
-            tables = input("Tables (comma-separated, optional)> ").strip()
+            tables = safe_input("Tables (comma-separated, optional)> ").strip()
             if tables.lower().startswith("from "):
                 tables = tables[5:].strip()
             task_queue.put((question, tables))

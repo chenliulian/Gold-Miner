@@ -19,6 +19,9 @@ JSON schema:
 
 Available skills:
 - build_adgroup_data: Build intermediate aggregation table with show/click/download/conversion data for a date range
+  Source table: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+  Partition field: dh (format: 'YYYYMMDDHH', e.g., '2026030100')
+  Key fields: ad_group_id, cost_type, ad_package_name, app_id, national_id, show_label, click_label, download_label, convert_label, ctr, cost
 - calc_summary_stats: Calculate summary metrics like cost/CTR/CVR/eCPM (input: intermediate table, output: summary table)
 - analyze_ctr_pcoc: Analyze CTR model prediction bias (PCOC) at adgroup or pkg_buz level
 - analyze_cvr_pcoc: Analyze CVR model prediction bias (PCOC), supports cpi/ocpc/ocpi conv types
