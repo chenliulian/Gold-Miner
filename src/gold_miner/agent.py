@@ -208,8 +208,6 @@ class SqlAgent:
         
         is_invisible = skill_def.invisible_context if skill_def else True
         
-        self.memory.add_step("assistant", f"Using skill: {skill}", visible=not is_invisible)
-        
         if self.state.last_df is not None and "dataframe" not in skill_args:
             skill_args = dict(skill_args)
             skill_args["dataframe"] = self.state.last_df

@@ -65,6 +65,7 @@ def main() -> None:
             "gold-miner chat mode. Type 'exit' to quit. "
             "Commands: /reset, /status, /cancel"
         )
+        print(f"[Debug] Loaded {len(agent.skills.skills)} skills: {list(agent.skills.skills.keys())}")
         task_queue: queue.Queue[tuple[str, str]] = queue.Queue()
         status_lock = threading.Lock()
         state = {"status": "idle", "current": None, "last_report": None, "cancel": None}
