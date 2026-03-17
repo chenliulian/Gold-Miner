@@ -143,7 +143,14 @@ class SqlAgent:
                     status_cb("done")
                 return report_path
             else:
-                raise ValueError(f"Unknown action: {action}")
+                # Invalid action, log error and continue
+                error_msg = f"Invalid action received: {action.get('action', 'None')}. Expected one of: run_sql, use_skill, search_skills, final"
+                print(f"\n[Agent Error] {error_msg}")
+                self.state.last_error = error_msg
+                self.memory.add_step("tool", f"Error: {error_msg}", visible=True)
+                if status_cb:
+                    status_cb({"type": "error", "content": error_msg})
+                continue
             self._maybe_update_memory_summary()
 
         report = self._final_report_via_llm(question)
@@ -181,6 +188,18 @@ class SqlAgent:
         ]
         content = self.llm.chat(messages, enforce_json=True)
         action = _parse_json(content)
+        
+        # Validate action
+        if not isinstance(action, dict):
+            print(f"[Warning] Invalid action format: {action}")
+            action = {"action": "final", "report_markdown": f"Error: Invalid response format from LLM", "notes": "Invalid action format"}
+        elif "action" not in action:
+            print(f"[Warning] Action missing 'action' field: {action}")
+            action = {"action": "final", "report_markdown": f"Error: Missing action field", "notes": "Missing action field"}
+        elif action["action"] not in ("run_sql", "use_skill", "search_skills", "final"):
+            print(f"[Warning] Invalid action value: {action['action']}")
+            # Try to recover by treating as final
+            action = {"action": "final", "report_markdown": f"Error: Invalid action '{action.get('action')}'", "notes": f"Invalid action: {action.get('action')}"}
         
         visible_context = action.get("visible_context", True)
         self.memory.add_step("assistant", content, visible=visible_context)
