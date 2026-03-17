@@ -40,7 +40,8 @@ def main() -> None:
     if args.cmd == "analyze":
         cfg = Config.from_env()
         cfg.validate()
-        skills_dir = os.path.join(os.getcwd(), "skills")
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        skills_dir = os.path.join(project_root, "skills")
         agent = SqlAgent(cfg, skills_dir)
         report_path = agent.run(
             question=args.question,
@@ -59,8 +60,9 @@ def main() -> None:
     if args.cmd == "chat":
         cfg = Config.from_env()
         cfg.validate()
-        skills_dir = os.path.join(os.getcwd(), "skills")
-        print(f"[Debug] cwd: {os.getcwd()}, skills_dir: {skills_dir}, exists: {os.path.exists(skills_dir)}")
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        skills_dir = os.path.join(project_root, "skills")
+        print(f"[Debug] project_root: {project_root}, skills_dir: {skills_dir}, exists: {os.path.exists(skills_dir)}")
         agent = SqlAgent(cfg, skills_dir)
         print(
             "gold-miner chat mode. Type 'exit' to quit. "
