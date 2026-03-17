@@ -36,6 +36,10 @@ class OdpsClient:
             endpoint=config.endpoint,
         )
         self._log_callback: Optional[Callable[[str], None]] = None
+        options.sql.settings = {
+            "odps.instance.priority": "7",
+            "odps.sql.mapper.split.size": "256",
+        }
 
     def set_log_callback(self, callback: Callable[[str], None]) -> None:
         self._log_callback = callback
@@ -79,6 +83,12 @@ class OdpsClient:
 
     def disable_verbose(self) -> None:
         options.verbose = False
+
+    def set_sql_settings(self, settings: Dict[str, Any]) -> None:
+        if options.sql.settings is None:
+            options.sql.settings = {}
+        options.sql.settings.update(settings)
+        self._log(f"SQL settings updated: {settings}")
 
     def get_logview_url(self, instance: Instance) -> str:
         return instance.get_logview_address()
