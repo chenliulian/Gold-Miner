@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import signal
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Tuple
 
@@ -105,7 +107,19 @@ class OdpsClient:
         if enable_log:
             self._log("正在提交...")
         
-        instance = self.odps.execute_sql(sql)
+        # Use timeout for execute_sql to prevent hanging
+        def execute_with_timeout():
+            return self.odps.execute_sql(sql)
+        
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(execute_with_timeout)
+                instance = future.result(timeout=60)  # 60 seconds timeout for submission
+        except TimeoutError:
+            if enable_log:
+                self._log("提交超时 (60秒)，请检查网络连接或ODPS服务状态")
+            raise TimeoutError("SQL submission timeout after 60 seconds")
+        
         instance_id = instance.id
         
         if enable_log:
@@ -154,7 +168,19 @@ class OdpsClient:
         if enable_log:
             self._log("正在提交...")
         
-        instance = self.odps.execute_sql(sql, hints=hints)
+        # Use timeout for execute_sql to prevent hanging
+        def execute_with_timeout():
+            return self.odps.execute_sql(sql, hints=hints)
+        
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(execute_with_timeout)
+                instance = future.result(timeout=60)  # 60 seconds timeout for submission
+        except TimeoutError:
+            if enable_log:
+                self._log("提交超时 (60秒)，请检查网络连接或ODPS服务状态")
+            raise TimeoutError("SQL submission timeout after 60 seconds")
+        
         instance_id = instance.id
         
         if enable_log:
