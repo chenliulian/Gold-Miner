@@ -60,6 +60,7 @@ def main() -> None:
         cfg = Config.from_env()
         cfg.validate()
         skills_dir = os.path.join(os.getcwd(), "skills")
+        print(f"[Debug] cwd: {os.getcwd()}, skills_dir: {skills_dir}, exists: {os.path.exists(skills_dir)}")
         agent = SqlAgent(cfg, skills_dir)
         print(
             "gold-miner chat mode. Type 'exit' to quit. "
