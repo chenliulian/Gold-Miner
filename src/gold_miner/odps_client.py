@@ -17,6 +17,7 @@ class OdpsConfig:
     access_key: str
     project: str
     endpoint: str
+    quota: str = ""  # ODPS 计算资源配额
 
     @classmethod
     def from_config(cls, config: "Config") -> "OdpsConfig":
@@ -25,6 +26,7 @@ class OdpsConfig:
             access_key=config.odps_access_key,
             project=config.odps_project,
             endpoint=config.odps_endpoint,
+            quota=config.odps_quota,
         )
 
 
@@ -38,10 +40,25 @@ class OdpsClient:
             endpoint=config.endpoint,
         )
         self._log_callback: Optional[Callable[[str], None]] = None
-        options.sql.settings = {
+        
+        # Base SQL settings
+        sql_settings = {
             "odps.instance.priority": "7",
             "odps.sql.mapper.split.size": "256",
         }
+        
+        # Add quota if configured
+        if config.quota:
+            sql_settings["odps.sql.quota"] = config.quota
+        
+        options.sql.settings = sql_settings
+        
+        # Also set default hints for instance creation
+        self._default_hints = {
+            "odps.instance.priority": "7",
+        }
+        if config.quota:
+            self._default_hints["odps.sql.quota"] = config.quota
 
     def set_log_callback(self, callback: Callable[[str], None]) -> None:
         self._log_callback = callback
@@ -54,7 +71,11 @@ class OdpsClient:
     def run_sql(self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None) -> pd.DataFrame:
         if enable_log:
             self._log("正在提交...")
-        instance = self.odps.execute_sql(sql)
+        
+        # Use default hints including quota if configured
+        hints = self._default_hints.copy()
+        
+        instance = self.odps.execute_sql(sql, hints=hints)
         
         if enable_log:
             self._log("提交任务成功")
@@ -107,9 +128,12 @@ class OdpsClient:
         if enable_log:
             self._log("正在提交...")
         
+        # Use default hints including quota if configured
+        hints = self._default_hints.copy()
+        
         # Use timeout for execute_sql to prevent hanging
         def execute_with_timeout():
-            return self.odps.execute_sql(sql)
+            return self.odps.execute_sql(sql, hints=hints)
         
         try:
             with ThreadPoolExecutor(max_workers=1) as executor:
@@ -160,13 +184,15 @@ class OdpsClient:
     def run_script_with_progress(
         self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None
     ) -> Tuple[pd.DataFrame, str]:
-        hints = {
-            "odps.sql.submit.mode": "script",
-            "odps.instance.priority": "7"
-        }
+        # Start with default hints including quota if configured
+        hints = self._default_hints.copy()
+        # Add script mode
+        hints["odps.sql.submit.mode"] = "script"
         
         if enable_log:
             self._log("正在提交...")
+            if self.config.quota:
+                self._log(f"使用计算配额: {self.config.quota}")
         
         # Use timeout for execute_sql to prevent hanging
         def execute_with_timeout():
@@ -219,13 +245,15 @@ class OdpsClient:
                 return pd.DataFrame(), instance_id
 
     def run_script(self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None) -> Tuple[pd.DataFrame, str]:
-        hints = {
-            "odps.sql.submit.mode": "script",
-            "odps.instance.priority": "7"
-        }
+        # Start with default hints including quota if configured
+        hints = self._default_hints.copy()
+        # Add script mode
+        hints["odps.sql.submit.mode"] = "script"
         
         if enable_log:
             self._log("正在提交...")
+            if self.config.quota:
+                self._log(f"使用计算配额: {self.config.quota}")
         instance = self.odps.execute_sql(sql, hints=hints)
         instance_id = instance.id
         
