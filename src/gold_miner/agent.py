@@ -362,22 +362,26 @@ def _df_preview(df: pd.DataFrame, max_rows: int = 10) -> str:
 def _parse_json(content: str) -> Dict[str, Any]:
     import re
     
+    content = content.strip()
+    
+    clean = ''.join(c for c in content if ord(c) >= 32)
+    
     try:
-        return json.loads(content)
+        return json.loads(clean)
     except json.JSONDecodeError:
         pass
 
     try:
-        start = content.find("{")
-        end = content.rfind("}")
+        start = clean.find("{")
+        end = clean.rfind("}")
         if start != -1 and end != -1:
-            return json.loads(content[start : end + 1])
+            return json.loads(clean[start : end + 1])
     except json.JSONDecodeError:
         pass
 
     brace_count = 0
     start = -1
-    for i, c in enumerate(content):
+    for i, c in enumerate(clean):
         if c == '{':
             if start == -1:
                 start = i
@@ -386,15 +390,15 @@ def _parse_json(content: str) -> Dict[str, Any]:
             brace_count -= 1
             if brace_count == 0 and start != -1:
                 try:
-                    return json.loads(content[start:i+1])
+                    return json.loads(clean[start:i+1])
                 except json.JSONDecodeError:
                     pass
 
-    match = re.search(r'\{[^{}]*\}', content)
+    match = re.search(r'\{[^{}]*\}', clean)
     if match:
         try:
             return json.loads(match.group(0))
         except json.JSONDecodeError:
             pass
 
-    raise ValueError(f"Could not parse JSON from content: {content[:200]}...")
+    raise ValueError(f"Could not parse JSON from content: {clean[:200]}...")
