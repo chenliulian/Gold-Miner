@@ -69,18 +69,33 @@ def main() -> None:
             "Commands: /reset, /status, /cancel"
         )
         print(f"[Debug] Loaded {len(agent.skills.skills)} skills: {list(agent.skills.skills.keys())}")
-        task_queue: queue.Queue[tuple[str, str]] = queue.Queue()
+        task_queue: queue.Queue[tuple[str, str] | None] = queue.Queue()
         status_lock = threading.Lock()
         state = {"status": "idle", "current": None, "last_report": None, "cancel": None}
+        exit_event = threading.Event()  # Signal for worker to exit immediately
+
+        def _do_exit() -> None:
+            """Signal worker thread to exit and cancel any running task."""
+            with status_lock:
+                cancel_event = state["cancel"]
+            if cancel_event is not None:
+                print("Cancelling running task...")
+                cancel_event.set()
+            exit_event.set()
+            task_queue.put(None)  # Wake up worker if waiting
+            time.sleep(0.3)  # Give it a moment to respond
 
         def set_status(value: str) -> None:
             with status_lock:
                 state["status"] = value
 
         def worker() -> None:
-            while True:
-                item = task_queue.get()
-                if item is None:
+            while not exit_event.is_set():
+                try:
+                    item = task_queue.get(timeout=0.5)
+                except queue.Empty:
+                    continue
+                if item is None or exit_event.is_set():
                     break
                 question, tables = item
                 cancel_event = threading.Event()
@@ -124,9 +139,11 @@ def main() -> None:
                 question = safe_input("\nQuestion> ").strip()
             except (EOFError, KeyboardInterrupt):
                 print("\nBye.")
+                _do_exit()
                 break
             if not question or question.lower() in {"exit", "quit"}:
                 print("Bye.")
+                _do_exit()
                 break
             if question.strip().lower() == "/reset":
                 agent.memory.clear()
