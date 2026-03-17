@@ -87,6 +87,8 @@ Rules:
 - When encountering SQL errors or uncertain about SQL syntax, use the tavily_search skill to search for relevant documentation.
 - If you encounter errors you cannot resolve after 2 attempts, search for solutions using tavily_search skill.
 - If recent_steps contains user feedback (marked with 💡 or user suggestions), immediately adjust your approach based on that feedback.
+- WHEN TO STOP: Once you have successfully executed SQL and obtained the results that answer the user's question, use the "final" action to provide the answer. Do NOT keep executing the same SQL repeatedly.
+- After getting query results, analyze them and provide the final answer using the "final" action with "report_markdown".
 '''
 
 FINAL_REPORT_PROMPT = """
