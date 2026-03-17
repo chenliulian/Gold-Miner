@@ -49,7 +49,7 @@ class OdpsClient:
             self._log_callback(message)
         print(message)
 
-    def run_sql(self, sql: str, limit: int = 2000, enable_log: bool = True) -> pd.DataFrame:
+    def run_sql(self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None) -> pd.DataFrame:
         if enable_log:
             self._log("正在提交...")
         instance = self.odps.execute_sql(sql)
@@ -59,6 +59,12 @@ class OdpsClient:
             self._log("Awaiting for the task submitting...")
             
             while not instance.is_terminated():
+                # Check for cancellation
+                if cancel_event is not None and cancel_event.is_set():
+                    self._log("Task cancelled by user")
+                    instance.stop()
+                    raise InterruptedError("Task cancelled by user")
+                
                 status = instance.status
                 if status == "running":
                     self._log("Current task status: RUNNING")
@@ -94,7 +100,7 @@ class OdpsClient:
         return instance.get_logview_address()
 
     def run_sql_with_progress(
-        self, sql: str, limit: int = 2000, enable_log: bool = True
+        self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None
     ) -> Tuple[pd.DataFrame, str]:
         if enable_log:
             self._log("正在提交...")
@@ -107,6 +113,12 @@ class OdpsClient:
             self._log("Awaiting for the task submitting...")
             
             while not instance.is_terminated():
+                # Check for cancellation
+                if cancel_event is not None and cancel_event.is_set():
+                    self._log("Task cancelled by user")
+                    instance.stop()
+                    raise InterruptedError("Task cancelled by user")
+                
                 status = instance.status
                 if status == "running":
                     self._log("Current task status: RUNNING")

@@ -56,6 +56,7 @@ class SqlAgent:
         self.skills = SkillRegistry(skills_dir)
         self.skills.load()
         self.state = AgentState()
+        self._cancel_event: Optional[Any] = None
 
     def run(
         self,
@@ -70,6 +71,10 @@ class SqlAgent:
         max_steps = max_steps or self.config.agent_max_steps
         if status_cb:
             status_cb("starting")
+        
+        # Reset agent state for new run
+        self.state = AgentState()
+        self._cancel_event = cancel_event
         
         step_count = 0
         for step in range(max_steps):
@@ -95,7 +100,12 @@ class SqlAgent:
             if action["action"] == "run_sql":
                 if status_cb:
                     status_cb({"type": "action", "content": f"执行 SQL: {action.get('sql', '')[:200]}..."})
-                self._handle_sql(action["sql"])
+                try:
+                    self._handle_sql(action["sql"])
+                except InterruptedError:
+                    if status_cb:
+                        status_cb("cancelled")
+                    return ""
                 if status_cb:
                     if self.state.last_error:
                         status_cb({"type": "error", "content": self.state.last_error})
@@ -182,8 +192,13 @@ class SqlAgent:
         self.state.last_error = None
         try:
             print("\n[SQL] Executing:\n" + sql)
-            df, instance_id = self.odps.run_script_with_progress(sql)
+            df, instance_id = self.odps.run_script_with_progress(sql, cancel_event=self._cancel_event)
             print(f"[SQL] Instance ID: {instance_id}")
+        except InterruptedError:
+            # Task was cancelled
+            self.state.last_error = "Task cancelled by user"
+            self.memory.add_step("tool", "SQL execution cancelled by user")
+            raise  # Re-raise to stop the agent
         except Exception as exc:  # noqa: BLE001
             err = str(exc)
             self.state.last_error = err
