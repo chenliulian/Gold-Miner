@@ -75,6 +75,7 @@ class SqlAgent:
         # Reset agent state for new run
         self.state = AgentState()
         self._cancel_event = cancel_event
+        self.memory.clear()
         
         step_count = 0
         for step in range(max_steps):
