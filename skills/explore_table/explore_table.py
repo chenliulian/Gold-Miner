@@ -13,6 +13,7 @@ def run(
     project: str = "mi_ads_dmp",
     sample_rows: int = 5,
     sample_date: str = "20260314",
+    generate_skill: bool = True,
 ) -> Dict[str, Any]:
     """
     探索新表的数据结构和业务含义
@@ -22,6 +23,7 @@ def run(
         project: 项目名 (默认: mi_ads_dmp)
         sample_rows: 采样行数 (默认: 5)
         sample_date: 采样日期 (默认: 20260314)
+        generate_skill: 是否自动生成 Skill 文件 (默认: True)
 
     返回:
         包含表结构、字段信息、样本数据的字典
@@ -94,6 +96,13 @@ def run(
         result["error"] = result.get("error", "") + f"\n采样失败: {str(e)}"
 
     result["business_notes"] = _generate_business_notes(result)
+
+    if generate_skill:
+        try:
+            skill_result = generate_skill(table_name, result)
+            result["skill_generation"] = skill_result
+        except Exception as e:
+            result["skill_generation"] = {"success": False, "error": str(e)}
 
     return result
 
@@ -256,6 +265,7 @@ SKILL = {
         "project": "项目名 (默认: mi_ads_dmp)",
         "sample_rows": "采样行数 (默认: 5)",
         "sample_date": "采样日期 (默认: 20260314)",
+        "generate_skill": "是否自动生成 Skill 文件 (默认: True)",
     },
     "run": run,
     "invisible_context": False,

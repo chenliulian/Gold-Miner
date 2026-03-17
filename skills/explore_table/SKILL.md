@@ -31,21 +31,23 @@ explore_table
 ## 使用场景
 - 用户提到新表名时，自动探索表结构
 - 不确定字段含义时，查看样本数据
-- 探索完成后，可调用 generate_skill 生成 Skill 文件
+- 探索完成后自动生成 Skill 文件到 skills/maxcompute/table_xxx 目录
 
 ## 使用示例
 ```python
-# 探索表结构
+# 探索表结构（默认会自动生成 Skill）
 result = run(
     table_name="mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi",
     project="mi_ads_dmp",
     sample_rows=3,
-    sample_date="20260314"
+    sample_date="20260314",
+    generate_skill=True  # 默认 True
 )
 
-# 根据结果生成 Skill
-generate_skill(
-    table_name="dwd_ew_ads_show_res_clk_dld_conv_hi",
-    table_info=result
+# 如果不想生成 skill
+result = run(
+    table_name="mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi",
+    generate_skill=False
+)
 )
 ```
