@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import pandas as pd
-from odps import ODPS
+from odps import ODPS, options
 from odps.models import Instance
 
 
@@ -73,15 +73,110 @@ class OdpsClient:
             except Exception:
                 return pd.DataFrame()
 
-    def run_script(self, sql: str, limit: int = 2000, enable_log: bool = True) -> pd.DataFrame:
-        hints = {"odps.sql.submit.mode": "script"}
+    def enable_verbose(self) -> None:
+        options.verbose = True
+        options.verbose_log = self._log
+
+    def disable_verbose(self) -> None:
+        options.verbose = False
+
+    def get_logview_url(self, instance: Instance) -> str:
+        return instance.get_logview_address()
+
+    def run_sql_with_progress(
+        self, sql: str, limit: int = 2000, enable_log: bool = True
+    ) -> Tuple[pd.DataFrame, str]:
+        if enable_log:
+            self._log("正在提交...")
+        
+        instance = self.odps.execute_sql(sql)
+        instance_id = instance.id
+        
+        if enable_log:
+            self._log(f"提交任务成功, Instance ID: {instance_id}")
+            self._log("Awaiting for the task submitting...")
+            
+            while not instance.is_terminated():
+                status = instance.status
+                if status == "running":
+                    self._log("Current task status: RUNNING")
+                    for task_name in instance.get_task_names():
+                        progress = instance.get_task_progress(task_name)
+                        self._log(f"  Task: {task_name}, Progress: {progress}")
+                elif status == "waiting":
+                    self._log("Awaiting in the cloud gateway for resources")
+                time.sleep(3)
+            
+            self._log(f"Task finished with status: {instance.status}")
+            
+            logview_url = self.get_logview_url(instance)
+            self._log(f"Logview: {logview_url}")
+        
+        with instance.open_reader() as reader:
+            try:
+                df = reader.to_pandas()
+                if limit and len(df) > limit:
+                    return df.head(limit), instance_id
+                return df, instance_id
+            except Exception:
+                return pd.DataFrame(), instance_id
+
+    def run_script_with_progress(
+        self, sql: str, limit: int = 2000, enable_log: bool = True
+    ) -> Tuple[pd.DataFrame, str]:
+        hints = {
+            "odps.sql.submit.mode": "script",
+            "odps.instance.priority": "7"
+        }
+        
+        if enable_log:
+            self._log("正在提交...")
+        
+        instance = self.odps.execute_sql(sql, hints=hints)
+        instance_id = instance.id
+        
+        if enable_log:
+            self._log(f"提交任务成功, Instance ID: {instance_id}")
+            self._log("Awaiting for the task submitting...")
+            
+            while not instance.is_terminated():
+                status = instance.status
+                if status == "running":
+                    self._log("Current task status: RUNNING")
+                    for task_name in instance.get_task_names():
+                        progress = instance.get_task_progress(task_name)
+                        self._log(f"  Task: {task_name}, Progress: {progress}")
+                elif status == "waiting":
+                    self._log("Awaiting in the cloud gateway for resources")
+                time.sleep(3)
+            
+            self._log(f"Task finished with status: {instance.status}")
+            
+            logview_url = self.get_logview_url(instance)
+            self._log(f"Logview: {logview_url}")
+        
+        with instance.open_reader() as reader:
+            try:
+                df = reader.to_pandas()
+                if limit and len(df) > limit:
+                    return df.head(limit), instance_id
+                return df, instance_id
+            except Exception:
+                return pd.DataFrame(), instance_id
+
+    def run_script(self, sql: str, limit: int = 2000, enable_log: bool = True) -> Tuple[pd.DataFrame, str]:
+        hints = {
+            "odps.sql.submit.mode": "script",
+            "odps.instance.priority": "7"
+        }
         
         if enable_log:
             self._log("正在提交...")
         instance = self.odps.execute_sql(sql, hints=hints)
+        instance_id = instance.id
         
         if enable_log:
-            self._log("提交任务成功")
+            self._log(f"提交任务成功, Instance ID: {instance_id}")
             self._log("Awaiting for the task submitting...")
             
             while not instance.is_terminated():
@@ -93,12 +188,15 @@ class OdpsClient:
                 time.sleep(3)
             
             self._log(f"Task finished with status: {instance.status}")
+            
+            logview_url = self.get_logview_url(instance)
+            self._log(f"Logview: {logview_url}")
         
         with instance.open_reader() as reader:
             try:
                 df = reader.to_pandas()
                 if limit and len(df) > limit:
-                    return df.head(limit)
-                return df
+                    return df.head(limit), instance_id
+                return df, instance_id
             except Exception:
-                return pd.DataFrame()
+                return pd.DataFrame(), instance_id
