@@ -237,7 +237,7 @@ class SqlAgent:
         for root, dirs, files in os.walk(skills_dir):
             for file in files:
                 if file == "SKILL.md":
-                    file_path = os.path.join(root, files)
+                    file_path = os.path.join(root, file)
                     try:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
