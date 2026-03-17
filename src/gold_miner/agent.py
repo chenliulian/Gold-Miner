@@ -364,24 +364,22 @@ def _parse_json(content: str) -> Dict[str, Any]:
     
     content = content.strip()
     
-    clean = ''.join(c for c in content if ord(c) >= 32)
-    
     try:
-        return json.loads(clean)
+        return json.loads(content, strict=False)
     except json.JSONDecodeError:
         pass
 
     try:
-        start = clean.find("{")
-        end = clean.rfind("}")
+        start = content.find("{")
+        end = content.rfind("}")
         if start != -1 and end != -1:
-            return json.loads(clean[start : end + 1])
+            return json.loads(content[start : end + 1], strict=False)
     except json.JSONDecodeError:
         pass
 
     brace_count = 0
     start = -1
-    for i, c in enumerate(clean):
+    for i, c in enumerate(content):
         if c == '{':
             if start == -1:
                 start = i
@@ -390,15 +388,15 @@ def _parse_json(content: str) -> Dict[str, Any]:
             brace_count -= 1
             if brace_count == 0 and start != -1:
                 try:
-                    return json.loads(clean[start:i+1])
+                    return json.loads(content[start:i+1], strict=False)
                 except json.JSONDecodeError:
                     pass
 
-    match = re.search(r'\{[^{}]*\}', clean)
+    match = re.search(r'\{[^{}]*\}', content)
     if match:
         try:
-            return json.loads(match.group(0))
+            return json.loads(match.group(0), strict=False)
         except json.JSONDecodeError:
             pass
 
-    raise ValueError(f"Could not parse JSON from content: {clean[:200]}...")
+    raise ValueError(f"Could not parse JSON from content: {content[:200]}...")
