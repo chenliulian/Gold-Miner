@@ -1,0 +1,239 @@
+# 查询规则定义
+# 用于指导 Agent 生成高质量的 SQL 查询
+
+查询规则:
+  # ========== 分区规则 ==========
+  必须指定分区:
+    规则ID: R001
+    名称: DWD表必须指定分区
+    描述: 查询DWD层明细表时必须指定分区条件
+    严重级别: 强制
+    适用表: 
+      - dwd_*
+      - 所有包含 dh/dt 分区字段的表
+    规则详情:
+      - 必须包含 WHERE dh >= '...' AND dh <= '...'
+      - 或者 WHERE dt >= '...' AND dt <= '...'
+    错误示例: >
+      SELECT * FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+      WHERE advertiser_id = 123
+    正确示例: >
+      SELECT * FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+      WHERE dh >= '2026031500' AND dh <= '2026031523'
+        AND advertiser_id = 123
+    违反后果: 查询会被系统拒绝或超时
+    
+  分区格式规范:
+    规则ID: R002
+    名称: 分区值格式必须正确
+    描述: dh分区必须是YYYYMMDDHH格式，dt分区必须是YYYYMMDD格式
+    严重级别: 强制
+    正确格式:
+      dh: "2026031500 - 14位"
+      dt: "20260315 - 8位"
+    错误格式:
+      - "2026-03-15 - 带横线"
+      - "2026/03/15 - 带斜线"
+      - "15-Mar-2026 - 其他格式"
+      
+  时间范围限制:
+    规则ID: R003
+    名称: 单次查询时间范围限制
+    描述: 为防止查询超时，限制单次查询的时间范围
+    严重级别: 建议
+    限制:
+      DWD层: 不超过7天
+      DWS层: 不超过31天
+      ADS层: 不超过90天
+    超出处理: 分多次查询，每次在限制范围内
+    
+  # ========== 性能优化规则 ==========
+  先过滤后聚合:
+    规则ID: R004
+    名称: 聚合前先过滤数据
+    描述: 在GROUP BY之前先过滤数据，减少计算量
+    严重级别: 建议
+    优化前: >
+      SELECT advertiser_id, SUM(billing_actual_deduction_price)
+      FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+      WHERE dh >= '2026031500' AND dh <= '2026031523'
+      GROUP BY advertiser_id
+      HAVING SUM(billing_actual_deduction_price) > 1000000
+    优化后: >
+      SELECT advertiser_id, SUM(price) AS total_price
+      FROM (
+        SELECT advertiser_id, billing_actual_deduction_price AS price
+        FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+        WHERE dh >= '2026031500' AND dh <= '2026031523'
+          AND billing_actual_deduction_price > 0
+      )
+      GROUP BY advertiser_id
+      HAVING total_price > 1000000
+      
+  避免SELECT星号:
+    规则ID: R005
+    名称: 避免使用 SELECT *
+    描述: 只查询需要的字段，减少数据传输
+    严重级别: 建议
+    错误示例: SELECT * FROM table
+    正确示例: SELECT advertiser_id, dh, billing_actual_deduction_price FROM table
+    
+  大表JOIN优化:
+    规则ID: R006
+    名称: 大表JOIN需要谨慎
+    描述: 两个大表JOIN会产生笛卡尔积，性能极差
+    严重级别: 警告
+    建议:
+      - 先分别聚合再JOIN
+      - 使用MAPJOIN提示，小表放右边
+      - 确保JOIN条件有分区过滤
+    优化示例: >
+      WITH advertiser_spend AS (
+        SELECT advertiser_id, SUM(billing_actual_deduction_price) AS spend
+        FROM dwd_table
+        WHERE dh >= '2026031500'
+        GROUP BY advertiser_id
+      ),
+      advertiser_info AS (
+        SELECT advertiser_id, industry
+        FROM dim_table
+      )
+      SELECT a.*, b.industry
+      FROM advertiser_spend a
+      JOIN advertiser_info b ON a.advertiser_id = b.advertiser_id
+      
+  # ========== 指标计算规则 ==========
+  消耗统一口径:
+    规则ID: R007
+    名称: 消耗类指标使用统一口径
+    描述: 所有消耗计算必须使用 billing_actual_deduction_price / 1e5
+    严重级别: 强制
+    正确计算:
+      总消耗: SUM(billing_actual_deduction_price) / 1e5
+      日均消耗: AVG(daily_spend_usd)
+    错误计算:
+      - 使用其他price字段
+      - 忘记除以1e5
+      - 使用MAX/MIN而不是SUM
+    示例: >
+      SELECT 
+        advertiser_id,
+        SUM(billing_actual_deduction_price) / 1e5 AS spend_usd
+      FROM table
+      GROUP BY advertiser_id
+      
+  CTR计算规则:
+    规则ID: R008
+    名称: CTR计算必须先SUM再除
+    描述: CTR = SUM(click) / SUM(show)，不是AVG(click/show)
+    严重级别: 强制
+    正确计算: SUM(click_count) / SUM(show_count)
+    错误计算: AVG(click_count / show_count)
+    原因: 需要先汇总再计算比率，避免比率平均的数学错误
+    示例: >
+      SELECT 
+        advertiser_id,
+        ROUND(SUM(click_count) / SUM(show_count), 4) AS ctr
+      FROM table
+      GROUP BY advertiser_id
+      
+  CVR计算规则:
+    规则ID: R009
+    名称: CVR计算规则
+    描述: CVR = SUM(conversion) / SUM(click)
+    严重级别: 强制
+    正确计算: SUM(conversion_count) / SUM(click_count)
+    注意: 分母是点击数，不是展示数
+    
+  CPM计算规则:
+    规则ID: R010
+    名称: CPM计算规则
+    描述: CPM = 消耗(美元) / 展示数 * 1000
+    严重级别: 强制
+    计算公式: SUM(billing_actual_deduction_price) / SUM(show_count) * 1000 / 1e5
+    单位: 美元/千次展示
+    
+  CPC计算规则:
+    规则ID: R011
+    名称: CPC计算规则
+    描述: CPC = 消耗(美元) / 点击数
+    严重级别: 强制
+    计算公式: SUM(billing_actual_deduction_price) / SUM(click_count) / 1e5
+    单位: 美元/点击
+    
+  去重规则:
+    规则ID: R012
+    名称: 去重统计规则
+    描述: 不同维度的去重使用不同的ID
+    严重级别: 建议
+    去重维度:
+      按请求去重: COUNT(DISTINCT request_id)
+      按广告主去重: COUNT(DISTINCT advertiser_id)
+      按用户去重: COUNT(DISTINCT user_id) 或 device_id
+      按广告去重: COUNT(DISTINCT creative_id)
+      
+  # ========== 数据质量规则 ==========
+  异常值检查:
+    规则ID: R013
+    名称: 识别异常值
+    描述: 查询结果中可能存在异常值，需要识别
+    严重级别: 建议
+    异常类型:
+      CTR大于10%:
+        可能原因: 作弊流量、数据错误
+        处理: 标记并进一步分析
+      CTR小于0.1%:
+        可能原因: 创意质量差、定向过宽
+        处理: 优化建议
+      消耗为0但有展示:
+        可能原因: 赠送流量、数据缺失
+        处理: 确认是否为赠送流量
+      点击大于展示:
+        严重级别: 高
+        说明: 数据逻辑错误
+        处理: 必须排查
+      转化大于点击:
+        严重级别: 高
+        说明: 数据逻辑错误
+        处理: 必须排查
+        
+  空值处理:
+    规则ID: R014
+    名称: 处理NULL值
+    描述: 聚合函数会自动忽略NULL，但需要显式处理
+    严重级别: 建议
+    处理方式:
+      替换为0: COALESCE(column, 0)
+      替换为默认值: COALESCE(column, '未知')
+      过滤NULL: WHERE column IS NOT NULL
+      
+  # ========== 安全规则 ==========
+  防止数据泄露:
+    规则ID: R015
+    名称: 敏感数据保护
+    描述: 避免查询中包含敏感信息
+    严重级别: 强制
+    敏感字段:
+      - user_id: 用户唯一标识
+      - device_id: 设备标识
+      - ip: IP地址
+      - phone: 手机号
+    处理:
+      - 不查询敏感字段
+      - 需要时进行脱敏处理
+      - 聚合后展示
+      
+  限制返回行数:
+    规则ID: R016
+    名称: 限制结果集大小
+    描述: 防止返回过多数据导致系统压力
+    严重级别: 建议
+    限制:
+      默认: LIMIT 1000
+      最大: LIMIT 10000
+    说明: 如需更多数据，使用分页或导出功能
+
+规则应用优先级:
+  强制级: 必须遵守，违反会导致查询失败或错误
+  警告级: 强烈建议遵守，违反可能导致性能问题
+  建议级: 推荐遵守，可以优化查询质量和性能

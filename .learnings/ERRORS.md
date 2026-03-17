@@ -113,3 +113,30 @@ self_improvement 调用报错修复：entry_type 不支持 'correction'
 - Related Files: 
 
 ---
+
+## [ERR-20260317-080] skill_or_command
+
+**Logged**: 2026-03-17T20:07:28
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+dwd_ew_ads_show_res_clk_dld_conv_hi 无 show_count/click_count 字段，需要用 show_label/click_label 聚合得到展示/点击数。
+
+### Error
+```
+查询 dh='2026031510' 时，引用 show_count/click_count 报错无法解析。该表为曝光级别明细，一行代表一次展示；展示/点击可用 show_label/click_label(通常为0/1) 汇总。
+```
+
+### Context
+- Source: error
+
+### Suggested Fix
+后续统计 shows=SUM(CASE WHEN CAST(show_label AS STRING)='1' THEN 1 ELSE 0 END)，clicks=SUM(CASE WHEN CAST(click_label AS STRING)='1' THEN 1 ELSE 0 END)，CTR=clicks/shows。
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---

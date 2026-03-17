@@ -1,0 +1,224 @@
+# 核心业务术语定义
+# 用于帮助 Agent 理解广告业务概念
+
+术语定义:
+  # ========== 基础指标 ==========
+  消耗:
+    英文: spend / cost
+    定义: 广告投放实际扣费金额
+    单位: 微美元 (micro USD)
+    计算公式: billing_actual_deduction_price / 1e5 (转为美元)
+    相关字段: 
+      - billing_actual_deduction_price (微美元)
+      - cost_micro_usd (微美元)
+      - spend_usd (美元，计算后)
+    常用口径:
+      总消耗: SUM(billing_actual_deduction_price) / 1e5
+      日均消耗: AVG(daily_spend)
+      小时消耗: SUM(CASE WHEN dh = '{hour}' THEN billing_actual_deduction_price ELSE 0 END) / 1e5
+    业务场景:
+      - 财务结算
+      - 预算控制
+      - ROI 计算
+    
+  展示:
+    英文: impression / show
+    定义: 广告被展示给用户的次数（用户看到广告）
+    相关字段:
+      - show_count
+      - impression_cnt
+      - imp
+      - impr
+    计算方式: COUNT(1) 或 SUM(show_count)
+    业务场景:
+      - 品牌曝光
+      - 流量规模评估
+      - CPM 计算
+    
+  点击:
+    英文: click
+    定义: 用户点击广告的次数
+    相关字段:
+      - click_count
+      - clk
+      - click_cnt
+    计算方式: SUM(click_count)
+    业务场景:
+      - 用户兴趣度
+      - CPC 计算
+      - CTR 计算
+    
+  转化:
+    英文: conversion
+    定义: 用户完成预期目标行为（如下载、注册、购买）
+    相关字段:
+      - conversion_count
+      - conv_cnt
+      - label (标签字段)
+    转化类型:
+      - 下载转化: download
+      - 激活转化: activate
+      - 注册转化: register
+      - 付费转化: purchase
+    
+  # ========== 比率指标 ==========
+  CTR:
+    英文: Click Through Rate
+    定义: 点击率，衡量广告吸引力
+    计算公式: SUM(click_count) / SUM(show_count)
+    常见阈值:
+      优秀: "> 2%"
+      一般: "1% - 2%"
+      较差: "< 1%"
+    优化建议:
+      - CTR 低: 优化创意、调整定向
+      - CTR 高但转化低: 检查落地页质量
+    
+  CVR:
+    英文: Conversion Rate
+    定义: 转化率，衡量转化效果
+    计算公式: SUM(conversion_count) / SUM(click_count)
+    常见阈值:
+      优秀: "> 10%"
+      一般: "3% - 10%"
+      较差: "< 3%"
+    影响因素:
+      - 落地页质量
+      - 产品吸引力
+      - 定向精准度
+    
+  CPM:
+    英文: Cost Per Mille
+    定义: 千次展示成本
+    计算公式: SUM(billing_actual_deduction_price) / SUM(show_count) * 1000 / 1e5
+    单位: 美元/千次展示
+    业务意义: 衡量流量成本
+    
+  CPC:
+    英文: Cost Per Click
+    定义: 单次点击成本
+    计算公式: SUM(billing_actual_deduction_price) / SUM(click_count) / 1e5
+    单位: 美元/点击
+    业务意义: 衡量点击成本
+    
+  # ========== 业务实体 ==========
+  广告主:
+    英文: advertiser
+    定义: 投放广告的客户/企业
+    相关字段:
+      - advertiser_id (广告主唯一ID)
+      - adv_id
+      - customer_id
+    关联维度表: dim_advertiser
+    分析维度:
+      - 行业分类
+      - 预算规模
+      - 投放时长
+    
+  广告计划:
+    英文: campaign
+    定义: 广告主的投放计划，包含预算、周期等设置
+    相关字段:
+      - campaign_id
+      - cmp_id
+      - plan_id
+    层级关系: 广告主 > 广告计划 > 广告组 > 广告创意
+    
+  广告组:
+    英文: adgroup
+    定义: 广告计划下的投放单元，包含定向、出价等设置
+    相关字段:
+      - adgroup_id
+      - adg_id
+      - unit_id
+    层级关系: 广告计划 > 广告组 > 广告创意
+    
+  广告创意:
+    英文: creative / ad
+    定义: 实际展示给用户的广告内容
+    相关字段:
+      - creative_id
+      - ad_id
+      - material_id
+    类型:
+      - 图片广告
+      - 视频广告
+      - 互动广告
+    
+  # ========== 定向相关 ==========
+  定向:
+    英文: targeting
+    定义: 广告投放的受众筛选条件
+    常见维度:
+      - 地域: region, city, province
+      - 年龄: age_range
+      - 性别: gender
+      - 兴趣: interest_category
+      - 行为: behavior_tag
+    
+  出价:
+    英文: bid
+    定义: 广告主愿意为每次转化/点击支付的价格
+    相关字段:
+      - bid_price
+      - bid_amount
+      - target_cpa
+    出价方式:
+      - CPC: 按点击出价
+      - CPM: 按展示出价
+      - oCPC: 优化点击出价
+      - oCPM: 优化展示出价
+    
+  # ========== 数据分层 ==========
+  DWD层:
+    全称: Data Warehouse Detail
+    定义: 明细数据层，存储最细粒度的业务数据
+    特点:
+      - 数据粒度最细（曝光级别）
+      - 包含完整历史数据
+      - 通常按小时/天分区
+      - 数据量大，查询需指定分区
+    适用场景:
+      - 明细分析
+      - 自定义聚合
+      - 数据质量检查
+    
+  DWS层:
+    全称: Data Warehouse Service
+    定义: 服务数据层，轻度汇总
+    特点:
+      - 按业务主题汇总
+      - 适合常规分析查询
+      - 数据量适中
+    适用场景:
+      - 日常报表
+      - 趋势分析
+      - 对比分析
+    
+  ADS层:
+    全称: Application Data Service
+    定义: 应用数据层，高度汇总
+    特点:
+      - 直接面向业务应用
+      - 查询性能最优
+      - 数据粒度粗
+    适用场景:
+      - 实时监控
+      - 大屏展示
+      - 快速查询
+    
+  # ========== 时间相关 ==========
+  数据时间:
+    英文: data hour / partition
+    定义: 数据分区字段，表示数据产生的时间
+    常用字段:
+      - dh: 小时分区 (YYYYMMDDHH)
+      - dt: 日期分区 (YYYYMMDD)
+      - biz_date: 业务日期
+    格式示例:
+      dh: "2026031500"  # 2026年3月15日0点
+      dt: "20260315"    # 2026年3月15日
+    查询注意:
+      - 必须指定时间范围
+      - 单次查询不超过31天
+      - 注意时区问题（通常是UTC+8）

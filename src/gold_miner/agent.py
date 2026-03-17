@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from tabulate import tabulate
 
+from .business_knowledge import get_knowledge_manager
 from .config import Config
 from .llm import OpenAICompatibleClient
 from .memory import MemoryStore
@@ -55,6 +56,7 @@ class SqlAgent:
         self.memory = MemoryStore(config.memory_path)
         self.skills = SkillRegistry(skills_dir)
         self.skills.load()
+        self.knowledge = get_knowledge_manager()  # 业务知识管理器
         self.state = AgentState()
         self._cancel_event: Optional[Any] = None
 
@@ -67,6 +69,7 @@ class SqlAgent:
         cancel_event: Optional[Any] = None,
         status_cb: Optional[Any] = None,
         heartbeat_cb: Optional[Any] = None,
+        clear_memory: bool = True,
     ) -> str:
         max_steps = max_steps or self.config.agent_max_steps
         if status_cb:
@@ -75,7 +78,9 @@ class SqlAgent:
         # Reset agent state for new run
         self.state = AgentState()
         self._cancel_event = cancel_event
-        self.memory.clear()
+        # 只在需要时清空记忆（聊天模式下不清空，保持对话上下文）
+        if clear_memory:
+            self.memory.clear()
         
         step_count = 0
         for step in range(max_steps):
@@ -166,10 +171,19 @@ class SqlAgent:
         results_summary = self._results_summary()
         skill_list = self.skills.list()
         
+        # 获取业务知识上下文
+        business_context = self.knowledge.build_context(question)
+        business_knowledge_str = self.knowledge.format_context_for_prompt(business_context)
+        
         visible_steps = [s for s in context["recent_steps"] if s.get("visible", True)]
         
+        # 构建增强的 system prompt
+        enhanced_system_prompt = SYSTEM_PROMPT
+        if business_knowledge_str:
+            enhanced_system_prompt += f"\n\n{business_knowledge_str}"
+        
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": enhanced_system_prompt},
             {
                 "role": "user",
                 "content": json.dumps(
