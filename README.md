@@ -22,12 +22,38 @@ pip install -e .
 cp .env.example .env
 ```
 
-3. Run:
+3. Run CLI chat mode:
 
 ```bash
-gold-miner analyze --question "分析过去30天的日活趋势，并给出异常峰值日期" \
-  --tables user_activity \
-  --output reports/dau-report.md
+gold-miner chat
+```
+
+Or directly with Python:
+
+```bash
+python -m gold_miner.cli
+```
+
+4. Example chat session:
+
+```
+🤖 GoldMiner Chat Mode
+Type your question or use commands:
+  /cancel - Cancel current task
+  /reset  - Clear conversation history
+  quit    - Exit
+
+> 查询昨天广告投放的消耗数据
+[Agent will auto-match tables and generate SQL]
+
+> 分析贷款CVR模型的特征分布
+[Agent will analyze and generate report]
+
+> /cancel
+Task cancelled.
+
+> quit
+Goodbye!
 ```
 
 ## How the agent works (high level)

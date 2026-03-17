@@ -1,0 +1,204 @@
+# 创意维度表
+# 来源: skills/maxcompute/table_com_cdm_dim_creativity_dd/SKILL.md
+
+基本信息:
+  表名: com_cdm.dim_creativity_dd
+  业务名称: 创意维度表
+  数据粒度: 创意级别
+  更新频率: 日
+  保留周期: 365天
+  项目: com_cdm
+  列数: 47
+  分区数: 1
+
+分区信息:
+  分区字段: dt
+  分区类型: STRING
+  分区说明: 日期分区，格式 YYYYMMDD
+
+核心字段详解:
+  id:
+    字段名: id
+    数据类型: STRING
+    业务含义: 创意ID
+    示例值: ['181370']
+    使用注意: 主键，唯一标识一个创意
+
+  title:
+    字段名: title
+    数据类型: STRING
+    业务含义: 创意标题
+    示例值: ['广告_24_02_03_20:43:06_4_copy_11_copy_88_copy_7']
+    使用注意: 创意的名称/标题
+
+  ad_group_id:
+    字段名: ad_group_id
+    数据类型: STRING
+    业务含义: 广告组ID
+    示例值: ['21345']
+    使用注意: 关联广告组
+
+  ad_group_title:
+    字段名: ad_group_title
+    数据类型: STRING
+    业务含义: 广告组标题
+    示例值: ['Brick Master-国家限定-非商店_2']
+    使用注意: 广告组名称
+
+  ad_plan_id:
+    字段名: ad_plan_id
+    数据类型: STRING
+    业务含义: 广告计划ID
+    示例值: ['12153']
+    使用注意: 关联广告计划
+
+  ad_plan_title:
+    字段名: ad_plan_title
+    数据类型: STRING
+    业务含义: 广告计划标题
+    示例值: ['brick-master_0203']
+    使用注意: 广告计划名称
+
+  advertiser_id:
+    字段名: advertiser_id
+    数据类型: STRING
+    业务含义: 广告主ID
+    示例值: ['3375']
+    使用注意: 关联广告主
+
+  account_name:
+    字段名: account_name
+    数据类型: STRING
+    业务含义: 账户名称
+    示例值: ['果石-funloop-01']
+    使用注意: 广告主账户名
+
+  style_type:
+    字段名: style_type
+    数据类型: STRING
+    业务含义: 样式类型
+    示例值: ['9:20']
+    使用注意: 创意尺寸比例
+
+  status:
+    字段名: status
+    数据类型: INT
+    业务含义: 状态码
+    示例值: ['0']
+    使用注意: 创意状态
+
+  status_cn:
+    字段名: status_cn
+    数据类型: STRING
+    业务含义: 状态中文
+    示例值: ['未定义']
+    使用注意: 状态描述
+
+  open:
+    字段名: open
+    数据类型: INT
+    业务含义: 开启状态
+    示例值: ['2']
+    使用注意: 2=暂停
+
+  open_cn:
+    字段名: open_cn
+    数据类型: STRING
+    业务含义: 开启状态中文
+    示例值: ['暂停']
+    使用注意: 开启状态描述
+
+  material_type:
+    字段名: material_type
+    数据类型: STRING
+    业务含义: 素材类型
+    示例值: ['2']
+    使用注意: 素材类型编码
+
+  material_type_cn:
+    字段名: material_type_cn
+    数据类型: STRING
+    业务含义: 素材类型中文
+    示例值: ['图片']
+    使用注意: 图片/视频等
+
+  category_name:
+    字段名: category_name
+    数据类型: STRING
+    业务含义: 分类名称
+    示例值: ['Role Playing']
+    使用注意: 游戏/应用分类
+
+  material_id:
+    字段名: material_id
+    数据类型: STRING
+    业务含义: 素材ID
+    示例值: ['47608']
+    使用注意: 关联素材
+
+  package_name:
+    字段名: package_name
+    数据类型: STRING
+    业务含义: 包名
+    示例值: ['com.casualgame.brick.master.free.game']
+    使用注意: 应用包名
+
+  gmt_create:
+    字段名: gmt_create
+    数据类型: DATETIME
+    业务含义: 创建时间
+    示例值: ['2024-02-03 20:51:45']
+    使用注意: 创意创建时间
+
+  gmt_modified:
+    字段名: gmt_modified
+    数据类型: DATETIME
+    业务含义: 修改时间
+    示例值: ['2026-01-15 05:26:27']
+    使用注意: 最后修改时间
+
+常用查询场景:
+  查询创意列表:
+    场景名称: 查询指定条件下的创意列表
+    SQL模板: |
+      SELECT id, title, ad_group_id, ad_plan_id, advertiser_id, 
+             material_type_cn, status_cn, open_cn, gmt_create
+      FROM com_cdm.dim_creativity_dd
+      WHERE dt = '${dt}'
+        AND advertiser_id = '${advertiser_id}'
+      LIMIT 100
+    参数:
+      dt: 日期分区，格式YYYYMMDD
+      advertiser_id: 广告主ID
+
+  统计创意数量:
+    场景名称: 按广告主统计创意数量
+    SQL模板: |
+      SELECT advertiser_id, account_name, 
+             COUNT(DISTINCT id) AS creativity_count
+      FROM com_cdm.dim_creativity_dd
+      WHERE dt = '${dt}'
+      GROUP BY advertiser_id, account_name
+      ORDER BY creativity_count DESC
+    参数:
+      dt: 日期分区，格式YYYYMMDD
+
+数据质量规则:
+  异常值识别:
+    空创意标题:
+      条件: title IS NULL OR title = ''
+      可能原因: 数据同步异常或创意未命名
+      建议: 检查数据源或联系广告主补充
+
+    无效状态:
+      条件: status NOT IN (0, 1, 2)
+      可能原因: 状态码异常
+      建议: 检查状态映射关系
+
+业务备注:
+  ID字段: [id, ad_group_id, ad_plan_id, advertiser_id, site_id, material_id]
+  时间字段: [gmt_create, gmt_modified, dt]
+  状态字段: [status, status_cn, open, open_cn]
+  关联表: [ad_group, ad_plan, advertiser]
+
+生成时间: '2026-03-17 20:30:06'
