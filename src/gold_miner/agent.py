@@ -198,8 +198,17 @@ class SqlAgent:
         self.memory.add_step("tool", f"SQL executed. Rows={len(df)}\n{preview}")
 
     def _handle_skill(self, skill: str, skill_args: Dict[str, Any]) -> None:
-        skill_def = self.skills.get(skill)
+        try:
+            skill_def = self.skills.get(skill)
+        except KeyError:
+            self.state.last_error = f"Skill '{skill}' not found. Available skills: {list(self.skills.skills.keys())}"
+            self.state.notes.append(self.state.last_error)
+            self.memory.add_step("tool", f"Skill error: {self.state.last_error}", visible=True)
+            return
+        
         is_invisible = skill_def.invisible_context if skill_def else True
+        
+        self.memory.add_step("assistant", f"Using skill: {skill}", visible=not is_invisible)
         
         if self.state.last_df is not None and "dataframe" not in skill_args:
             skill_args = dict(skill_args)
