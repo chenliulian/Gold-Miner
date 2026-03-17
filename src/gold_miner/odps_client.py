@@ -144,7 +144,7 @@ class OdpsClient:
                 return pd.DataFrame(), instance_id
 
     def run_script_with_progress(
-        self, sql: str, limit: int = 2000, enable_log: bool = True
+        self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None
     ) -> Tuple[pd.DataFrame, str]:
         hints = {
             "odps.sql.submit.mode": "script",
@@ -162,6 +162,12 @@ class OdpsClient:
             self._log("Awaiting for the task submitting...")
             
             while not instance.is_terminated():
+                # Check for cancellation
+                if cancel_event is not None and cancel_event.is_set():
+                    self._log("Task cancelled by user")
+                    instance.stop()
+                    raise InterruptedError("Task cancelled by user")
+                
                 status = instance.status
                 if status == "running":
                     self._log("Current task status: RUNNING")
@@ -186,7 +192,7 @@ class OdpsClient:
             except Exception:
                 return pd.DataFrame(), instance_id
 
-    def run_script(self, sql: str, limit: int = 2000, enable_log: bool = True) -> Tuple[pd.DataFrame, str]:
+    def run_script(self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None) -> Tuple[pd.DataFrame, str]:
         hints = {
             "odps.sql.submit.mode": "script",
             "odps.instance.priority": "7"
@@ -202,6 +208,12 @@ class OdpsClient:
             self._log("Awaiting for the task submitting...")
             
             while not instance.is_terminated():
+                # Check for cancellation
+                if cancel_event is not None and cancel_event.is_set():
+                    self._log("Task cancelled by user")
+                    instance.stop()
+                    raise InterruptedError("Task cancelled by user")
+                
                 status = instance.status
                 if status == "running":
                     self._log("Current task status: RUNNING")
