@@ -360,6 +360,8 @@ def _df_preview(df: pd.DataFrame, max_rows: int = 10) -> str:
 
 
 def _parse_json(content: str) -> Dict[str, Any]:
+    import re
+    
     try:
         return json.loads(content)
     except json.JSONDecodeError:
@@ -373,7 +375,21 @@ def _parse_json(content: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
-    import re
+    brace_count = 0
+    start = -1
+    for i, c in enumerate(content):
+        if c == '{':
+            if start == -1:
+                start = i
+            brace_count += 1
+        elif c == '}':
+            brace_count -= 1
+            if brace_count == 0 and start != -1:
+                try:
+                    return json.loads(content[start:i+1])
+                except json.JSONDecodeError:
+                    pass
+
     match = re.search(r'\{[^{}]*\}', content)
     if match:
         try:
