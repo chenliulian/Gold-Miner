@@ -42,6 +42,13 @@ SYSTEM_PROMPT = SYSTEM_PROMPT_PREFIX + JSON_SCHEMA + '''
 
 You MUST respond with a single JSON object, no extra text.
 
+IMPORTANT JSON FORMATTING RULES:
+- All string values must be valid JSON strings
+- Do NOT use backticks (`) inside JSON strings - use single quotes (') or no quotes instead
+- Do NOT use unescaped newlines in JSON strings - use \\n instead
+- Ensure all quotes inside strings are properly escaped with \\
+- When writing markdown tables in report_markdown, avoid using backticks for code formatting
+
 Available skills:
 - build_adgroup_data: Build intermediate aggregation table with show/click/download/conversion data for a date range
   Source table: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi

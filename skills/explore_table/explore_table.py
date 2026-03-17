@@ -99,7 +99,7 @@ def run(
 
     if generate_skill:
         try:
-            skill_result = generate_skill(table_name, result)
+            skill_result = _generate_skill_file(table_name, result)
             result["skill_generation"] = skill_result
         except Exception as e:
             result["skill_generation"] = {"success": False, "error": str(e)}
@@ -133,7 +133,7 @@ def _generate_business_notes(table_info: Dict) -> List[str]:
     return notes
 
 
-def generate_skill(
+def _generate_skill_file(
     table_name: str,
     table_info: Dict[str, Any],
     category: str = "maxcompute",

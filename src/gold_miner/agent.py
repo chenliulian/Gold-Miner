@@ -364,6 +364,10 @@ def _parse_json(content: str) -> Dict[str, Any]:
     
     content = content.strip()
     
+    # 如果内容以 ... 结尾，说明可能被截断了，记录警告
+    if content.endswith('...'):
+        print(f"[Warning] LLM response appears to be truncated: {content[:100]}...")
+    
     try:
         return json.loads(content, strict=False)
     except json.JSONDecodeError:
@@ -372,7 +376,7 @@ def _parse_json(content: str) -> Dict[str, Any]:
     try:
         start = content.find("{")
         end = content.rfind("}")
-        if start != -1 and end != -1:
+        if start != -1 and end != -1 and end > start:
             return json.loads(content[start : end + 1], strict=False)
     except json.JSONDecodeError:
         pass
@@ -399,4 +403,27 @@ def _parse_json(content: str) -> Dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-    raise ValueError(f"Could not parse JSON from content: {content[:200]}...")
+    # 尝试修复常见的 JSON 格式问题
+    try:
+        # 移除可能的尾部逗号
+        fixed_content = re.sub(r',(\s*[}\]])', r'\1', content)
+        return json.loads(fixed_content, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    # 尝试修复反引号转义问题 (LLM 有时会返回 \` 而不是 `)
+    try:
+        fixed_content = content.replace(r'\`', '`')
+        return json.loads(fixed_content, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    # 尝试修复其他常见的无效转义序列
+    try:
+        # 将无效的转义序列替换为未转义的字符
+        fixed_content = re.sub(r'\\([^"\\/bfnrtu])', r'\1', content)
+        return json.loads(fixed_content, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    raise ValueError(f"Could not parse JSON from content (length={len(content)}): {content[:500]}...")
