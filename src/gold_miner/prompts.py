@@ -89,6 +89,7 @@ Rules:
 - If recent_steps contains user feedback (marked with 💡 or user suggestions), immediately adjust your approach based on that feedback.
 - WHEN TO STOP: Once you have successfully executed SQL and obtained the results that answer the user's question, use the "final" action to provide the answer. Do NOT keep executing the same SQL repeatedly.
 - After getting query results, analyze them and provide the final answer using the "final" action with "report_markdown".
+- CHECK BEFORE EXECUTING: Always check results_summary and last_sql before executing SQL. If the same SQL has already been executed successfully, do NOT execute it again - use "final" action to report the existing results.
 '''
 
 FINAL_REPORT_PROMPT = """
