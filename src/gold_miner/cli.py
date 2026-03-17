@@ -165,12 +165,33 @@ def main() -> None:
             if question.strip().lower() == "/cancel":
                 with status_lock:
                     cancel_event = state["cancel"]
+                    current_status = state["status"]
                 if cancel_event is None:
                     print("Nothing to cancel.")
                 else:
                     cancel_event.set()
                     print("Cancel requested. It will stop after the current step.")
+                    # Wait for worker to become idle
+                    print("Waiting for current task to stop...")
+                    for _ in range(60):  # Wait up to 30 seconds
+                        with status_lock:
+                            if state["status"] == "idle":
+                                break
+                        time.sleep(0.5)
+                    with status_lock:
+                        if state["status"] != "idle":
+                            print("Warning: Task may still be running in background.")
+                        else:
+                            print("Task cancelled. Ready for new questions.")
                 continue
+            
+            # Check if worker is busy before accepting new task
+            with status_lock:
+                if state["status"] != "idle":
+                    print(f"Cannot start new task: current status is '{state['status']}'")
+                    print("Please wait for the current task to complete or use /cancel to stop it.")
+                    continue
+            
             tables = safe_input("Tables (comma-separated, optional)> ").strip()
             if tables.lower().startswith("from "):
                 tables = tables[5:].strip()

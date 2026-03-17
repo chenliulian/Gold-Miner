@@ -32,7 +32,7 @@ class TestMemoryStore:
     def test_init_creates_memory_store(self):
         store = MemoryStore(self.memory_path, summary_path=self.summary_path)
         assert store.path == self.memory_path
-        assert store.max_recent == 8
+        assert store.max_recent == 50
         assert store.state.summary == ""
         assert store.state.recent_steps == []
 
@@ -57,7 +57,7 @@ class TestMemoryStore:
 
     def test_init_creates_default_max_recent(self):
         store = MemoryStore(self.memory_path, summary_path=self.summary_path)
-        assert store.max_recent == 8
+        assert store.max_recent == 50
 
     def test_init_with_custom_max_recent(self):
         store = MemoryStore(
