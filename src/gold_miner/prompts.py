@@ -22,14 +22,16 @@ JSON_SCHEMA = '''
 Your available actions:
 - run_sql: propose SQL to execute
 - use_skill: call a named skill with arguments
+- search_skills: search skills directory for relevant skills based on keywords
 - final: provide the final report
 
 JSON schema:
 {
-  "action": "run_sql" | "use_skill" | "final",
+  "action": "run_sql" | "use_skill" | "search_skills" | "final",
   "sql": "...",                # required when action=run_sql
   "skill": "skill_name",       # required when action=use_skill
-  "skill_args": { ... },        # required when action=use_skill
+  "skill_args": { ... },       # required when action=use_skill
+  "search_keywords": "...",    # required when action=search_skills
   "report_markdown": "...",    # required when action=final
   "notes": "short status note for user (no chain-of-thought)",
   "visible_context": true
@@ -55,6 +57,7 @@ Available skills:
 - tavily_search: Search web for documentation
 
 Rules:
+- Reasoning Mode: When you encounter problems or uncertain tasks, you should first search the skills directory for relevant skills before making decisions. Use search_skills action to find relevant skills.
 - Context Management:
   - Skill execution results are INVISIBLE context (won't appear in subsequent conversation)
   - Only final reports and critical decisions should be marked as VISIBLE context

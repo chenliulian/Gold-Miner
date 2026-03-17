@@ -116,6 +116,14 @@ class SqlAgent:
                         status_cb({"type": "skill_result", "content": f"技能 {skill_name} 执行完成"})
                 if self.state.last_error:
                     continue
+            elif action["action"] == "search_skills":
+                keywords = action.get("search_keywords", "")
+                print(f"\n[Agent] Searching skills for: {keywords}")
+                if status_cb:
+                    status_cb({"type": "action", "content": f"搜索技能: {keywords}"})
+                self._handle_search_skills(keywords)
+                if status_cb:
+                    status_cb({"type": "skill_result", "content": f"技能搜索完成"})
             elif action["action"] == "final":
                 if status_cb:
                     status_cb("finalizing")
@@ -208,6 +216,39 @@ class SqlAgent:
             self.state.last_error = f"Skill '{skill}' error: {err}"
             self.state.notes.append(f"Skill {skill} error: {err}")
             self.memory.add_step("tool", f"Skill {skill} error: {err}\nSkill args: {skill_args}", visible=True)
+
+    def _handle_search_skills(self, keywords: str) -> None:
+        import os
+        import re
+        from pathlib import Path
+        
+        skills_dir = self.skills.skills_dir
+        results = []
+        
+        pattern = re.compile(keywords, re.IGNORECASE) if keywords else None
+        
+        for root, dirs, files in os.walk(skills_dir):
+            for file in files:
+                if file == "SKILL.md":
+                    file_path = os.path.join(root, files)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            if pattern is None or pattern.search(content):
+                                rel_path = os.path.relpath(file_path, skills_dir)
+                                results.append({
+                                    "path": rel_path,
+                                    "content": content[:500]
+                                })
+                    except Exception:
+                        pass
+        
+        result_text = f"搜索关键词: {keywords}\n\n找到 {len(results)} 个相关 skills:\n"
+        for r in results:
+            result_text += f"- {r['path']}\n"
+        
+        self.state.notes.append(f"Skill search results: {result_text}")
+        self.memory.add_step("tool", f"Skill search: {result_text}", visible=True)
 
     def _final_report_via_llm(self, question: str) -> str:
         results_summary = self._results_summary()
