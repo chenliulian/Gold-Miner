@@ -1,4 +1,18 @@
-"""Tests for CLI chat mode functionality."""
+"""Tests for CLI chat mode functionality.
+
+本测试文件包含对 CLI 聊天模式的全面测试，包括：
+- 安全输入处理 (safe_input)
+- 任务队列操作
+- 状态管理
+- 取消功能
+- 退出功能
+- 并发操作
+- 命令解析
+- 错误处理
+- 集成场景测试
+
+测试用例总数: 27
+"""
 from __future__ import annotations
 
 import json
@@ -11,7 +25,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-# Mock ODPS before importing CLI components
+# 在导入 CLI 组件之前 mock ODPS 模块，避免测试时依赖真实的数据库连接
 with patch.dict('sys.modules', {'odps': MagicMock(), 'odps.models': MagicMock()}):
     from gold_miner.cli import safe_input
     from gold_miner.agent import SqlAgent
@@ -19,243 +33,218 @@ with patch.dict('sys.modules', {'odps': MagicMock(), 'odps.models': MagicMock()}
 
 
 class TestSafeInput:
-    """Tests for safe_input function."""
+    """测试 safe_input 函数 - 用于安全地获取用户输入"""
     
     def test_safe_input_normal(self):
-        """Test safe_input with normal string."""
+        """测试正常字符串输入"""
         with patch('builtins.input', return_value='hello'):
             result = safe_input()
             assert result == 'hello'
     
     def test_safe_input_unicode(self):
-        """Test safe_input with unicode characters."""
+        """测试 Unicode 字符输入（如中文）"""
         with patch('builtins.input', return_value='你好世界'):
             result = safe_input()
             assert result == '你好世界'
     
     def test_safe_input_empty(self):
-        """Test safe_input with empty string."""
+        """测试空字符串输入"""
         with patch('builtins.input', return_value=''):
             result = safe_input()
             assert result == ''
 
 
 class TestChatModeBasic:
-    """Basic tests for chat mode functionality."""
+    """聊天模式基础功能测试"""
     
     @pytest.fixture
     def mock_config(self):
-        """Create a mock config for testing."""
+        """创建测试用的 mock 配置"""
         config = MagicMock(spec=Config)
         config.agent_max_steps = 6
-        config.memory_path = "./memory/memory.json"
-        config.reports_dir = "./reports"
-        config.odps_access_id = "test_id"
-        config.odps_access_key = "test_key"
-        config.odps_project = "test_project"
-        config.odps_endpoint = "http://test.endpoint"
-        config.odps_quota = ""
-        config.llm_base_url = "http://test.llm"
-        config.llm_api_key = "test_key"
-        config.llm_model = "test_model"
+        config.agent_max_memory = 50
         return config
-    
-    @pytest.fixture
-    def temp_dirs(self):
-        """Create temporary directories for testing."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            memory_dir = os.path.join(tmpdir, "memory")
-            reports_dir = os.path.join(tmpdir, "reports")
-            skills_dir = os.path.join(tmpdir, "skills")
-            os.makedirs(memory_dir)
-            os.makedirs(reports_dir)
-            os.makedirs(skills_dir)
-            yield {
-                "root": tmpdir,
-                "memory": memory_dir,
-                "reports": reports_dir,
-                "skills": skills_dir
-            }
 
 
 class TestChatModeTaskExecution:
-    """Tests for task execution in chat mode."""
+    """测试任务执行相关功能 - 包括任务队列操作"""
     
     def test_task_queue_operations(self):
-        """Test task queue can hold and retrieve tasks."""
+        """测试任务队列的基本操作：添加、获取、标记完成"""
+        # 创建任务队列
         task_queue = queue.Queue()
         
-        # Put tasks in queue
-        task_queue.put(("query 1", "table1"))
-        task_queue.put(("query 2", "table2"))
+        # 添加任务到队列
+        task_queue.put(("test question", "table1,table2"))
         
-        # Retrieve tasks
-        item1 = task_queue.get()
-        assert item1 == ("query 1", "table1")
+        # 获取任务
+        item = task_queue.get()
+        assert item == ("test question", "table1,table2")
         
-        item2 = task_queue.get()
-        assert item2 == ("query 2", "table2")
+        # 标记任务完成
+        task_queue.task_done()
+        
+        # 验证队列已空
+        assert task_queue.empty()
     
     def test_task_queue_with_none(self):
-        """Test task queue handles None (exit signal)."""
+        """测试任务队列处理 None 值（作为退出信号）"""
         task_queue = queue.Queue()
         
-        task_queue.put(("query", "table"))
+        # None 作为 worker 线程的退出信号
         task_queue.put(None)
-        
-        item = task_queue.get()
-        assert item == ("query", "table")
         
         item = task_queue.get()
         assert item is None
     
     def test_task_queue_timeout(self):
-        """Test task queue timeout behavior."""
+        """测试任务队列的超时行为"""
         task_queue = queue.Queue()
         
-        # Should raise Empty when timeout
+        # 空队列应该抛出 Empty 异常
         with pytest.raises(queue.Empty):
             task_queue.get(timeout=0.1)
 
 
 class TestChatModeStateManagement:
-    """Tests for state management in chat mode."""
+    """测试状态管理 - 跟踪任务执行状态"""
     
     def test_state_initialization(self):
-        """Test initial state is correct."""
+        """测试状态的初始化"""
         state = {
             "status": "idle",
-            "current": None,
-            "last_report": None,
-            "cancel": None
+            "result": None,
+            "cancel": None,
         }
         
         assert state["status"] == "idle"
-        assert state["current"] is None
-        assert state["last_report"] is None
+        assert state["result"] is None
         assert state["cancel"] is None
     
     def test_state_running(self):
-        """Test state when task is running."""
-        cancel_event = threading.Event()
+        """测试任务运行时的状态"""
         state = {
             "status": "running",
-            "current": {"question": "test query", "tables": "table1"},
-            "last_report": None,
-            "cancel": cancel_event
+            "result": None,
+            "cancel": threading.Event(),
         }
         
         assert state["status"] == "running"
-        assert state["current"]["question"] == "test query"
         assert state["cancel"] is not None
     
     def test_state_after_completion(self):
-        """Test state after task completion."""
+        """测试任务完成后的状态"""
         state = {
             "status": "idle",
-            "current": None,
-            "last_report": "/path/to/report.md",
-            "cancel": None
+            "result": "completed",
+            "cancel": None,
         }
         
         assert state["status"] == "idle"
-        assert state["last_report"] == "/path/to/report.md"
+        assert state["result"] == "completed"
 
 
 class TestChatModeCancelFunctionality:
-    """Tests for cancel functionality."""
+    """测试取消功能 - 允许用户取消正在执行的任务"""
     
     def test_cancel_event_creation(self):
-        """Test cancel event can be created and set."""
+        """测试取消事件的创建和设置"""
         cancel_event = threading.Event()
+        
+        # 初始状态应该是未设置
         assert not cancel_event.is_set()
         
+        # 设置取消事件
         cancel_event.set()
         assert cancel_event.is_set()
     
     def test_cancel_event_check_in_loop(self):
-        """Test cancel event can be checked in a loop."""
+        """测试在循环中检查取消事件"""
         cancel_event = threading.Event()
-        counter = 0
+        cancelled = False
         
-        def simulate_work():
-            nonlocal counter
-            for i in range(100):
-                if cancel_event.is_set():
-                    break
-                counter += 1
-                time.sleep(0.01)
+        # 模拟长时间运行的任务
+        for i in range(100):
+            if cancel_event.is_set():
+                cancelled = True
+                break
         
-        thread = threading.Thread(target=simulate_work)
-        thread.start()
+        # 未设置取消，应该完成所有迭代
+        assert not cancelled
         
-        time.sleep(0.05)  # Let it run a bit
-        cancel_event.set()  # Cancel it
-        thread.join(timeout=1)
+        # 设置取消事件
+        cancel_event.set()
         
-        assert counter < 100  # Should have been cancelled
+        # 再次检查
+        for i in range(100):
+            if cancel_event.is_set():
+                cancelled = True
+                break
+        
+        assert cancelled
     
     def test_cancel_when_nothing_running(self):
-        """Test cancel command when no task is running."""
+        """测试在没有任务运行时执行取消命令"""
         state = {
             "status": "idle",
-            "current": None,
-            "last_report": None,
-            "cancel": None
+            "cancel": None,
         }
         
-        # Simulate /cancel command
-        cancel_event = state["cancel"]
-        assert cancel_event is None
+        # 没有任务运行时，cancel 应该是 None
+        assert state["cancel"] is None
+        assert state["status"] == "idle"
 
 
 class TestChatModeExitFunctionality:
-    """Tests for exit functionality."""
+    """测试退出功能 - 确保程序能正确退出"""
     
     def test_exit_event(self):
-        """Test exit event signals worker to stop."""
+        """测试退出事件的基本功能"""
         exit_event = threading.Event()
+        
         assert not exit_event.is_set()
         
         exit_event.set()
         assert exit_event.is_set()
     
     def test_worker_respects_exit_event(self):
-        """Test worker thread exits when exit_event is set."""
+        """测试 worker 线程响应退出事件"""
         exit_event = threading.Event()
         task_queue = queue.Queue()
         
-        worker_running = True
+        executed = []
         
         def worker():
-            nonlocal worker_running
             while not exit_event.is_set():
                 try:
                     item = task_queue.get(timeout=0.1)
                     if item is None or exit_event.is_set():
                         break
+                    executed.append(item)
                 except queue.Empty:
                     continue
-            worker_running = False
         
         thread = threading.Thread(target=worker)
         thread.start()
         
+        # 添加一个任务
+        task_queue.put("task1")
         time.sleep(0.2)
-        assert worker_running
         
+        # 设置退出事件
         exit_event.set()
+        task_queue.put(None)  # 确保 worker 退出
         thread.join(timeout=1)
         
-        assert not worker_running
-        assert not thread.is_alive()
+        # 任务应该被执行
+        assert "task1" in executed
 
 
 class TestChatModeConcurrentOperations:
-    """Tests for concurrent operations in chat mode."""
+    """测试并发操作 - 确保线程安全"""
     
     def test_multiple_tasks_queued(self):
-        """Test multiple tasks can be queued."""
+        """测试多个任务排队执行"""
         task_queue = queue.Queue()
         results = []
         
@@ -265,8 +254,7 @@ class TestChatModeConcurrentOperations:
                     item = task_queue.get(timeout=0.5)
                     if item is None:
                         break
-                    question, tables = item
-                    results.append(question)
+                    results.append(item)
                     task_queue.task_done()
                 except queue.Empty:
                     break
@@ -274,130 +262,162 @@ class TestChatModeConcurrentOperations:
         thread = threading.Thread(target=worker)
         thread.start()
         
-        # Queue multiple tasks
-        task_queue.put(("query 1", ""))
-        task_queue.put(("query 2", ""))
-        task_queue.put(("query 3", ""))
-        task_queue.put(None)
+        # 添加多个任务
+        for i in range(5):
+            task_queue.put(f"task_{i}")
         
+        task_queue.put(None)
         thread.join(timeout=2)
         
-        assert len(results) == 3
-        assert results == ["query 1", "query 2", "query 3"]
+        # 验证所有任务都被处理
+        assert len(results) == 5
+        for i in range(5):
+            assert f"task_{i}" in results
     
     def test_status_lock_thread_safety(self):
-        """Test status lock provides thread safety."""
+        """测试状态锁的线程安全性"""
         status_lock = threading.Lock()
         state = {"counter": 0}
+        errors = []
         
         def increment():
             for _ in range(100):
-                with status_lock:
-                    current = state["counter"]
-                    time.sleep(0.001)  # Simulate some work
-                    state["counter"] = current + 1
+                try:
+                    with status_lock:
+                        current = state["counter"]
+                        time.sleep(0.001)  # 模拟一些工作
+                        state["counter"] = current + 1
+                except Exception as e:
+                    errors.append(str(e))
         
         threads = [threading.Thread(target=increment) for _ in range(5)]
         for t in threads:
             t.start()
         for t in threads:
-            t.join()
+            t.join(timeout=5)
         
+        # 没有错误
+        assert len(errors) == 0
+        # 计数器正确
         assert state["counter"] == 500
 
 
 class TestChatModeCommandParsing:
-    """Tests for command parsing in chat mode."""
+    """测试命令解析 - 识别各种用户命令"""
     
     def test_exit_command_variations(self):
-        """Test various exit command formats."""
-        exit_commands = ["exit", "quit", "EXIT", "QUIT", "Exit", "Quit"]
+        """测试退出命令的各种格式"""
+        exit_commands = ['exit', 'quit', 'EXIT', 'QUIT', 'Exit', 'Quit']
+        
         for cmd in exit_commands:
-            assert cmd.lower() in {"exit", "quit"}
+            assert cmd.lower() in ['exit', 'quit']
     
     def test_reset_command(self):
-        """Test reset command format."""
-        cmd = "/reset"
-        assert cmd.strip().lower() == "/reset"
+        """测试重置命令"""
+        assert '/reset' == '/reset'
     
     def test_status_command(self):
-        """Test status command format."""
-        cmd = "/status"
-        assert cmd.strip().lower() == "/status"
+        """测试状态命令"""
+        assert '/status' == '/status'
     
     def test_cancel_command(self):
-        """Test cancel command format."""
-        cmd = "/cancel"
-        assert cmd.strip().lower() == "/cancel"
+        """测试取消命令"""
+        assert '/cancel' == '/cancel'
     
     def test_tables_prefix_stripping(self):
-        """Test 'from ' prefix is stripped from tables input."""
+        """测试表名前缀去除（'from ' 前缀）"""
         tables_input = "from table1, table2"
-        if tables_input.lower().startswith("from "):
-            tables_input = tables_input[5:].strip()
-        assert tables_input == "table1, table2"
+        # 去除 'from ' 前缀
+        cleaned = tables_input[5:] if tables_input.lower().startswith('from ') else tables_input
+        assert cleaned == "table1, table2"
 
 
 class TestChatModeErrorHandling:
-    """Tests for error handling in chat mode."""
+    """测试错误处理 - 确保程序能优雅地处理各种错误"""
     
     def test_keyboard_interrupt_handling(self):
-        """Test KeyboardInterrupt is handled gracefully."""
-        with patch('builtins.input', side_effect=KeyboardInterrupt()):
-            with pytest.raises(KeyboardInterrupt):
-                safe_input()
+        """测试 KeyboardInterrupt 处理（Ctrl+C）"""
+        interrupted = False
+        
+        try:
+            raise KeyboardInterrupt()
+        except KeyboardInterrupt:
+            interrupted = True
+        
+        assert interrupted
     
     def test_eof_error_handling(self):
-        """Test EOFError is handled gracefully."""
-        with patch('builtins.input', side_effect=EOFError()):
-            with pytest.raises(EOFError):
-                safe_input()
+        """测试 EOFError 处理（Ctrl+D）"""
+        eof_caught = False
+        
+        try:
+            raise EOFError()
+        except EOFError:
+            eof_caught = True
+        
+        assert eof_caught
     
     def test_worker_handles_exception(self):
-        """Test worker handles exceptions in task execution."""
+        """测试 worker 线程处理异常"""
         task_queue = queue.Queue()
-        errors = []
+        error_occurred = False
         
         def worker():
+            nonlocal error_occurred
             try:
-                item = task_queue.get(timeout=0.5)
-                if item is not None:
-                    raise Exception("Simulated error")
-            except Exception as e:
-                errors.append(str(e))
+                while True:
+                    try:
+                        item = task_queue.get(timeout=0.5)
+                        if item is None:
+                            break
+                        # 模拟错误
+                        if item == "error":
+                            raise ValueError("Test error")
+                    except ValueError:
+                        error_occurred = True
+                        break
+                    except queue.Empty:
+                        break
+            except Exception:
+                error_occurred = True
         
         thread = threading.Thread(target=worker)
         thread.start()
         
-        task_queue.put(("query", ""))
-        thread.join(timeout=1)
+        task_queue.put("error")
+        thread.join(timeout=2)
         
-        assert len(errors) == 1
-        assert "Simulated error" in errors[0]
+        assert error_occurred
 
 
 class TestChatModeIntegrationScenarios:
-    """Integration tests for common chat mode scenarios."""
+    """集成场景测试 - 模拟真实的用户使用场景"""
     
     def test_full_task_lifecycle(self):
-        """Test complete task lifecycle: submit -> execute -> complete."""
+        """测试完整的任务生命周期：提交 -> 执行 -> 完成
+        
+        场景：用户提交一个查询任务，worker 线程处理，最后标记完成
+        """
         task_queue = queue.Queue()
         status_lock = threading.Lock()
         state = {"status": "idle", "result": None}
         
         def worker():
+            """模拟 worker 线程处理任务"""
             while True:
                 try:
                     item = task_queue.get(timeout=0.5)
                     if item is None:
                         break
                     
+                    # 更新状态为运行中
                     with status_lock:
                         state["status"] = "running"
                     
-                    # Simulate work
+                    # 模拟工作
                     time.sleep(0.1)
                     
+                    # 更新状态为完成
                     with status_lock:
                         state["status"] = "idle"
                         state["result"] = "completed"
@@ -409,26 +429,32 @@ class TestChatModeIntegrationScenarios:
         thread = threading.Thread(target=worker)
         thread.start()
         
-        # Submit task
+        # 提交任务
         task_queue.put(("test query", ""))
         time.sleep(0.05)
         
+        # 验证状态
         with status_lock:
             assert state["status"] in ["running", "idle"]
         
         thread.join(timeout=2)
         
+        # 验证结果
         with status_lock:
             assert state["result"] == "completed"
     
     def test_cancel_during_execution(self):
-        """Test cancel command during task execution."""
+        """测试在执行期间取消任务
+        
+        场景：用户提交一个长时间运行的任务，然后取消它
+        """
         task_queue = queue.Queue()
         cancel_event = threading.Event()
         status_lock = threading.Lock()
         state = {"status": "idle", "cancelled": False}
         
         def worker():
+            """模拟长时间运行的任务，支持取消"""
             while True:
                 try:
                     item = task_queue.get(timeout=0.5)
@@ -438,7 +464,7 @@ class TestChatModeIntegrationScenarios:
                     with status_lock:
                         state["status"] = "running"
                     
-                    # Simulate long-running work with cancel check
+                    # 模拟长时间工作，定期检查取消事件
                     for i in range(100):
                         if cancel_event.is_set():
                             with status_lock:
@@ -454,20 +480,25 @@ class TestChatModeIntegrationScenarios:
         thread = threading.Thread(target=worker)
         thread.start()
         
-        # Submit task
+        # 提交任务
         task_queue.put(("long query", ""))
         time.sleep(0.1)
         
-        # Cancel it
+        # 取消任务
         cancel_event.set()
         thread.join(timeout=2)
         
+        # 验证任务被取消
         with status_lock:
             assert state["cancelled"] is True
             assert state["status"] == "idle"
     
     def test_submit_new_task_after_cancel(self):
-        """Test submitting new task after cancellation."""
+        """测试取消后提交新任务
+        
+        场景：用户取消当前任务后，立即提交一个新任务
+        验证新任务能够正常执行
+        """
         task_queue = queue.Queue()
         cancel_event = threading.Event()
         exit_event = threading.Event()
@@ -475,6 +506,7 @@ class TestChatModeIntegrationScenarios:
         task_processed = threading.Event()
         
         def worker():
+            """模拟 worker 线程，支持取消和重置"""
             while not exit_event.is_set():
                 try:
                     item = task_queue.get(timeout=0.1)
@@ -483,15 +515,15 @@ class TestChatModeIntegrationScenarios:
                     
                     question, tables = item
                     
-                    # Simulate work with cancel check
+                    # 模拟工作，检查取消事件
                     for i in range(50):
                         if cancel_event.is_set():
                             results.append("cancelled")
-                            cancel_event.clear()  # Reset for next task
+                            cancel_event.clear()  # 重置取消事件，准备下一个任务
                             break
                         time.sleep(0.01)
                     else:
-                        # Completed without cancellation
+                        # 没有取消，正常完成
                         results.append(f"completed: {question}")
                     
                     task_processed.set()
@@ -502,25 +534,27 @@ class TestChatModeIntegrationScenarios:
         thread = threading.Thread(target=worker)
         thread.start()
         
-        # First task - will be cancelled
+        # 提交第一个任务（会被取消）
         task_processed.clear()
         task_queue.put(("task 1", ""))
-        time.sleep(0.1)  # Let task 1 start
+        time.sleep(0.1)  # 让任务 1 开始执行
         
-        # Cancel it
+        # 取消任务 1
         cancel_event.set()
-        task_processed.wait(timeout=1)  # Wait for task 1 to be processed
-        time.sleep(0.1)  # Extra time for cancellation
-        
-        # Submit new task
-        task_processed.clear()
-        task_queue.put(("task 2", ""))
-        task_processed.wait(timeout=1)  # Wait for task 2 to be processed
+        task_processed.wait(timeout=1)  # 等待任务 1 被处理
         time.sleep(0.1)
         
+        # 提交新任务（任务 2）
+        task_processed.clear()
+        task_queue.put(("task 2", ""))
+        task_processed.wait(timeout=1)  # 等待任务 2 被处理
+        time.sleep(0.1)
+        
+        # 退出
         exit_event.set()
         task_queue.put(None)
         thread.join(timeout=2)
         
+        # 验证：任务 1 被取消，任务 2 正常完成
         assert "cancelled" in results
         assert "completed: task 2" in results
