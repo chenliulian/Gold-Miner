@@ -7,13 +7,17 @@ from typing import Any, Dict, List, Optional
 
 SKILLS_DIR = Path(__file__).parent.parent
 
+# knowledge/tables 目录路径
+KNOWLEDGE_DIR = Path(__file__).parent.parent.parent / "knowledge"
+TABLES_DIR = KNOWLEDGE_DIR / "tables"
+
 
 def run(
     table_name: str,
     project: str = "mi_ads_dmp",
     sample_rows: int = 5,
     sample_date: str = "20260314",
-    generate_skill: bool = True,
+    generate_knowledge: bool = True,
 ) -> Dict[str, Any]:
     """
     探索新表的数据结构和业务含义
@@ -23,7 +27,7 @@ def run(
         project: 项目名 (默认: mi_ads_dmp)
         sample_rows: 采样行数 (默认: 5)
         sample_date: 采样日期 (默认: 20260314)
-        generate_skill: 是否自动生成 Skill 文件 (默认: True)
+        generate_knowledge: 是否自动生成知识文件到 knowledge/tables (默认: True)
 
     返回:
         包含表结构、字段信息、样本数据的字典
@@ -97,12 +101,12 @@ def run(
 
     result["business_notes"] = _generate_business_notes(result)
 
-    if generate_skill:
+    if generate_knowledge:
         try:
-            skill_result = _generate_skill_file(table_name, result)
-            result["skill_generation"] = skill_result
+            knowledge_result = _generate_knowledge_file(table_name, result)
+            result["knowledge_generation"] = knowledge_result
         except Exception as e:
-            result["skill_generation"] = {"success": False, "error": str(e)}
+            result["knowledge_generation"] = {"success": False, "error": str(e)}
 
     return result
 
@@ -133,139 +137,138 @@ def _generate_business_notes(table_info: Dict) -> List[str]:
     return notes
 
 
-def _generate_skill_file(
+def _generate_knowledge_file(
     table_name: str,
     table_info: Dict[str, Any],
-    category: str = "maxcompute",
 ) -> Dict[str, Any]:
     """
-    根据探索结果生成 Skill 文件
+    根据探索结果生成 knowledge/tables YAML 文件
 
     参数:
         table_name: 表名
         table_info: 表信息 (来自 explore_table run 的结果)
-        category: 技能分类 (默认: maxcompute)
 
     返回:
         生成结果
     """
     from datetime import datetime
-    import json
+    import yaml
 
     table_name_clean = table_name.replace(".", "_").replace("-", "_")
+    knowledge_file = TABLES_DIR / f"{table_name_clean}.yaml"
 
-    skill_dir = SKILLS_DIR / category / f"table_{table_name_clean}"
-    if skill_dir.exists():
+    # 如果文件已存在，返回提示
+    if knowledge_file.exists():
         return {
             "success": False,
-            "error": f"Skill 目录已存在: {skill_dir}",
+            "error": f"知识文件已存在: {knowledge_file}",
         }
 
-    skill_dir.mkdir(parents=True, exist_ok=True)
-
-    columns_md = ""
-    if table_info.get("columns"):
-        for col in table_info["columns"][:30]:
-            col_type = col.get("type", "unknown")
-            col_sample = col.get("sample", "")
-            columns_md += f"- **{col['name']}**: {col_type}"
-            if col_sample:
-                columns_md += f" (示例: {col_sample})"
-            columns_md += "\n"
-
-    partitions_md = ""
-    if table_info.get("partitions"):
-        for part in table_info["partitions"]:
-            partitions_md += f"- **{part['name']}**: {part['type']}\n"
-
-    business_notes_md = ""
-    if table_info.get("business_notes"):
-        business_notes_md = "\n".join(f"- {note}" for note in table_info["business_notes"])
+    # 确保目录存在
+    TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
     full_table_name = table_info.get('table_name', table_name)
     project = table_info.get('project', 'mi_ads_dmp')
     total_columns = table_info.get('structure', {}).get('total_columns', 0)
     total_partitions = table_info.get('structure', {}).get('total_partitions', 0)
 
-    skill_md = f"""# {full_table_name} 表探索
+    # 构建核心字段
+    core_fields = {}
+    for col in table_info.get("columns", [])[:50]:  # 最多50个字段
+        col_name = col['name']
+        col_type = col.get('type', 'UNKNOWN')
+        col_sample = col.get('sample', '')
 
-## 概述
-- **表名**: {full_table_name}
-- **项目**: {project}
-- **列数**: {total_columns}
-- **分区数**: {total_partitions}
+        core_fields[col_name] = {
+            '字段名': col_name,
+            '数据类型': col_type,
+            '业务含义': '',  # 待补充
+            '示例值': [col_sample] if col_sample else [],
+            '使用注意': ''
+        }
 
-## 分区字段
-{partitions_md or '无'}
+    # 构建分区信息
+    partition_info = {}
+    if table_info.get("partitions"):
+        part = table_info["partitions"][0]
+        partition_info = {
+            '分区字段': part['name'],
+            '分区类型': part['type'],
+            '分区说明': '日期/小时分区'
+        }
 
-## 字段说明
-{columns_md or '无'}
+    # 解析业务备注
+    business_notes = table_info.get("business_notes", [])
+    id_fields = []
+    label_fields = []
+    metric_fields = []
+    time_fields = []
 
-## 业务备注
-{business_notes_md or '无'}
+    for note in business_notes:
+        if note.startswith("ID字段:"):
+            id_fields = [f.strip() for f in note.replace("ID字段:", "").split(",")]
+        elif note.startswith("标签字段:"):
+            label_fields = [f.strip() for f in note.replace("标签字段:", "").split(",")]
+        elif note.startswith("计费/指标字段:"):
+            metric_fields = [f.strip() for f in note.replace("计费/指标字段:", "").split(",")]
+        elif note.startswith("时间字段:"):
+            time_fields = [f.strip() for f in note.replace("时间字段:", "").split(",")]
 
-## 使用示例
-```sql
-SELECT * FROM {full_table_name}
-WHERE dh = '2026031400'
-LIMIT 100;
-```
+    # 构建 YAML 结构
+    knowledge_data = {
+        '基本信息': {
+            '表名': full_table_name,
+            '业务名称': '',  # 待补充
+            '数据粒度': '',  # 待补充
+            '更新频率': '未知',
+            '保留周期': '未知',
+            '项目': project,
+            '列数': total_columns,
+            '分区数': total_partitions
+        },
+        '分区信息': partition_info,
+        '核心字段详解': core_fields,
+        '常用查询场景': {
+            '示例查询': {
+                '场景名称': '示例查询',
+                'SQL模板': f"SELECT * FROM {full_table_name} WHERE dh = '{{{{dh}}}}' LIMIT 100",
+                '参数': {
+                    'dh': '分区值'
+                }
+            }
+        },
+        '数据质量规则': {
+            '异常值识别': {}
+        },
+        '业务备注': {
+            'ID字段': id_fields,
+            '标签字段': label_fields,
+            '计费字段': metric_fields,
+            '时间字段': time_fields
+        },
+        '生成时间': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
 
-## 生成时间
-{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-"""
-
-    with open(skill_dir / "SKILL.md", "w", encoding="utf-8") as f:
-        f.write(skill_md)
-
-    skill_py = f'''
-from typing import Any, Dict
-
-def run(table_name: str = "{full_table_name}") -> Dict[str, Any]:
-    """
-    {full_table_name} 表的元信息
-
-    更多信息请查看同目录下的 SKILL.md
-    """
-    return {{
-        "table_name": "{full_table_name}",
-        "project": "{project}",
-        "columns_count": {total_columns},
-        "partitions_count": {total_partitions},
-    }}
-
-
-SKILL = {{
-    "name": "table_{table_name_clean}",
-    "description": "{full_table_name} 表的元信息和字段说明",
-    "inputs": {{
-        "table_name": "表名 (可选，默认值即为该表)"
-    }},
-    "run": run,
-    "invisible_context": True,
-    "hooks": [],
-}}
-'''
-
-    with open(skill_dir / "table_info.py", "w", encoding="utf-8") as f:
-        f.write(skill_py)
+    # 写入 YAML 文件
+    with open(knowledge_file, "w", encoding="utf-8") as f:
+        yaml.dump(knowledge_data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
 
     return {
         "success": True,
-        "skill_dir": str(skill_dir),
-        "message": f"Skill 已生成到: {skill_dir}",
+        "knowledge_file": str(knowledge_file),
+        "message": f"知识文件已生成到: {knowledge_file}",
     }
 
 
 SKILL = {
     "name": "explore_table",
-    "description": "探索新表的数据结构和业务含义，分析字段类型、分区、样本数据，并可自动生成 Skill 文件帮助后续理解",
+    "description": "探索新表的数据结构和业务含义，分析字段类型、分区、样本数据，并自动生成 knowledge/tables YAML 文件",
     "inputs": {
         "table_name": "表名 (可以是完整名称如 mi_ads_dmp.dwd_xxx 或简短名称)",
         "project": "项目名 (默认: mi_ads_dmp)",
         "sample_rows": "采样行数 (默认: 5)",
         "sample_date": "采样日期 (默认: 20260314)",
-        "generate_skill": "是否自动生成 Skill 文件 (默认: True)",
+        "generate_knowledge": "是否自动生成知识文件到 knowledge/tables (默认: True)",
     },
     "run": run,
     "invisible_context": False,
