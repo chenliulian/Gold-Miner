@@ -163,14 +163,17 @@ class OdpsClient:
         if enable_log:
             self._log(f"提交任务成功, Instance ID: {instance_id}")
             self._log("Awaiting for the task submitting...")
-            
-            while not instance.is_terminated():
-                # Check for cancellation
-                if cancel_event is not None and cancel_event.is_set():
+        
+        # 等待任务完成 - 取消检测必须在 enable_log 之外，确保无论是否启用日志都能取消
+        while not instance.is_terminated():
+            # Check for cancellation - 这是关键功能，必须在循环外检查
+            if cancel_event is not None and cancel_event.is_set():
+                if enable_log:
                     self._log("Task cancelled by user")
-                    instance.stop()
-                    raise InterruptedError("Task cancelled by user")
-                
+                instance.stop()
+                raise InterruptedError("Task cancelled by user")
+            
+            if enable_log:
                 status = instance.status
                 if status == "running":
                     self._log("Current task status: RUNNING")
@@ -179,8 +182,9 @@ class OdpsClient:
                         self._log(f"  Task: {task_name}, Progress: {progress}")
                 elif status == "waiting":
                     self._log("Awaiting in the cloud gateway for resources")
-                time.sleep(3)
-            
+            time.sleep(3)
+        
+        if enable_log:
             self._log(f"Task finished with status: {instance.status}")
             
             logview_url = self.get_logview_url(instance)
@@ -300,21 +304,25 @@ class OdpsClient:
         if enable_log:
             self._log(f"提交任务成功, Instance ID: {instance_id}")
             self._log("Awaiting for the task submitting...")
-            
-            while not instance.is_terminated():
-                # Check for cancellation
-                if cancel_event is not None and cancel_event.is_set():
+        
+        # 等待任务完成 - 取消检测必须在 enable_log 之外，确保无论是否启用日志都能取消
+        while not instance.is_terminated():
+            # Check for cancellation - 这是关键功能，必须在循环外检查
+            if cancel_event is not None and cancel_event.is_set():
+                if enable_log:
                     self._log("Task cancelled by user")
-                    instance.stop()
-                    raise InterruptedError("Task cancelled by user")
-                
+                instance.stop()
+                raise InterruptedError("Task cancelled by user")
+            
+            if enable_log:
                 status = instance.status
                 if status == "running":
                     self._log("Current task status: RUNNING")
                 elif status == "waiting":
                     self._log("Awaiting in the cloud gateway for resources")
-                time.sleep(3)
-            
+            time.sleep(3)
+        
+        if enable_log:
             self._log(f"Task finished with status: {instance.status}")
             
             logview_url = self.get_logview_url(instance)

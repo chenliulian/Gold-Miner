@@ -182,15 +182,18 @@ def main() -> None:
             else:
                 cancel_event.set()
                 print("⏹️  正在取消任务...")
-                # 等待任务完成或超时（最多30秒）
-                for _ in range(60):
+                # 等待任务完成或超时（最多60秒）
+                cancelled = False
+                for i in range(120):  # 120 * 0.5 = 60秒
                     with status_lock:
+                        current_st = state["status"]
                         # 检查状态是否为 idle 或 done（agent 完成时会设置 done）
-                        if state["status"] in ("idle", "done", "cancelled"):
+                        if current_st in ("idle", "done", "cancelled"):
+                            cancelled = True
                             break
                     time.sleep(0.5)
                 with status_lock:
-                    if state["status"] not in ("idle", "done", "cancelled"):
+                    if not cancelled:
                         print("⚠️ 任务可能仍在后台运行")
                     else:
                         # 重置状态为 idle，允许新任务
