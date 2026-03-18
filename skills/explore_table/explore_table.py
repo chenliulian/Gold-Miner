@@ -165,6 +165,23 @@ def run(
             print(f"[explore_table] Found {len(result['columns'])} columns with {sum(1 for c in result['columns'] if c.get('comment'))} having comments")
         else:
             print(f"[explore_table] Sample query returned empty result")
+            # 使用 SDK 获取的字段信息填充列信息
+            if column_comments:
+                print(f"[explore_table] Using SDK column info to populate columns")
+                for col_name, col_info in column_comments.items():
+                    # 检查是否是分区列
+                    is_partition = any(p["name"] == col_name for p in result["partitions"])
+                    if is_partition:
+                        continue
+
+                    result["columns"].append({
+                        "name": col_name,
+                        "type": col_info["type"],
+                        "comment": col_info["comment"],
+                        "sample": "",
+                    })
+                result["structure"]["total_columns"] = len(result["columns"])
+                print(f"[explore_table] Populated {len(result['columns'])} columns from SDK")
 
     except Exception as e:
         result["error"] = f"获取表结构失败: {str(e)}"
