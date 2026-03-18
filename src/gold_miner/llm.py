@@ -52,29 +52,38 @@ class OpenAICompatibleClient:
             messages = self._add_json_instruction(messages)
         
         while attempt <= retries:
-            resp = _request(enforce)
-            if resp.status_code < 400:
-                data = resp.json()
-                try:
-                    content = data["choices"][0]["message"]["content"]
-                    # 如果强制要求 JSON，验证返回内容是否为有效 JSON
-                    if enforce_json:
-                        content = self._validate_and_fix_json(content)
-                    return content
-                except Exception as exc:  # noqa: BLE001
-                    raise LLMError(f"Unexpected LLM response: {data}") from exc
-            last_error = f"{resp.status_code}: {resp.text}"
-            # If the backend doesn't support response_format, retry without it once.
-            if enforce and resp.status_code == 400:
-                self._supports_json_mode = False
-                enforce = False
-                # 在 prompt 中添加 JSON 格式要求
-                messages = self._add_json_instruction(messages)
-            else:
+            try:
+                resp = _request(enforce)
+                if resp.status_code < 400:
+                    data = resp.json()
+                    try:
+                        content = data["choices"][0]["message"]["content"]
+                        # 如果强制要求 JSON，验证返回内容是否为有效 JSON
+                        if enforce_json:
+                            content = self._validate_and_fix_json(content)
+                        return content
+                    except Exception as exc:  # noqa: BLE001
+                        raise LLMError(f"Unexpected LLM response: {data}") from exc
+                last_error = f"{resp.status_code}: {resp.text}"
+                # If the backend doesn't support response_format, retry without it once.
+                if enforce and resp.status_code == 400:
+                    self._supports_json_mode = False
+                    enforce = False
+                    # 在 prompt 中添加 JSON 格式要求
+                    messages = self._add_json_instruction(messages)
+                else:
+                    time.sleep(0.5 * (2**attempt))
+            except requests.exceptions.ReadTimeout as e:
+                last_error = f"Read timeout: {e}"
+                print(f"[LLM] Request timeout (attempt {attempt + 1}/{retries + 1}), retrying...")
+                time.sleep(1.0 * (2**attempt))
+            except requests.exceptions.RequestException as e:
+                last_error = f"Request error: {e}"
+                print(f"[LLM] Request error (attempt {attempt + 1}/{retries + 1}): {e}")
                 time.sleep(0.5 * (2**attempt))
             attempt += 1
 
-        raise LLMError(f"LLM error {last_error}")
+        raise LLMError(f"LLM error after {retries + 1} attempts: {last_error}")
     
     def _add_json_instruction(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
         """在 system message 中添加 JSON 格式要求"""
