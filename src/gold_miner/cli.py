@@ -208,6 +208,9 @@ def main() -> None:
             if state["status"] != "idle":
                 print(f"⚠️ 当前状态 '{state['status']}'，请先等待或输入 /cancel 取消")
                 continue
+            # 立即更新状态为 starting，让用户知道任务已提交
+            state["status"] = "starting"
+            state["current"] = {"question": question, "tables": ""}
         
         # 提交任务（不再询问表名，由 Agent 自动识别）
         task_queue.put((question, ""))
