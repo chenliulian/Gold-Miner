@@ -1,0 +1,84 @@
+基本信息:
+  表名: ads_strategy.dwd_ads_engine_compe_suc_req_hi
+  业务名称: ''
+  数据粒度: ''
+  更新频率: 未知
+  保留周期: 未知
+  项目: ads_strategy
+  列数: 9
+  分区数: 1
+分区信息:
+  分区字段: dh
+  分区类型: STRING
+  分区说明: 日期/小时分区
+核心字段详解:
+  id_type:
+    字段名: id_type
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  country_name:
+    字段名: country_name
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  busniess_line:
+    字段名: busniess_line
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  code_seat_type:
+    字段名: code_seat_type
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  is_offline_ad:
+    字段名: is_offline_ad
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  id_value:
+    字段名: id_value
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  rank_req_cnt:
+    字段名: rank_req_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  resp_req_cnt:
+    字段名: resp_req_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  dh:
+    字段名: dh
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+常用查询场景:
+  示例查询:
+    场景名称: 示例查询
+    SQL模板: SELECT * FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi WHERE dh = '{{dh}}'
+      LIMIT 100
+    参数:
+      dh: 分区值
+数据质量规则:
+  异常值识别: {}
+业务备注:
+  ID字段: []
+  标签字段: []
+  计费字段: []
+  时间字段:
+  - dh
+生成时间: '2026-03-18 14:59:56'

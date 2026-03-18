@@ -1,0 +1,394 @@
+基本信息:
+  表名: ads_strategy.dwd_ads_launch_info_dt
+  业务名称: ''
+  数据粒度: ''
+  更新频率: 未知
+  保留周期: 未知
+  项目: ads_strategy
+  列数: 50
+  分区数: 1
+分区信息:
+  分区字段: dt
+  分区类型: STRING
+  分区说明: 日期/小时分区
+核心字段详解:
+  ad_group_id:
+    字段名: ad_group_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '69121'
+    使用注意: ''
+  pkg:
+    字段名: pkg
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - com.zk.magicalpets.mi
+    使用注意: ''
+  is_new:
+    字段名: is_new
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  launch_cids:
+    字段名: launch_cids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '13'
+    使用注意: ''
+  is_full_launch:
+    字段名: is_full_launch
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  launch_rate:
+    字段名: launch_rate
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '29.17'
+    使用注意: ''
+  is_bill_change:
+    字段名: is_bill_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  new_bill:
+    字段名: new_bill
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.25'
+    使用注意: ''
+  old_bill:
+    字段名: old_bill
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  bill_diff:
+    字段名: bill_diff
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  not_launch_size:
+    字段名: not_launch_size
+    数据类型: ARRAY<STRING>
+    业务含义: ''
+    示例值:
+    - '[''1080*468'', ''730*300'', ''780*470'', ''985*403'']'
+    使用注意: ''
+  is_media_change:
+    字段名: is_media_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  is_country_change:
+    字段名: is_country_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  is_crowd_change:
+    字段名: is_crowd_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  is_ex_crowd_change:
+    字段名: is_ex_crowd_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  is_install_change:
+    字段名: is_install_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  is_ex_install_change:
+    字段名: is_ex_install_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  new_media_cat_ids:
+    字段名: new_media_cat_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '[118,119,120,122,124,126,127,129,140,148,149,150]'
+    使用注意: ''
+  new_country_ids:
+    字段名: new_country_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '["30121"]'
+    使用注意: ''
+  new_crowd_pack_ids:
+    字段名: new_crowd_pack_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '["-1"]'
+    使用注意: ''
+  new_ex_crowd_pack_ids:
+    字段名: new_ex_crowd_pack_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '["-1"]'
+    使用注意: ''
+  new_install_pkg_ids:
+    字段名: new_install_pkg_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '["-1"]'
+    使用注意: ''
+  new_ex_install_pkg_ids:
+    字段名: new_ex_install_pkg_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '["3786"]'
+    使用注意: ''
+  old_media_cat_ids:
+    字段名: old_media_cat_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_country_ids:
+    字段名: old_country_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_crowd_pack_ids:
+    字段名: old_crowd_pack_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_ex_crowd_pack_ids:
+    字段名: old_ex_crowd_pack_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_install_pkg_ids:
+    字段名: old_install_pkg_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_ex_install_pkg_ids:
+    字段名: old_ex_install_pkg_ids
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  is_seat_types_change:
+    字段名: is_seat_types_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  new_seat_type:
+    字段名: new_seat_type
+    数据类型: ARRAY<STRING>
+    业务含义: ''
+    示例值:
+    - '[''"feeds"'', ''"interstitial"'', ''"rewarded"'', ''"sear'
+    使用注意: ''
+  old_seat_type:
+    字段名: old_seat_type
+    数据类型: ARRAY<STRING>
+    业务含义: ''
+    示例值:
+    - '[]'
+    使用注意: ''
+  is_budget_type_change:
+    字段名: is_budget_type_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  is_budget_change:
+    字段名: is_budget_change
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_budget_type:
+    字段名: old_budget_type
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  new_budget_type:
+    字段名: new_budget_type
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  old_budget:
+    字段名: old_budget
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  new_budget:
+    字段名: new_budget
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  budget_diff:
+    字段名: budget_diff
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  new_crowd_pack_user_cnt:
+    字段名: new_crowd_pack_user_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  old_crowd_pack_user_cnt:
+    字段名: old_crowd_pack_user_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  new_ex_crowd_pack_user_cnt:
+    字段名: new_ex_crowd_pack_user_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  old_ex_crowd_pack_user_cnt:
+    字段名: old_ex_crowd_pack_user_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  is_crowd_pack_user_cnt_change:
+    字段名: is_crowd_pack_user_cnt_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  is_ex_crowd_pack_user_cnt_change:
+    字段名: is_ex_crowd_pack_user_cnt_change
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  advertiser_id:
+    字段名: advertiser_id
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  available_amount:
+    字段名: available_amount
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  ad_cost:
+    字段名: ad_cost
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  ext_info:
+    字段名: ext_info
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '{"cvr_on_click_dt":"0.0","support_coef":null,"star'
+    使用注意: ''
+  dt:
+    字段名: dt
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+常用查询场景:
+  示例查询:
+    场景名称: 示例查询
+    SQL模板: SELECT * FROM ads_strategy.dwd_ads_launch_info_dt WHERE dh = '{{dh}}' LIMIT
+      100
+    参数:
+      dh: 分区值
+数据质量规则:
+  异常值识别: {}
+业务备注:
+  ID字段:
+  - ad_group_id
+  - new_media_cat_ids
+  - new_country_ids
+  - new_crowd_pack_ids
+  - new_ex_crowd_pack_ids
+  - new_install_pkg_ids
+  - new_ex_install_pkg_ids
+  - old_media_cat_ids
+  - old_country_ids
+  - old_crowd_pack_ids
+  - old_ex_crowd_pack_ids
+  - old_install_pkg_ids
+  - old_ex_install_pkg_ids
+  - advertiser_id
+  标签字段: []
+  计费字段:
+  - ad_cost
+  时间字段:
+  - dt
+生成时间: '2026-03-18 16:27:11'
