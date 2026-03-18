@@ -68,10 +68,16 @@ def main() -> None:
         task_queue.put(None)
         time.sleep(0.3)
 
-    def set_status(value: str) -> None:
-        """更新状态"""
+    def set_status(value) -> None:
+        """更新状态 - 支持字符串或字典"""
         with status_lock:
-            state["status"] = value
+            # 如果 value 是字典，提取状态类型
+            if isinstance(value, dict):
+                state["status"] = value.get("type", "running")
+                state["status_detail"] = value
+            else:
+                state["status"] = value
+                state["status_detail"] = None
 
     def worker() -> None:
         """工作线程 - 处理任务队列"""
@@ -150,11 +156,19 @@ def main() -> None:
         if question == "/status":
             with status_lock:
                 status = state["status"]
+                status_detail = state.get("status_detail")
                 current = state["current"]
             if status == "idle":
                 print("📍 状态: 空闲")
             else:
-                print(f"📍 状态: {status}")
+                # 如果有详细状态信息，显示更友好的内容
+                if status_detail and isinstance(status_detail, dict):
+                    content = status_detail.get("content", "")
+                    if len(content) > 100:
+                        content = content[:100] + "..."
+                    print(f"📍 状态: {status} - {content}")
+                else:
+                    print(f"📍 状态: {status}")
                 if current:
                     print(f"📝 当前问题: {current['question']}")
             continue
@@ -168,15 +182,21 @@ def main() -> None:
             else:
                 cancel_event.set()
                 print("⏹️  正在取消任务...")
+                # 等待任务完成或超时（最多30秒）
                 for _ in range(60):
                     with status_lock:
-                        if state["status"] == "idle":
+                        # 检查状态是否为 idle 或 done（agent 完成时会设置 done）
+                        if state["status"] in ("idle", "done", "cancelled"):
                             break
                     time.sleep(0.5)
                 with status_lock:
-                    if state["status"] != "idle":
+                    if state["status"] not in ("idle", "done", "cancelled"):
                         print("⚠️ 任务可能仍在后台运行")
                     else:
+                        # 重置状态为 idle，允许新任务
+                        state["status"] = "idle"
+                        state["cancel"] = None
+                        state["current"] = None
                         print("✅ 任务已取消，可以继续提问")
             continue
         

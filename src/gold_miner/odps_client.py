@@ -132,13 +132,27 @@ class OdpsClient:
         hints = self._default_hints.copy()
         
         # Use timeout for execute_sql to prevent hanging
+        # Check for cancellation during submission
         def execute_with_timeout():
             return self.odps.execute_sql(sql, hints=hints)
         
         try:
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(execute_with_timeout)
-                instance = future.result(timeout=60)  # 60 seconds timeout for submission
+                # Wait for submission with periodic cancellation checks
+                instance = None
+                for _ in range(60):  # 60 seconds max, checking every 1 second
+                    if cancel_event is not None and cancel_event.is_set():
+                        future.cancel()
+                        raise InterruptedError("Task cancelled by user during submission")
+                    try:
+                        instance = future.result(timeout=1)
+                        break
+                    except TimeoutError:
+                        continue
+                if instance is None:
+                    future.cancel()
+                    raise TimeoutError("SQL submission timeout after 60 seconds")
         except TimeoutError:
             if enable_log:
                 self._log("提交超时 (60秒)，请检查网络连接或ODPS服务状态")
@@ -254,7 +268,33 @@ class OdpsClient:
             self._log("正在提交...")
             if self.config.quota:
                 self._log(f"使用计算配额: {self.config.quota}")
-        instance = self.odps.execute_sql(sql, hints=hints)
+        
+        # Use timeout for execute_sql to prevent hanging and support cancellation
+        def execute_with_timeout():
+            return self.odps.execute_sql(sql, hints=hints)
+        
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(execute_with_timeout)
+                # Wait for submission with periodic cancellation checks
+                instance = None
+                for _ in range(60):  # 60 seconds max, checking every 1 second
+                    if cancel_event is not None and cancel_event.is_set():
+                        future.cancel()
+                        raise InterruptedError("Task cancelled by user during submission")
+                    try:
+                        instance = future.result(timeout=1)
+                        break
+                    except TimeoutError:
+                        continue
+                if instance is None:
+                    future.cancel()
+                    raise TimeoutError("SQL submission timeout after 60 seconds")
+        except TimeoutError:
+            if enable_log:
+                self._log("提交超时 (60秒)，请检查网络连接或ODPS服务状态")
+            raise TimeoutError("SQL submission timeout after 60 seconds")
+        
         instance_id = instance.id
         
         if enable_log:
