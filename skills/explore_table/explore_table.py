@@ -244,7 +244,7 @@ def _generate_knowledge_file(
     table_info: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    根据探索结果生成 knowledge/tables YAML 文件
+    根据探索结果生成或更新 knowledge/tables YAML 文件
 
     参数:
         table_name: 表名
@@ -259,13 +259,6 @@ def _generate_knowledge_file(
     table_name_clean = table_name.replace(".", "_").replace("-", "_")
     knowledge_file = TABLES_DIR / f"{table_name_clean}.yaml"
 
-    # 如果文件已存在，返回提示
-    if knowledge_file.exists():
-        return {
-            "success": False,
-            "error": f"知识文件已存在: {knowledge_file}",
-        }
-
     # 确保目录存在
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -274,19 +267,91 @@ def _generate_knowledge_file(
     total_columns = table_info.get('structure', {}).get('total_columns', 0)
     total_partitions = table_info.get('structure', {}).get('total_partitions', 0)
 
+    # 从 ODPS 获取的字段信息（包含注释）
+    odps_columns = {}
+    for col in table_info.get("columns", []):
+        odps_columns[col['name']] = {
+            'type': col.get('type', 'UNKNOWN'),
+            'comment': col.get('comment', ''),
+            'sample': col.get('sample', ''),
+        }
+
+    # 如果文件已存在，读取并更新
+    if knowledge_file.exists():
+        try:
+            with open(knowledge_file, "r", encoding="utf-8") as f:
+                existing_data = yaml.safe_load(f) or {}
+
+            # 更新基本信息
+            existing_data['基本信息'] = existing_data.get('基本信息', {})
+            existing_data['基本信息']['表名'] = full_table_name
+            existing_data['基本信息']['项目'] = project
+            existing_data['基本信息']['列数'] = total_columns
+            existing_data['基本信息']['分区数'] = total_partitions
+
+            # 更新或补充核心字段
+            existing_fields = existing_data.get('核心字段详解', {})
+            updated_fields = {}
+            updated_count = 0
+            added_count = 0
+
+            for col_name, odps_info in odps_columns.items():
+                if col_name in existing_fields:
+                    # 更新现有字段
+                    field_info = existing_fields[col_name]
+                    # 如果业务含义为空，使用 ODPS 注释补充
+                    if not field_info.get('业务含义') and odps_info['comment']:
+                        field_info['业务含义'] = odps_info['comment']
+                        updated_count += 1
+                    # 更新数据类型
+                    field_info['数据类型'] = odps_info['type']
+                    # 更新示例值
+                    if odps_info['sample'] and not field_info.get('示例值'):
+                        field_info['示例值'] = [odps_info['sample']]
+                    updated_fields[col_name] = field_info
+                else:
+                    # 添加新字段
+                    updated_fields[col_name] = {
+                        '字段名': col_name,
+                        '数据类型': odps_info['type'],
+                        '业务含义': odps_info['comment'],
+                        '示例值': [odps_info['sample']] if odps_info['sample'] else [],
+                        '使用注意': ''
+                    }
+                    added_count += 1
+
+            existing_data['核心字段详解'] = updated_fields
+            existing_data['更新时间'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # 写入更新后的文件
+            with open(knowledge_file, "w", encoding="utf-8") as f:
+                yaml.dump(existing_data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+
+            return {
+                "success": True,
+                "knowledge_file": str(knowledge_file),
+                "message": f"知识文件已更新: {knowledge_file}",
+                "details": {
+                    "updated_comments": updated_count,
+                    "added_fields": added_count,
+                    "total_fields": len(updated_fields),
+                }
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"更新知识文件失败: {str(e)}",
+            }
+
+    # 文件不存在，创建新文件
     # 构建核心字段
     core_fields = {}
-    for col in table_info.get("columns", [])[:50]:  # 最多50个字段
-        col_name = col['name']
-        col_type = col.get('type', 'UNKNOWN')
-        col_sample = col.get('sample', '')
-        col_comment = col.get('comment', '')  # 从 ODPS 获取的字段注释
-
+    for col_name, odps_info in odps_columns.items():
         core_fields[col_name] = {
             '字段名': col_name,
-            '数据类型': col_type,
-            '业务含义': col_comment,  # 使用 ODPS 字段注释
-            '示例值': [col_sample] if col_sample else [],
+            '数据类型': odps_info['type'],
+            '业务含义': odps_info['comment'],
+            '示例值': [odps_info['sample']] if odps_info['sample'] else [],
             '使用注意': ''
         }
 
@@ -360,6 +425,9 @@ def _generate_knowledge_file(
         "success": True,
         "knowledge_file": str(knowledge_file),
         "message": f"知识文件已生成到: {knowledge_file}",
+        "details": {
+            "added_fields": len(core_fields),
+        }
     }
 
 
