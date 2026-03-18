@@ -4,7 +4,7 @@
   数据粒度: ''
   更新频率: 未知
   保留周期: 未知
-  项目: com_ads
+  项目: mi_ads_dmp
   列数: 114
   分区数: 1
 分区信息:
@@ -80,28 +80,28 @@
     数据类型: STRING
     业务含义: 广告组ID
     示例值:
-    - '13268'
+    - '66334'
     使用注意: ''
   ad_group_title:
     字段名: ad_group_title
     数据类型: STRING
     业务含义: 广告组名称
     示例值:
-    - 'AHAgames-PSlink-Stickman Party: 2 3 4 MiniGames-超高'
+    - 'AHAgames-PSlink-Stickman Party: 2 3 4 MiniGames-联运'
     使用注意: ''
   creativity_id:
     字段名: creativity_id
     数据类型: STRING
     业务含义: 广告创意ID
     示例值:
-    - '93573'
+    - '711256'
     使用注意: ''
   creativity_title:
     字段名: creativity_title
     数据类型: STRING
     业务含义: 广告创意名称
     示例值:
-    - 'AHAgames-PSlink-Stickman Party: 2 3 4 MiniGames-超高'
+    - 广告_25_10_23_15:31:59_copy_1763709185339_0
     使用注意: ''
   media_id:
     字段名: media_id
@@ -136,14 +136,14 @@
     数据类型: STRING
     业务含义: 代码位ID
     示例值:
-    - 230104DdXnCEAr
+    - 251103sNia5kB4
     使用注意: ''
   code_seat_title:
     字段名: code_seat_title
     数据类型: STRING
     业务含义: 代码位名称
     示例值:
-    - PS-icon-feeds-老用户装机必备
+    - PS-icon-feeds-推荐合集
     使用注意: ''
   code_seat_type:
     字段名: code_seat_type
@@ -178,21 +178,21 @@
     数据类型: STRING
     业务含义: 国家名称
     示例值:
-    - Canada
+    - Slovenia
     使用注意: ''
   country_zh:
     字段名: country_zh
     数据类型: STRING
     业务含义: 国家中文名
     示例值:
-    - 加拿大
+    - 斯洛文尼亚
     使用注意: ''
   continent:
     字段名: continent
     数据类型: STRING
     业务含义: 洲名
     示例值:
-    - Americas
+    - Europe
     使用注意: ''
   model_version:
     字段名: model_version
@@ -227,7 +227,7 @@
     数据类型: STRING
     业务含义: 广告结算方式
     示例值:
-    - ocpd
+    - ocpi
     使用注意: ''
   req_num:
     字段名: req_num
@@ -241,7 +241,7 @@
     数据类型: BIGINT
     业务含义: 有广告返回的请求数
     示例值:
-    - None
+    - nan
     使用注意: ''
   res_cnt:
     字段名: res_cnt
@@ -339,14 +339,14 @@
     数据类型: DOUBLE
     业务含义: 预估ctr(单位:美元)
     示例值:
-    - None
+    - nan
     使用注意: ''
   pre_cost:
     字段名: pre_cost
     数据类型: DOUBLE
     业务含义: 预估CPM(单位:美元)
     示例值:
-    - None
+    - nan
     使用注意: ''
   install_pv:
     字段名: install_pv
@@ -388,63 +388,63 @@
     数据类型: STRING
     业务含义: sdk版本号
     示例值:
-    - 3.5.0.3
+    - 3.4.1.1_S
     使用注意: ''
   pre_cost_sum:
     字段名: pre_cost_sum
     数据类型: DOUBLE
     业务含义: 预估消耗(单位:美元)
     示例值:
-    - None
+    - nan
     使用注意: ''
   style_type:
     字段名: style_type
     数据类型: STRING
     业务含义: 样式类型
     示例值:
-    - '9:16'
+    - None
     使用注意: ''
   agent_id:
     字段名: agent_id
     数据类型: INT
     业务含义: 代理商id
     示例值:
-    - None
+    - '187.0'
     使用注意: ''
   agent_name:
     字段名: agent_name
     数据类型: STRING
     业务含义: 代理商名称
     示例值:
-    - None
+    - 传音控股分发业务部
     使用注意: ''
   pre_click_cnt:
     字段名: pre_click_cnt
     数据类型: DOUBLE
     业务含义: 预估广告点击数
     示例值:
-    - None
+    - nan
     使用注意: ''
   is_offline_ad:
     字段名: is_offline_ad
     数据类型: BIGINT
     业务含义: 是否离线广告：0.在线广告1.离线广告
     示例值:
-    - '0'
+    - '0.0'
     使用注意: ''
   ad_trigger_status:
     字段名: ad_trigger_status
     数据类型: BIGINT
     业务含义: 广告触发状态，0-正常，1-没网异常，2-没有云控异常
     示例值:
-    - None
+    - nan
     使用注意: ''
   business_line_nm:
     字段名: business_line_nm
     数据类型: STRING
     业务含义: 业务线名称
     示例值:
-    - 工具
+    - 分发
     使用注意: ''
   bill_should_cost:
     字段名: bill_should_cost
@@ -493,28 +493,28 @@
     数据类型: BIGINT
     业务含义: 开始下载
     示例值:
-    - None
+    - nan
     使用注意: ''
   dld_finished_cnt:
     字段名: dld_finished_cnt
     数据类型: BIGINT
     业务含义: 下载完成
     示例值:
-    - None
+    - nan
     使用注意: ''
   install_finish_cnt:
     字段名: install_finish_cnt
     数据类型: BIGINT
     业务含义: 安装完成
     示例值:
-    - None
+    - nan
     使用注意: ''
   queue_dld_cnt:
     字段名: queue_dld_cnt
     数据类型: BIGINT
     业务含义: 加入下载队列数量
     示例值:
-    - None
+    - nan
     使用注意: ''
   correct_click_num:
     字段名: correct_click_num
@@ -577,7 +577,7 @@
     数据类型: STRING
     业务含义: 下载包名
     示例值:
-    - com.community.oneroom
+    - com.indofenfa.xiao
     使用注意: ''
   req_cnt:
     字段名: req_cnt
@@ -633,7 +633,7 @@
     数据类型: DOUBLE
     业务含义: 响应广告ecpm出价（千次美元）
     示例值:
-    - '1.551773426'
+    - '0.09918611699999999'
     使用注意: ''
   click_cpi_cost:
     字段名: click_cpi_cost
@@ -674,8 +674,7 @@
     字段名: scale
     数据类型: STRING
     业务含义: 尺寸
-    示例值:
-    - '9:16'
+    示例值: []
     使用注意: ''
   status_v2:
     字段名: status_v2
@@ -696,28 +695,28 @@
     数据类型: STRING
     业务含义: 素材类型
     示例值:
-    - 图片
+    - 无图
     使用注意: ''
   material_sub_type_cn:
     字段名: material_sub_type_cn
     数据类型: STRING
     业务含义: 素材细分类型
     示例值:
-    - GIF素材
+    - None
     使用注意: ''
   material_format:
     字段名: material_format
     数据类型: STRING
     业务含义: 素材格式
     示例值:
-    - image/gif
+    - None
     使用注意: ''
   cate1_gp:
     字段名: cate1_gp
     数据类型: STRING
     业务含义: 投放客户所属行业
     示例值:
-    - Video Editors
+    - Games
     使用注意: ''
   is_direct:
     字段名: is_direct
@@ -738,7 +737,7 @@
     数据类型: STRING
     业务含义: 通投状态不派生；待派生广告；派生中 ；通投中；已删除
     示例值:
-    - 不派生
+    - 已删除
     使用注意: ''
   generate_type_cn:
     字段名: generate_type_cn
@@ -752,14 +751,14 @@
     数据类型: STRING
     业务含义: 转化目标
     示例值:
-    - 无
+    - 广告变现
     使用注意: ''
   material_generate_type_cn:
     字段名: material_generate_type_cn
     数据类型: STRING
     业务含义: 物料生成类型
     示例值:
-    - 本地上传
+    - None
     使用注意: ''
   is_natural:
     字段名: is_natural
@@ -849,4 +848,4 @@
   - click_cpi_cost
   时间字段: []
 生成时间: '2026-03-18 17:42:40'
-更新时间: '2026-03-18 19:42:02'
+更新时间: '2026-03-18 20:11:05'

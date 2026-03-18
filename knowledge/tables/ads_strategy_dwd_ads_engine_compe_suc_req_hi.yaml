@@ -4,8 +4,8 @@
   数据粒度: ''
   更新频率: 未知
   保留周期: 未知
-  项目: ads_strategy
-  列数: 9
+  项目: mi_ads_dmp
+  列数: 8
   分区数: 1
 分区信息:
   分区字段: dh
@@ -15,55 +15,49 @@
   id_type:
     字段名: id_type
     数据类型: STRING
-    业务含义: ''
+    业务含义: 广告组ID、广告主ID(ad_group_id、advertiser_id)
     示例值: []
     使用注意: ''
   country_name:
     字段名: country_name
     数据类型: STRING
-    业务含义: ''
+    业务含义: 国家名
     示例值: []
     使用注意: ''
   busniess_line:
     字段名: busniess_line
     数据类型: STRING
-    业务含义: ''
+    业务含义: 业务线
     示例值: []
     使用注意: ''
   code_seat_type:
     字段名: code_seat_type
     数据类型: STRING
-    业务含义: ''
+    业务含义: 代码位类型
     示例值: []
     使用注意: ''
   is_offline_ad:
     字段名: is_offline_ad
     数据类型: STRING
-    业务含义: ''
+    业务含义: 是否离线广告 1 离线 0 在线
     示例值: []
     使用注意: ''
   id_value:
     字段名: id_value
     数据类型: STRING
-    业务含义: ''
+    业务含义: 广告组ID 或者 广告主ID 具体取值
     示例值: []
     使用注意: ''
   rank_req_cnt:
     字段名: rank_req_cnt
     数据类型: BIGINT
-    业务含义: ''
+    业务含义: 进精排请求数
     示例值: []
     使用注意: ''
   resp_req_cnt:
     字段名: resp_req_cnt
     数据类型: BIGINT
-    业务含义: ''
-    示例值: []
-    使用注意: ''
-  dh:
-    字段名: dh
-    数据类型: STRING
-    业务含义: ''
+    业务含义: 响应请求数
     示例值: []
     使用注意: ''
 常用查询场景:
@@ -82,3 +76,4 @@
   时间字段:
   - dh
 生成时间: '2026-03-18 14:59:56'
+更新时间: '2026-03-18 20:09:27'

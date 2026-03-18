@@ -4,8 +4,8 @@
   数据粒度: ''
   更新频率: 未知
   保留周期: 未知
-  项目: ads_strategy
-  列数: 50
+  项目: mi_ads_dmp
+  列数: 49
   分区数: 1
 分区信息:
   分区字段: dt
@@ -15,351 +15,345 @@
   ad_group_id:
     字段名: ad_group_id
     数据类型: STRING
-    业务含义: ''
+    业务含义: 广告组ID
     示例值:
     - '69121'
     使用注意: ''
   pkg:
     字段名: pkg
     数据类型: STRING
-    业务含义: ''
+    业务含义: 包名
     示例值:
     - com.zk.magicalpets.mi
     使用注意: ''
   is_new:
     字段名: is_new
     数据类型: STRING
-    业务含义: ''
+    业务含义: 是否新广告
     示例值:
     - '1'
     使用注意: ''
   launch_cids:
     字段名: launch_cids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 在投创意数
     示例值:
     - '13'
     使用注意: ''
   is_full_launch:
     字段名: is_full_launch
     数据类型: STRING
-    业务含义: ''
+    业务含义: 所有广告是否24小时投放
     示例值:
     - '0'
     使用注意: ''
   launch_rate:
     字段名: launch_rate
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 投放率
     示例值:
     - '29.17'
     使用注意: ''
   is_bill_change:
     字段名: is_bill_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 出价是否调整
     示例值:
     - '1'
     使用注意: ''
   new_bill:
     字段名: new_bill
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 最新出价
     示例值:
     - '0.25'
     使用注意: ''
   old_bill:
     字段名: old_bill
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 上一日出价
     示例值:
     - '0.0'
     使用注意: ''
   bill_diff:
     字段名: bill_diff
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 出价变化幅度
     示例值:
     - None
     使用注意: ''
   not_launch_size:
     字段名: not_launch_size
     数据类型: ARRAY<STRING>
-    业务含义: ''
+    业务含义: 未投放的素材尺寸
     示例值:
     - '[''1080*468'', ''730*300'', ''780*470'', ''985*403'']'
     使用注意: ''
   is_media_change:
     字段名: is_media_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 媒体是否变化
     示例值:
     - '1'
     使用注意: ''
   is_country_change:
     字段名: is_country_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 国家是否变化
     示例值:
     - '1'
     使用注意: ''
   is_crowd_change:
     字段名: is_crowd_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 人群包是否变化
     示例值:
     - '1'
     使用注意: ''
   is_ex_crowd_change:
     字段名: is_ex_crowd_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 排除人群包是否变化
     示例值:
     - '1'
     使用注意: ''
   is_install_change:
     字段名: is_install_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 已安装人群包是否变化
     示例值:
     - '1'
     使用注意: ''
   is_ex_install_change:
     字段名: is_ex_install_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 排除已安装人群包是否变化
     示例值:
     - '1'
     使用注意: ''
   new_media_cat_ids:
     字段名: new_media_cat_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新投放媒体
     示例值:
     - '[118,119,120,122,124,126,127,129,140,148,149,150]'
     使用注意: ''
   new_country_ids:
     字段名: new_country_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新投放国家
     示例值:
     - '["30121"]'
     使用注意: ''
   new_crowd_pack_ids:
     字段名: new_crowd_pack_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新投放人群包
     示例值:
     - '["-1"]'
     使用注意: ''
   new_ex_crowd_pack_ids:
     字段名: new_ex_crowd_pack_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新已排除人群包
     示例值:
     - '["-1"]'
     使用注意: ''
   new_install_pkg_ids:
     字段名: new_install_pkg_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新已安装人群包
     示例值:
     - '["-1"]'
     使用注意: ''
   new_ex_install_pkg_ids:
     字段名: new_ex_install_pkg_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新排出已安装人群包
     示例值:
     - '["3786"]'
     使用注意: ''
   old_media_cat_ids:
     字段名: old_media_cat_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日投放媒体
     示例值:
     - None
     使用注意: ''
   old_country_ids:
     字段名: old_country_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日投放国家
     示例值:
     - None
     使用注意: ''
   old_crowd_pack_ids:
     字段名: old_crowd_pack_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日投放人群包
     示例值:
     - None
     使用注意: ''
   old_ex_crowd_pack_ids:
     字段名: old_ex_crowd_pack_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日已排除人群包
     示例值:
     - None
     使用注意: ''
   old_install_pkg_ids:
     字段名: old_install_pkg_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日已安装人群包
     示例值:
     - None
     使用注意: ''
   old_ex_install_pkg_ids:
     字段名: old_ex_install_pkg_ids
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日排出已安装人群包
     示例值:
     - None
     使用注意: ''
   is_seat_types_change:
     字段名: is_seat_types_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 广告位是否改变
     示例值:
     - '1'
     使用注意: ''
   new_seat_type:
     字段名: new_seat_type
     数据类型: ARRAY<STRING>
-    业务含义: ''
+    业务含义: 最新广告位
     示例值:
     - '[''"feeds"'', ''"interstitial"'', ''"rewarded"'', ''"sear'
     使用注意: ''
   old_seat_type:
     字段名: old_seat_type
     数据类型: ARRAY<STRING>
-    业务含义: ''
+    业务含义: 上一日广告位
     示例值:
     - '[]'
     使用注意: ''
   is_budget_type_change:
     字段名: is_budget_type_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 预估类型是否改变
     示例值:
     - None
     使用注意: ''
   is_budget_change:
     字段名: is_budget_change
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 预算是否调整
     示例值:
     - None
     使用注意: ''
   old_budget_type:
     字段名: old_budget_type
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日预算类型
     示例值:
     - None
     使用注意: ''
   new_budget_type:
     字段名: new_budget_type
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新预算类型
     示例值:
     - None
     使用注意: ''
   old_budget:
     字段名: old_budget
     数据类型: STRING
-    业务含义: ''
+    业务含义: 上一日预算
     示例值:
     - None
     使用注意: ''
   new_budget:
     字段名: new_budget
     数据类型: STRING
-    业务含义: ''
+    业务含义: 最新预算
     示例值:
     - None
     使用注意: ''
   budget_diff:
     字段名: budget_diff
     数据类型: STRING
-    业务含义: ''
+    业务含义: 预算变化幅度
     示例值:
     - None
     使用注意: ''
   new_crowd_pack_user_cnt:
     字段名: new_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: ''
+    业务含义: 新定向人群包用户量级
     示例值:
     - '0'
     使用注意: ''
   old_crowd_pack_user_cnt:
     字段名: old_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: ''
+    业务含义: 原定向人群包用户量级
     示例值:
     - '0'
     使用注意: ''
   new_ex_crowd_pack_user_cnt:
     字段名: new_ex_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: ''
+    业务含义: 新排除人群包用户量级
     示例值:
     - '0'
     使用注意: ''
   old_ex_crowd_pack_user_cnt:
     字段名: old_ex_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: ''
+    业务含义: 原排除人群包用户量级
     示例值:
     - '0'
     使用注意: ''
   is_crowd_pack_user_cnt_change:
     字段名: is_crowd_pack_user_cnt_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 定向人群包量级是否变更
     示例值:
     - '1'
     使用注意: ''
   is_ex_crowd_pack_user_cnt_change:
     字段名: is_ex_crowd_pack_user_cnt_change
     数据类型: INT
-    业务含义: ''
+    业务含义: 排除人群包量级是否变更
     示例值:
     - '1'
     使用注意: ''
   advertiser_id:
     字段名: advertiser_id
     数据类型: INT
-    业务含义: ''
+    业务含义: 广告主ID
     示例值:
     - None
     使用注意: ''
   available_amount:
     字段名: available_amount
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 账户余额
     示例值:
     - None
     使用注意: ''
   ad_cost:
     字段名: ad_cost
     数据类型: DOUBLE
-    业务含义: ''
+    业务含义: 账户消耗
     示例值:
     - None
     使用注意: ''
   ext_info:
     字段名: ext_info
     数据类型: STRING
-    业务含义: ''
+    业务含义: 扩展字段，json map
     示例值:
     - '{"cvr_on_click_dt":"0.0","support_coef":null,"star'
-    使用注意: ''
-  dt:
-    字段名: dt
-    数据类型: STRING
-    业务含义: ''
-    示例值: []
     使用注意: ''
 常用查询场景:
   示例查询:
@@ -392,3 +386,4 @@
   时间字段:
   - dt
 生成时间: '2026-03-18 16:27:11'
+更新时间: '2026-03-18 20:09:34'

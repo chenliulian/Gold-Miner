@@ -1,204 +1,385 @@
-# 创意维度表
-# 来源: skills/maxcompute/table_com_cdm_dim_creativity_dd/SKILL.md
-
 基本信息:
   表名: com_cdm.dim_creativity_dd
   业务名称: 创意维度表
   数据粒度: 创意级别
   更新频率: 日
   保留周期: 365天
-  项目: com_cdm
-  列数: 47
+  项目: mi_ads_dmp
+  列数: 46
   分区数: 1
-
 分区信息:
   分区字段: dt
   分区类型: STRING
   分区说明: 日期分区，格式 YYYYMMDD
-
 核心字段详解:
   id:
     字段名: id
     数据类型: STRING
     业务含义: 创意ID
-    示例值: ['181370']
+    示例值:
+    - '181370'
     使用注意: 主键，唯一标识一个创意
-
   title:
     字段名: title
     数据类型: STRING
     业务含义: 创意标题
-    示例值: ['广告_24_02_03_20:43:06_4_copy_11_copy_88_copy_7']
+    示例值:
+    - 广告_24_02_03_20:43:06_4_copy_11_copy_88_copy_7
     使用注意: 创意的名称/标题
-
   ad_group_id:
     字段名: ad_group_id
     数据类型: STRING
     业务含义: 广告组ID
-    示例值: ['21345']
+    示例值:
+    - '21345'
     使用注意: 关联广告组
-
   ad_group_title:
     字段名: ad_group_title
     数据类型: STRING
     业务含义: 广告组标题
-    示例值: ['Brick Master-国家限定-非商店_2']
+    示例值:
+    - Brick Master-国家限定-非商店_2
     使用注意: 广告组名称
-
   ad_plan_id:
     字段名: ad_plan_id
     数据类型: STRING
     业务含义: 广告计划ID
-    示例值: ['12153']
+    示例值:
+    - '12153'
     使用注意: 关联广告计划
-
   ad_plan_title:
     字段名: ad_plan_title
     数据类型: STRING
     业务含义: 广告计划标题
-    示例值: ['brick-master_0203']
+    示例值:
+    - brick-master_0203
     使用注意: 广告计划名称
-
   advertiser_id:
     字段名: advertiser_id
     数据类型: STRING
     业务含义: 广告主ID
-    示例值: ['3375']
+    示例值:
+    - '3375'
     使用注意: 关联广告主
-
   account_name:
     字段名: account_name
     数据类型: STRING
     业务含义: 账户名称
-    示例值: ['果石-funloop-01']
+    示例值:
+    - 果石-funloop-01
     使用注意: 广告主账户名
-
+  is_default:
+    字段名: is_default
+    数据类型: INT
+    业务含义: 是否打底广告:0不是,1是,2打底广告被暂停
+    示例值:
+    - '0'
+    使用注意: ''
+  site_id:
+    字段名: site_id
+    数据类型: STRING
+    业务含义: 站点ID
+    示例值:
+    - '0'
+    使用注意: ''
   style_type:
     字段名: style_type
     数据类型: STRING
     业务含义: 样式类型
-    示例值: ['9:20']
+    示例值:
+    - '9:20'
     使用注意: 创意尺寸比例
-
   status:
     字段名: status
     数据类型: INT
     业务含义: 状态码
-    示例值: ['0']
+    示例值:
+    - '0'
     使用注意: 创意状态
-
   status_cn:
     字段名: status_cn
     数据类型: STRING
     业务含义: 状态中文
-    示例值: ['未定义']
+    示例值:
+    - 未定义
     使用注意: 状态描述
-
   open:
     字段名: open
     数据类型: INT
     业务含义: 开启状态
-    示例值: ['2']
+    示例值:
+    - '2'
     使用注意: 2=暂停
-
   open_cn:
     字段名: open_cn
     数据类型: STRING
     业务含义: 开启状态中文
-    示例值: ['暂停']
+    示例值:
+    - 暂停
     使用注意: 开启状态描述
-
-  material_type:
-    字段名: material_type
+  show_limit:
+    字段名: show_limit
+    数据类型: BIGINT
+    业务含义: 广告展示上线
+    示例值:
+    - '0'
+    使用注意: ''
+  is_deleted:
+    字段名: is_deleted
+    数据类型: INT
+    业务含义: 是否删除
+    示例值:
+    - '0'
+    使用注意: ''
+  creator:
+    字段名: creator
     数据类型: STRING
-    业务含义: 素材类型
-    示例值: ['2']
-    使用注意: 素材类型编码
-
-  material_type_cn:
-    字段名: material_type_cn
-    数据类型: STRING
-    业务含义: 素材类型中文
-    示例值: ['图片']
-    使用注意: 图片/视频等
-
-  category_name:
-    字段名: category_name
-    数据类型: STRING
-    业务含义: 分类名称
-    示例值: ['Role Playing']
-    使用注意: 游戏/应用分类
-
-  material_id:
-    字段名: material_id
-    数据类型: STRING
-    业务含义: 素材ID
-    示例值: ['47608']
-    使用注意: 关联素材
-
-  package_name:
-    字段名: package_name
-    数据类型: STRING
-    业务含义: 包名
-    示例值: ['com.casualgame.brick.master.free.game']
-    使用注意: 应用包名
-
+    业务含义: 创建者
+    示例值:
+    - '3375'
+    使用注意: ''
   gmt_create:
     字段名: gmt_create
     数据类型: DATETIME
     业务含义: 创建时间
-    示例值: ['2024-02-03 20:51:45']
+    示例值:
+    - '2024-02-03 20:51:45'
     使用注意: 创意创建时间
-
+  modifier:
+    字段名: modifier
+    数据类型: STRING
+    业务含义: 最近一次更新者
+    示例值:
+    - '3375'
+    使用注意: ''
   gmt_modified:
     字段名: gmt_modified
     数据类型: DATETIME
     业务含义: 修改时间
-    示例值: ['2026-01-15 05:26:27']
+    示例值:
+    - '2026-01-15 05:26:27'
     使用注意: 最后修改时间
-
+  package_name:
+    字段名: package_name
+    数据类型: STRING
+    业务含义: 包名
+    示例值:
+    - com.casualgame.brick.master.free.game
+    使用注意: 应用包名
+  package_source:
+    字段名: package_source
+    数据类型: STRING
+    业务含义: 下载包名渠道
+    示例值:
+    - PS
+    使用注意: ''
+  scale:
+    字段名: scale
+    数据类型: STRING
+    业务含义: 尺寸
+    示例值:
+    - '9:16'
+    使用注意: ''
+  status_v2:
+    字段名: status_v2
+    数据类型: STRING
+    业务含义: 投放状态
+    示例值:
+    - '11'
+    使用注意: ''
+  material_type:
+    字段名: material_type
+    数据类型: STRING
+    业务含义: 素材类型
+    示例值:
+    - '2'
+    使用注意: 素材类型编码
+  material_type_cn:
+    字段名: material_type_cn
+    数据类型: STRING
+    业务含义: 素材类型中文
+    示例值:
+    - 图片
+    使用注意: 图片/视频等
+  category_name:
+    字段名: category_name
+    数据类型: STRING
+    业务含义: 分类名称
+    示例值:
+    - Role Playing
+    使用注意: 游戏/应用分类
+  material_id:
+    字段名: material_id
+    数据类型: STRING
+    业务含义: 素材ID
+    示例值:
+    - '47608'
+    使用注意: 关联素材
+  material_sub_type:
+    字段名: material_sub_type
+    数据类型: STRING
+    业务含义: 类型 1:图片2:动图
+    示例值:
+    - '1'
+    使用注意: ''
+  material_sub_type_cn:
+    字段名: material_sub_type_cn
+    数据类型: STRING
+    业务含义: 类型
+    示例值:
+    - 图片素材
+    使用注意: ''
+  material_format:
+    字段名: material_format
+    数据类型: STRING
+    业务含义: 格式
+    示例值:
+    - image/jpeg
+    使用注意: ''
+  audit_entity_id:
+    字段名: audit_entity_id
+    数据类型: BIGINT
+    业务含义: 审核id
+    示例值:
+    - '136839'
+    使用注意: ''
+  generate_type:
+    字段名: generate_type
+    数据类型: STRING
+    业务含义: 创意生成类型：0 普通创意；1 原始创意；2派生创意
+    示例值:
+    - '0'
+    使用注意: ''
+  generate_type_cn:
+    字段名: generate_type_cn
+    数据类型: STRING
+    业务含义: 创意生成类型
+    示例值:
+    - 普通创意
+    使用注意: ''
+  origin_creativity_id:
+    字段名: origin_creativity_id
+    数据类型: STRING
+    业务含义: 原始创意id
+    示例值:
+    - '0'
+    使用注意: ''
+  material_generate_type:
+    字段名: material_generate_type
+    数据类型: STRING
+    业务含义: 物料生成类型
+    示例值:
+    - '0'
+    使用注意: ''
+  material_generate_type_cn:
+    字段名: material_generate_type_cn
+    数据类型: STRING
+    业务含义: 物料生成类型
+    示例值:
+    - 本地上传
+    使用注意: ''
+  icon_gif_type:
+    字段名: icon_gif_type
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  icon_gif_type_cn:
+    字段名: icon_gif_type_cn
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  is_rewarded:
+    字段名: is_rewarded
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  internal_ad_type:
+    字段名: internal_ad_type
+    数据类型: INT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  start_time:
+    字段名: start_time
+    数据类型: STRING
+    业务含义: 开始投放日期
+    示例值:
+    - '1001-01-01 00:00:00'
+    使用注意: ''
+  end_time:
+    字段名: end_time
+    数据类型: STRING
+    业务含义: 结束投放日期
+    示例值:
+    - '9999-01-01 00:00:00'
+    使用注意: ''
+  sale_type:
+    字段名: sale_type
+    数据类型: STRING
+    业务含义: 1-竞价 2-合约
+    示例值:
+    - '1'
+    使用注意: ''
+  sale_type_cn:
+    字段名: sale_type_cn
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 竞价
+    使用注意: ''
 常用查询场景:
   查询创意列表:
     场景名称: 查询指定条件下的创意列表
-    SQL模板: |
-      SELECT id, title, ad_group_id, ad_plan_id, advertiser_id, 
-             material_type_cn, status_cn, open_cn, gmt_create
-      FROM com_cdm.dim_creativity_dd
-      WHERE dt = '${dt}'
-        AND advertiser_id = '${advertiser_id}'
-      LIMIT 100
+    SQL模板: "SELECT id, title, ad_group_id, ad_plan_id, advertiser_id, \n       material_type_cn,\
+      \ status_cn, open_cn, gmt_create\nFROM com_cdm.dim_creativity_dd\nWHERE dt =\
+      \ '${dt}'\n  AND advertiser_id = '${advertiser_id}'\nLIMIT 100\n"
     参数:
       dt: 日期分区，格式YYYYMMDD
       advertiser_id: 广告主ID
-
   统计创意数量:
     场景名称: 按广告主统计创意数量
-    SQL模板: |
-      SELECT advertiser_id, account_name, 
-             COUNT(DISTINCT id) AS creativity_count
-      FROM com_cdm.dim_creativity_dd
-      WHERE dt = '${dt}'
-      GROUP BY advertiser_id, account_name
-      ORDER BY creativity_count DESC
+    SQL模板: "SELECT advertiser_id, account_name, \n       COUNT(DISTINCT id) AS creativity_count\n\
+      FROM com_cdm.dim_creativity_dd\nWHERE dt = '${dt}'\nGROUP BY advertiser_id,\
+      \ account_name\nORDER BY creativity_count DESC\n"
     参数:
       dt: 日期分区，格式YYYYMMDD
-
 数据质量规则:
   异常值识别:
     空创意标题:
       条件: title IS NULL OR title = ''
       可能原因: 数据同步异常或创意未命名
       建议: 检查数据源或联系广告主补充
-
     无效状态:
       条件: status NOT IN (0, 1, 2)
       可能原因: 状态码异常
       建议: 检查状态映射关系
-
 业务备注:
-  ID字段: [id, ad_group_id, ad_plan_id, advertiser_id, site_id, material_id]
-  时间字段: [gmt_create, gmt_modified, dt]
-  状态字段: [status, status_cn, open, open_cn]
-  关联表: [ad_group, ad_plan, advertiser]
-
+  ID字段:
+  - id
+  - ad_group_id
+  - ad_plan_id
+  - advertiser_id
+  - site_id
+  - material_id
+  时间字段:
+  - gmt_create
+  - gmt_modified
+  - dt
+  状态字段:
+  - status
+  - status_cn
+  - open
+  - open_cn
+  关联表:
+  - ad_group
+  - ad_plan
+  - advertiser
 生成时间: '2026-03-17 20:30:06'
+更新时间: '2026-03-18 20:09:59'
