@@ -52,49 +52,119 @@ def run(
     }
 
     try:
-        table = client.odps.get_table(full_table_name)
-        table_schema = table.table_schema
+        # 首先尝试 SHOW PARTITIONS 获取分区信息（只需要 Select 权限）
+        try:
+            partition_sql = f"SHOW PARTITIONS {full_table_name}"
+            print(f"[explore_table] Executing SHOW PARTITIONS: {partition_sql}")
+            partition_df = client.run_sql(partition_sql, enable_log=False)
+            if not partition_df.empty:
+                # 从分区值推断分区字段名
+                first_partition = str(partition_df.iloc[0, 0])
+                if "=" in first_partition:
+                    part_col = first_partition.split("=")[0]
+                    result["partitions"].append({
+                        "name": part_col,
+                        "type": "string",
+                    })
+                    result["structure"]["total_partitions"] = len(partition_df)
+                    print(f"[explore_table] Found partition column: {part_col}")
+        except Exception as e:
+            print(f"[explore_table] SHOW PARTITIONS failed (may not be partitioned): {e}")
         
-        for col in table_schema.columns:
-            result["columns"].append({
-                "name": col.name,
-                "type": str(col.type),
-            })
-        
-        for part in table_schema.partitions:
-            result["partitions"].append({
-                "name": part.name,
-                "type": str(part.type),
-            })
-        
-        result["structure"]["total_columns"] = len(result["columns"])
-        result["structure"]["total_partitions"] = len(result["partitions"])
-    except Exception as e:
-        result["error"] = f"获取表结构失败: {str(e)}"
-
-    try:
+        # 使用样本查询获取列信息（只需要 Select 权限）
+        # 构建带分区的查询
         partition_where = ""
         if result["partitions"]:
             part_col = result["partitions"][0]["name"]
-            partition_where = f"WHERE {part_col} = '{sample_date}'"
-
-        sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows};"
-        print(f"[explore_table] Executing sample query: {sample_sql}")
+            # 获取最新分区值
+            latest_partition = str(partition_df.iloc[-1, 0]) if not partition_df.empty else ""
+            if "=" in latest_partition:
+                part_val = latest_partition.split("=")[1]
+                partition_where = f"WHERE {part_col} = '{part_val}'"
+            else:
+                partition_where = f"WHERE {part_col} = '{sample_date}'"
+        
+        # 先查询一条数据来获取列信息
+        sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT 1"
+        print(f"[explore_table] Getting column info: {sample_sql}")
         sample_df = client.run_sql(sample_sql, enable_log=False)
-
+        
         if not sample_df.empty:
+            # 从 DataFrame 推断列信息
+            for col_name in sample_df.columns:
+                col_type = str(sample_df[col_name].dtype)
+                # 将 pandas dtype 映射到 ODPS 类型
+                type_mapping = {
+                    'int64': 'BIGINT',
+                    'float64': 'DOUBLE',
+                    'object': 'STRING',
+                    'bool': 'BOOLEAN',
+                    'datetime64[ns]': 'DATETIME',
+                }
+                odps_type = type_mapping.get(col_type, 'STRING')
+                
+                col_info = {
+                    "name": col_name,
+                    "type": odps_type,
+                }
+                
+                # 检查是否是分区列
+                is_partition = any(p["name"] == col_name for p in result["partitions"])
+                
+                if is_partition:
+                    # 更新分区列的类型
+                    for p in result["partitions"]:
+                        if p["name"] == col_name:
+                            p["type"] = odps_type
+                else:
+                    # 添加样本值
+                    col_data = sample_df[col_name]
+                    col_info["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
+                    result["columns"].append(col_info)
+            
+            result["structure"]["total_columns"] = len(result["columns"])
+            
+            # 保存样本数据
             result["sample_data"] = {
                 "columns": list(sample_df.columns),
                 "rows": sample_df.head(sample_rows).to_dict(orient="records"),
             }
+            
+            print(f"[explore_table] Found {len(result['columns'])} columns")
+        else:
+            print(f"[explore_table] Sample query returned empty result")
+                
+    except Exception as e:
+        result["error"] = f"获取表结构失败: {str(e)}"
 
-            for col in sample_df.columns:
-                if col not in [p["name"] for p in result["partitions"]]:
-                    col_data = sample_df[col]
-                    result["columns"] = [
-                        c | {"sample": str(col_data.iloc[0])[:50]} if c["name"] == col else c
-                        for c in result["columns"]
-                    ]
+    # 样本数据查询已经在上面执行过了，这里只需要保存结果
+    # 如果需要更多行数，可以重新查询
+    try:
+        if result.get("sample_data") is None and result["columns"]:
+            # 需要获取更多样本数据
+            partition_where = ""
+            if result["partitions"]:
+                part_col = result["partitions"][0]["name"]
+                partition_where = f"WHERE {part_col} = '{sample_date}'"
+
+            sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows}"
+            print(f"[explore_table] Executing sample query: {sample_sql}")
+            sample_df = client.run_sql(sample_sql, enable_log=False)
+
+            if not sample_df.empty:
+                result["sample_data"] = {
+                    "columns": list(sample_df.columns),
+                    "rows": sample_df.head(sample_rows).to_dict(orient="records"),
+                }
+
+                # 添加样本值到列信息
+                for col in sample_df.columns:
+                    if col not in [p["name"] for p in result["partitions"]]:
+                        col_data = sample_df[col]
+                        for c in result["columns"]:
+                            if c["name"] == col:
+                                c["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
+                                break
 
     except Exception as e:
         result["error"] = result.get("error", "") + f"\n采样失败: {str(e)}"
