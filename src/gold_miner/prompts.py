@@ -65,6 +65,7 @@ Available skills:
 
 Rules:
 - Reasoning Mode: When you encounter problems or uncertain tasks, you should first search the skills directory for relevant skills before making decisions. Use search_skills action to find relevant skills.
+- Cross-Project Access: You CAN access tables from ANY project (com_ads, mi_ads_dmp, etc.), not just the default project. NEVER assume permission denied without trying to execute SQL first. If SQL execution fails with permission error, then report it.
 - Context Management:
   - Skill execution results are INVISIBLE context (won't appear in subsequent conversation)
   - Only final reports and critical decisions should be marked as VISIBLE context
