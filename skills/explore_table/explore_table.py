@@ -34,6 +34,7 @@ def run(
     """
     from gold_miner.odps_client import OdpsClient, OdpsConfig
     from gold_miner.config import Config
+    from odps import ODPS
 
     config = Config.from_env()
     odps_config = OdpsConfig.from_config(config)
@@ -51,89 +52,120 @@ def run(
         "business_notes": [],
     }
 
+    # 存储字段注释信息
+    column_comments = {}
+
     try:
-        # 首先尝试 SHOW PARTITIONS 获取分区信息（只需要 Select 权限）
+        # 首先尝试使用 ODPS SDK get_table 获取表结构（包括字段注释）
         try:
-            partition_sql = f"SHOW PARTITIONS {full_table_name}"
-            print(f"[explore_table] Executing SHOW PARTITIONS: {partition_sql}")
-            partition_df = client.run_sql(partition_sql, enable_log=False)
-            if not partition_df.empty:
-                # 从分区值推断分区字段名
-                first_partition = str(partition_df.iloc[0, 0])
-                if "=" in first_partition:
-                    part_col = first_partition.split("=")[0]
-                    result["partitions"].append({
-                        "name": part_col,
-                        "type": "string",
-                    })
-                    result["structure"]["total_partitions"] = len(partition_df)
-                    print(f"[explore_table] Found partition column: {part_col}")
+            print(f"[explore_table] Getting table schema via ODPS SDK: {full_table_name}")
+            o = ODPS(
+                odps_config.access_id,
+                odps_config.access_key,
+                odps_config.project,
+                endpoint=odps_config.endpoint
+            )
+            table_obj = o.get_table(full_table_name)
+
+            # 获取分区信息
+            for part in table_obj.table_schema.partitions:
+                result["partitions"].append({
+                    "name": part.name,
+                    "type": str(part.type),
+                })
+            result["structure"]["total_partitions"] = len(result["partitions"])
+            print(f"[explore_table] Found {len(result['partitions'])} partition columns via SDK")
+
+            # 获取字段信息和注释
+            for col in table_obj.table_schema.columns:
+                col_name = col.name
+                col_type = str(col.type)
+                col_comment = col.comment if col.comment else ""
+                column_comments[col_name] = {
+                    "type": col_type,
+                    "comment": col_comment,
+                }
+            print(f"[explore_table] Found {len(column_comments)} columns with comments via SDK")
+
         except Exception as e:
-            print(f"[explore_table] SHOW PARTITIONS failed (may not be partitioned): {e}")
-        
-        # 使用样本查询获取列信息（只需要 Select 权限）
-        # 构建带分区的查询
+            print(f"[explore_table] ODPS SDK get_table failed: {e}")
+            # 降级到 SHOW PARTITIONS
+            try:
+                partition_sql = f"SHOW PARTITIONS {full_table_name}"
+                print(f"[explore_table] Executing SHOW PARTITIONS: {partition_sql}")
+                partition_df = client.run_sql(partition_sql, enable_log=False)
+                if not partition_df.empty:
+                    first_partition = str(partition_df.iloc[0, 0])
+                    if "=" in first_partition:
+                        part_col = first_partition.split("=")[0]
+                        result["partitions"].append({
+                            "name": part_col,
+                            "type": "string",
+                        })
+                        result["structure"]["total_partitions"] = len(partition_df)
+                        print(f"[explore_table] Found partition column: {part_col}")
+            except Exception as e2:
+                print(f"[explore_table] SHOW PARTITIONS also failed: {e2}")
+
+        # 使用样本查询获取样本数据
         partition_where = ""
         if result["partitions"]:
             part_col = result["partitions"][0]["name"]
-            # 获取最新分区值
-            latest_partition = str(partition_df.iloc[-1, 0]) if not partition_df.empty else ""
-            if "=" in latest_partition:
-                part_val = latest_partition.split("=")[1]
-                partition_where = f"WHERE {part_col} = '{part_val}'"
-            else:
-                partition_where = f"WHERE {part_col} = '{sample_date}'"
-        
-        # 先查询一条数据来获取列信息
-        sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT 1"
-        print(f"[explore_table] Getting column info: {sample_sql}")
+            # 如果有 SDK 获取的分区信息，使用 sample_date
+            partition_where = f"WHERE {part_col} = '{sample_date}'"
+
+        sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows}"
+        print(f"[explore_table] Getting sample data: {sample_sql}")
         sample_df = client.run_sql(sample_sql, enable_log=False)
-        
+
         if not sample_df.empty:
-            # 从 DataFrame 推断列信息
+            # 从 DataFrame 和 SDK 获取的注释构建列信息
             for col_name in sample_df.columns:
-                col_type = str(sample_df[col_name].dtype)
-                # 将 pandas dtype 映射到 ODPS 类型
-                type_mapping = {
-                    'int64': 'BIGINT',
-                    'float64': 'DOUBLE',
-                    'object': 'STRING',
-                    'bool': 'BOOLEAN',
-                    'datetime64[ns]': 'DATETIME',
-                }
-                odps_type = type_mapping.get(col_type, 'STRING')
-                
-                col_info = {
-                    "name": col_name,
-                    "type": odps_type,
-                }
-                
                 # 检查是否是分区列
                 is_partition = any(p["name"] == col_name for p in result["partitions"])
-                
+
                 if is_partition:
-                    # 更新分区列的类型
-                    for p in result["partitions"]:
-                        if p["name"] == col_name:
-                            p["type"] = odps_type
+                    continue  # 分区列已在上面处理
+
+                # 获取列信息（优先使用 SDK 获取的信息）
+                col_info = {
+                    "name": col_name,
+                    "type": "STRING",
+                    "comment": "",
+                }
+
+                if col_name in column_comments:
+                    col_info["type"] = column_comments[col_name]["type"]
+                    col_info["comment"] = column_comments[col_name]["comment"]
                 else:
-                    # 添加样本值
-                    col_data = sample_df[col_name]
-                    col_info["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
-                    result["columns"].append(col_info)
-            
+                    # 从 DataFrame 推断类型
+                    col_type = str(sample_df[col_name].dtype)
+                    type_mapping = {
+                        'int64': 'BIGINT',
+                        'float64': 'DOUBLE',
+                        'object': 'STRING',
+                        'bool': 'BOOLEAN',
+                        'datetime64[ns]': 'DATETIME',
+                    }
+                    col_info["type"] = type_mapping.get(col_type, 'STRING')
+
+                # 添加样本值
+                col_data = sample_df[col_name]
+                col_info["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
+                result["columns"].append(col_info)
+
             result["structure"]["total_columns"] = len(result["columns"])
-            
+
             # 保存样本数据
             result["sample_data"] = {
                 "columns": list(sample_df.columns),
                 "rows": sample_df.head(sample_rows).to_dict(orient="records"),
             }
-            
-            print(f"[explore_table] Found {len(result['columns'])} columns")
+
+            print(f"[explore_table] Found {len(result['columns'])} columns with {sum(1 for c in result['columns'] if c.get('comment'))} having comments")
         else:
             print(f"[explore_table] Sample query returned empty result")
-                
+
     except Exception as e:
         result["error"] = f"获取表结构失败: {str(e)}"
 
@@ -248,11 +280,12 @@ def _generate_knowledge_file(
         col_name = col['name']
         col_type = col.get('type', 'UNKNOWN')
         col_sample = col.get('sample', '')
+        col_comment = col.get('comment', '')  # 从 ODPS 获取的字段注释
 
         core_fields[col_name] = {
             '字段名': col_name,
             '数据类型': col_type,
-            '业务含义': '',  # 待补充
+            '业务含义': col_comment,  # 使用 ODPS 字段注释
             '示例值': [col_sample] if col_sample else [],
             '使用注意': ''
         }
