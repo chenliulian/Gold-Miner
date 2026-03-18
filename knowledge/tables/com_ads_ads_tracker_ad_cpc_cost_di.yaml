@@ -1,0 +1,403 @@
+基本信息:
+  表名: com_ads.ads_tracker_ad_cpc_cost_di
+  业务名称: ''
+  数据粒度: ''
+  更新频率: 未知
+  保留周期: 未知
+  项目: com_ads
+  列数: 114
+  分区数: 1536
+分区信息:
+  分区字段: dt
+  分区类型: STRING
+  分区说明: 日期/小时分区
+核心字段详解:
+  advertiser_id:
+    字段名: advertiser_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '2761'
+    使用注意: ''
+  account_name:
+    字段名: account_name
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 'MI_游戏_联运_Stickman Party: 2 3 4 MiniGames'
+    使用注意: ''
+  first_industry:
+    字段名: first_industry
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 软件应用&网站
+    使用注意: ''
+  second_industry:
+    字段名: second_industry
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 一般游戏
+    使用注意: ''
+  third_industry:
+    字段名: third_industry
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 其他游戏
+    使用注意: ''
+  ad_plan_id:
+    字段名: ad_plan_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '9199'
+    使用注意: ''
+  ad_plan_title:
+    字段名: ad_plan_title
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 'AHAgames-PSlink-Stickman Party: 2 3 4 MiniGames-9-'
+    使用注意: ''
+  purpose_type:
+    字段名: purpose_type
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '2'
+    使用注意: ''
+  purpose_type_cn:
+    字段名: purpose_type_cn
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 应用推广
+    使用注意: ''
+  ad_group_id:
+    字段名: ad_group_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '13268'
+    使用注意: ''
+  ad_group_title:
+    字段名: ad_group_title
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 'AHAgames-PSlink-Stickman Party: 2 3 4 MiniGames-超高'
+    使用注意: ''
+  creativity_id:
+    字段名: creativity_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '93573'
+    使用注意: ''
+  creativity_title:
+    字段名: creativity_title
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 'AHAgames-PSlink-Stickman Party: 2 3 4 MiniGames-超高'
+    使用注意: ''
+  media_id:
+    字段名: media_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - '52'
+    使用注意: ''
+  media_company_name:
+    字段名: media_company_name
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 传音控股
+    使用注意: ''
+  app_id:
+    字段名: app_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 36875cdb6a7f4da783d3714632937d9c
+    使用注意: ''
+  app_name:
+    字段名: app_name
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - Palmstore
+    使用注意: ''
+  code_seat_id:
+    字段名: code_seat_id
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 230104DdXnCEAr
+    使用注意: ''
+  code_seat_title:
+    字段名: code_seat_title
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - PS-icon-feeds-老用户装机必备
+    使用注意: ''
+  code_seat_type:
+    字段名: code_seat_type
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '6'
+    使用注意: ''
+  code_seat_type_cn:
+    字段名: code_seat_type_cn
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - ICON
+    使用注意: ''
+  is_default_ad:
+    字段名: is_default_ad
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  mcc:
+    字段名: mcc
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 未知
+    使用注意: ''
+  country:
+    字段名: country
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - Canada
+    使用注意: ''
+  country_zh:
+    字段名: country_zh
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - 加拿大
+    使用注意: ''
+  continent:
+    字段名: continent
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - Americas
+    使用注意: ''
+  model_version:
+    字段名: model_version
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  adv_seat_type:
+    字段名: adv_seat_type
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - icon
+    使用注意: ''
+  os_type:
+    字段名: os_type
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  server_version:
+    字段名: server_version
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  cost_type:
+    字段名: cost_type
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - ocpd
+    使用注意: ''
+  req_num:
+    字段名: req_num
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  res_num:
+    字段名: res_num
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  res_cnt:
+    字段名: res_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '1'
+    使用注意: ''
+  show_num:
+    字段名: show_num
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  show_cnt:
+    字段名: show_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  click_num:
+    字段名: click_num
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  click_cnt:
+    字段名: click_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  cpm_cost:
+    字段名: cpm_cost
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  cpc_cost:
+    字段名: cpc_cost
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  cpm_income:
+    字段名: cpm_income
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  cpc_income:
+    字段名: cpc_income
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  correct_show_num:
+    字段名: correct_show_num
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  correct_show_cnt:
+    字段名: correct_show_cnt
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  correct_cpm_cost:
+    字段名: correct_cpm_cost
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  correct_cpm_income:
+    字段名: correct_cpm_income
+    数据类型: DOUBLE
+    业务含义: ''
+    示例值:
+    - '0.0'
+    使用注意: ''
+  pre_ctr:
+    字段名: pre_ctr
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  pre_cost:
+    字段名: pre_cost
+    数据类型: STRING
+    业务含义: ''
+    示例值:
+    - None
+    使用注意: ''
+  install_pv:
+    字段名: install_pv
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+  active_pv:
+    字段名: active_pv
+    数据类型: BIGINT
+    业务含义: ''
+    示例值:
+    - '0'
+    使用注意: ''
+常用查询场景:
+  示例查询:
+    场景名称: 示例查询
+    SQL模板: SELECT * FROM com_ads.ads_tracker_ad_cpc_cost_di WHERE dh = '{{dh}}' LIMIT
+      100
+    参数:
+      dh: 分区值
+数据质量规则:
+  异常值识别: {}
+业务备注:
+  ID字段:
+  - advertiser_id
+  - ad_plan_id
+  - ad_group_id
+  - creativity_id
+  - media_id
+  - app_id
+  - code_seat_id
+  - agent_id
+  - ori_creative_id
+  标签字段: []
+  计费字段:
+  - cost_type
+  - cpm_cost
+  - cpc_cost
+  - correct_cpm_cost
+  - pre_ctr
+  - pre_cost
+  - pre_cost_sum
+  - bill_should_cost
+  - pool_should_cost
+  - correct_cpc_cost
+  - cpd_cost
+  - correct_cpd_cost
+  - cpi_cost
+  - res_price
+  - click_cpi_cost
+  时间字段: []
+生成时间: '2026-03-18 17:42:40'

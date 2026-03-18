@@ -1,5 +1,6 @@
 .env
 memory/
 reports/
+docs/
 __pycache__/
 *.pyc
