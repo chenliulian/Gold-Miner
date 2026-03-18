@@ -1,6 +1,7 @@
 .env
 memory/
 reports/
-docs/
+src/reports/
+knowledge/etl/
 __pycache__/
 *.pyc

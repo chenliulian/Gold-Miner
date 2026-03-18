@@ -1,0 +1,236 @@
+基本信息:
+  表名: ads_strategy.dwd_ads_competition_rank_hi
+  业务名称: 广告竞价排名表
+  数据粒度: 广告创意+广告组+包名+国家+代码位+小时
+  更新频率: 小时
+  保留周期: 30天
+  项目: ads_strategy
+  列数: 13
+  分区数: 1
+建表语句: |
+  create table if not exists dwd_ads_competition_rank_hi 
+  ( 
+      ad_group_id  STRING, 
+      ad_creative_id STRING, 
+      package_name STRING, 
+      national_id  STRING, 
+      code_seat_id STRING, 
+      recall_nums  STRING, 
+      rank_nums    STRING, 
+      resp_nums    STRING, 
+      pos1_nums    STRING, 
+      pos2_nums    STRING, 
+      pos3_nums    STRING, 
+      pos4_nums    STRING, 
+      pos5_nums    STRING 
+  ) 
+  COMMENT "广告竞价排名表" 
+  PARTITIONED by ( 
+      dh              STRING COMMENT "yyyymmddhh，法兰克福时间" 
+  ) 
+  LIFECYCLE 30;
+分区信息:
+  dh: 小时分区，格式 yyyymmddhh，法兰克福时间
+核心字段详解:
+  ad_group_id:
+    字段名: ad_group_id
+    数据类型: STRING
+    业务含义: 广告组ID，标识一个广告活动组
+    示例值: []
+    使用注意: 关联广告组维度表获取详细信息
+  ad_creative_id:
+    字段名: ad_creative_id
+    数据类型: STRING
+    业务含义: 广告创意ID，标识具体的广告素材
+    示例值: []
+    使用注意: 关联创意维度表获取创意详情
+  package_name:
+    字段名: package_name
+    数据类型: STRING
+    业务含义: 应用包名，标识广告投放的目标应用
+    示例值: ['com.transsion.weather', 'com.transsion.calendar']
+    使用注意: 用于区分不同应用的投放数据
+  national_id:
+    字段名: national_id
+    数据类型: STRING
+    业务含义: 国家ID，标识广告投放的国家/地区
+    示例值: ['CN', 'US', 'IN', 'NG']
+    使用注意: 关联国家维度表获取国家名称和区域信息
+  code_seat_id:
+    字段名: code_seat_id
+    数据类型: STRING
+    业务含义: 代码位ID，标识广告展示的具体位置
+    示例值: []
+    使用注意: 关联代码位维度表获取广告位信息
+  recall_nums:
+    字段名: recall_nums
+    数据类型: STRING
+    业务含义: 召回次数，广告创意被召回参与竞价的不同请求数
+    示例值: []
+    使用注意: 基于dwd_ew_request_sample_hi表统计，反映广告参与竞价竞争的活跃度
+  rank_nums:
+    字段名: rank_nums
+    数据类型: STRING
+    业务含义: 进入排名阶段次数，stage为'RESP'或'cnt_limit'的不同请求数
+    示例值: []
+    使用注意: 用于计算从召回到排名的转化率
+  resp_nums:
+    字段名: resp_nums
+    数据类型: STRING
+    业务含义: 响应次数，stage为'RESP'的不同请求数，即成功响应的竞价次数
+    示例值: []
+    使用注意: 反映广告竞价成功后的实际响应次数
+  pos1_nums:
+    字段名: pos1_nums
+    数据类型: STRING
+    业务含义: 排名第1位次数，stage为'RESP'且stage_rank=0的不同请求数
+    示例值: []
+    使用注意: 排名第一表示最优竞价位置，stage_rank从0开始计数
+  pos2_nums:
+    字段名: pos2_nums
+    数据类型: STRING
+    业务含义: 排名第2位次数，stage为'RESP'且stage_rank=1的不同请求数
+    示例值: []
+    使用注意: stage_rank=1对应排名第二
+  pos3_nums:
+    字段名: pos3_nums
+    数据类型: STRING
+    业务含义: 排名第3位次数，stage为'RESP'且stage_rank=2的不同请求数
+    示例值: []
+    使用注意: stage_rank=2对应排名第三
+  pos4_nums:
+    字段名: pos4_nums
+    数据类型: STRING
+    业务含义: 排名第4位次数，stage为'RESP'且stage_rank=3的不同请求数
+    示例值: []
+    使用注意: stage_rank=3对应排名第四
+  pos5_nums:
+    字段名: pos5_nums
+    数据类型: STRING
+    业务含义: 排名第5位次数，stage为'RESP'且stage_rank=4的不同请求数
+    示例值: []
+    使用注意: stage_rank=4对应排名第五
+常用查询场景:
+  示例查询:
+    场景名称: 示例查询
+    SQL模板: SELECT * FROM ads_strategy.dwd_ads_competition_rank_hi WHERE dh = '{{dh}}'
+      LIMIT 100
+    参数:
+      dh: 分区值
+数据质量规则:
+  异常值识别: {}
+
+数据生产逻辑:
+  概述: |
+    本表统计广告竞价过程中的排名分布情况，追踪广告从召回到最终响应的转化漏斗。
+    数据粒度为广告创意+广告组+包名+国家+代码位+小时，用于分析广告竞价竞争力和排名表现。
+  
+  输入数据源:
+    - com_ods.ods_creativity_adaptation_creativity_index: 创意索引表，获取创意与广告组、包名的映射关系
+    - ads_strategy.dwd_ew_request_sample_hi: 竞价请求采样表，包含竞价各阶段的请求数据
+  
+  核心处理流程:
+    阶段1_创意信息准备:
+      - creative_info: 从创意索引表获取最新的创意ID、广告组ID、包名映射关系
+      - 使用MAX_PT获取最新分区数据
+      - 去重处理，确保创意信息唯一性
+    
+    阶段2_请求数据关联:
+      - req_group_tb: 关联竞价请求数据与创意信息
+      - 从dwd_ew_request_sample_hi获取指定小时分区数据
+      - LEFT JOIN关联creative_info，补充广告组ID和包名
+      - 保留字段: request_id, national_id, code_seat_id, stage, ad_creative_id, stage_rank, ad_group_id, ps_package_name
+    
+    阶段3_竞价排名统计:
+      - 按ad_group_id, ad_creative_id, ps_package_name, national_id, code_seat_id分组聚合
+      - 统计指标计算:
+        * recall_nums: COUNT(DISTINCT request_id) - 召回次数（所有请求）
+        * rank_nums: COUNT(DISTINCT CASE WHEN stage IN ('RESP','cnt_limit') THEN request_id END) - 进入排名阶段次数
+        * resp_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' THEN request_id END) - 响应次数
+        * pos1_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 0 THEN request_id END) - 排名第1位次数
+        * pos2_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 1 THEN request_id END) - 排名第2位次数
+        * pos3_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 2 THEN request_id END) - 排名第3位次数
+        * pos4_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 3 THEN request_id END) - 排名第4位次数
+        * pos5_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 4 THEN request_id END) - 排名第5位次数
+  
+  输出字段生成逻辑:
+    - recall_nums: 广告创意被召回参与竞价的不同请求数，反映广告参与竞价竞争的活跃度
+    - rank_nums: stage为'RESP'或'cnt_limit'的不同请求数，表示进入排名阶段的请求数
+    - resp_nums: stage为'RESP'的不同请求数，表示成功响应的竞价次数
+    - pos1_nums~pos5_nums: stage为'RESP'且stage_rank分别为0~4的不同请求数，表示排名第1~5位的次数
+    - stage_rank从0开始计数，0表示排名第1，1表示排名第2，以此类推
+  
+  时间参数说明:
+    - ${dh}: 小时分区，格式yyyymmddhh，法兰克福时间
+    - MAX_PT: 获取创意索引表的最新分区
+
+ETL代码: |
+  WITH creative_info AS 
+  ( 
+      SELECT  DISTINCT creativity_id id 
+              ,launch_group_id ad_group_id 
+              ,ps_package_name 
+      FROM    com_ods.ods_creativity_adaptation_creativity_index 
+      WHERE   dt = MAX_PT("com_ods.ods_creativity_adaptation_creativity_index") 
+  ) 
+  ,req_group_tb AS ( 
+  SELECT 
+      t1.request_id 
+      ,t1.national_id 
+      ,t1.code_seat_id 
+      ,t1.stage 
+      ,t1.ad_creative_id 
+      ,t1.stage_rank 
+      ,t2.ad_group_id 
+      ,t2.ps_package_name 
+  from 
+      ( 
+          select * from dwd_ew_request_sample_hi where dh = '${dh}' 
+      ) t1 
+      left JOIN creative_info t2 
+      on t1.ad_creative_id = t2.id 
+  ) 
+
+  INSERT OVERWRITE TABLE dwd_ads_competition_rank_hi PARTITION (dh = "${dh}") 
+  SELECT 
+      ad_group_id 
+      ,ad_creative_id 
+      ,ps_package_name 
+      ,national_id 
+      ,code_seat_id 
+      ,COUNT(DISTINCT request_id) recall_nums 
+      ,COUNT(DISTINCT CASE    WHEN stage IN ('RESP','cnt_limit') THEN request_id 
+      END) AS rank_nums 
+      ,COUNT(DISTINCT CASE    WHEN stage = 'RESP' THEN request_id 
+      END) AS resp_nums 
+      ,COUNT(DISTINCT CASE    WHEN stage = 'RESP' AND stage_rank = 0 THEN request_id 
+      END) AS resp_1 
+      ,COUNT(DISTINCT CASE    WHEN stage = 'RESP' AND stage_rank = 1 THEN request_id 
+      END) AS resp_2 
+      ,COUNT(DISTINCT CASE    WHEN stage = 'RESP' AND stage_rank = 2 THEN request_id 
+      END) AS resp_3 
+      ,COUNT(DISTINCT CASE    WHEN stage = 'RESP' AND stage_rank = 3 THEN request_id 
+      END) AS resp_4 
+      ,COUNT(DISTINCT CASE    WHEN stage = 'RESP' AND stage_rank = 4 THEN request_id 
+      END) AS resp_5 
+  FROM    req_group_tb 
+  group by 
+      ad_group_id 
+      ,ad_creative_id 
+      ,ps_package_name 
+      ,national_id 
+      ,code_seat_id 
+  ;
+
+业务备注:
+  ID字段:
+    - ad_group_id
+    - ad_creative_id
+    - national_id
+    - code_seat_id
+  标签字段: []
+  计费字段: []
+  时间字段:
+    - dh
+生成时间: '2026-03-18 22:20:36'
+更新时间: '2026-03-18 22:23:37'

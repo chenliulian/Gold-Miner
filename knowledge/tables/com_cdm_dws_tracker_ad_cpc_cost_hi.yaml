@@ -1,0 +1,662 @@
+基本信息:
+  表名: com_cdm.dws_tracker_ad_cpc_cost_hi
+  业务名称: 程序化广告请求/响应/展现点击/计费结果小时DWS汇总表
+  数据粒度: 代码位+广告创意+小时
+  更新频率: 小时
+  保留周期: 36500天(永久)
+  项目: mi_ads_dmp
+  列数: 114
+  分区数: 1
+建表语句: |
+  CREATE TABLE IF NOT EXISTS dws_tracker_ad_cpc_cost_hi
+  (
+      advertiser_id             STRING COMMENT '广告主ID'
+      ,account_name             STRING COMMENT '广告主名称'
+      ,first_industry           STRING COMMENT '广告主一级行业'
+      ,second_industry          STRING COMMENT '广告主二级行业'
+      ,third_industry           STRING COMMENT '广告主三级行业'
+      ,ad_plan_id               STRING COMMENT '广告计划ID'
+      ,ad_plan_title            STRING COMMENT '广告计划名称'
+      ,purpose_type             INT COMMENT '推广目的，1-品牌营销，2-应用推广，3-卡券推广'
+      ,purpose_type_cn          STRING COMMENT '推广目的(中文)'
+      ,ad_group_id              STRING COMMENT '广告组ID'
+      ,ad_group_title           STRING COMMENT '广告组名称'
+      ,creativity_id            STRING COMMENT '广告创意ID'
+      ,creativity_title         STRING COMMENT '广告创意名称'
+      ,media_id                 STRING COMMENT '媒体主ID'
+      ,media_company_name       STRING COMMENT '媒体主公司名称'
+      ,app_id                   STRING COMMENT '应用ID'
+      ,app_name                 STRING COMMENT '应用名称'
+      ,code_seat_id             STRING COMMENT '代码位ID'
+      ,code_seat_title          STRING COMMENT '代码位名称'
+      ,code_seat_type           INT COMMENT '代码位类型，1 native/原生，2 banner/横幅，3插屏， 4 开屏'
+      ,code_seat_type_cn        STRING COMMENT '代码位类型(中文)'
+      ,is_default_ad            INT COMMENT '是否打底广告'
+      ,mcc                      STRING COMMENT '国家mcc码'
+      ,country                  STRING COMMENT '国家名称'
+      ,country_zh               STRING COMMENT '国家中文名'
+      ,continent                STRING COMMENT '洲名'
+      ,model_version            STRING COMMENT '模型版本'
+      ,adv_seat_type            STRING COMMENT '广告位类型'
+      ,os_type                  STRING COMMENT '操作系统'
+      ,server_version           STRING COMMENT '广告引擎版本号'
+      ,cost_type                STRING COMMENT '广告结算方式'
+      ,req_num                  BIGINT COMMENT '请求数'
+      ,res_num                  BIGINT COMMENT '有广告返回的请求数'
+      ,res_cnt                  BIGINT COMMENT '广告返回数'
+      ,show_num                 BIGINT COMMENT '有广告展现的请求数'
+      ,show_cnt                 BIGINT COMMENT '广告展现数(去重)'
+      ,click_num                BIGINT COMMENT '有广告点击的请求数'
+      ,click_cnt                BIGINT COMMENT '广告点击数(去重)'
+      ,cpm_cost                 DOUBLE COMMENT '广告主CPM花费(单位:美元)'
+      ,cpc_cost                 DOUBLE COMMENT '广告主CPC花费(单位:美元)'
+      ,cpm_income               DOUBLE COMMENT '媒体主CPM收益(单位:美元)'
+      ,cpc_income               DOUBLE COMMENT '媒体主CPC收益(单位:美元)'
+      ,correct_show_num         BIGINT COMMENT '有广告展现的补偿请求数'
+      ,correct_show_cnt         BIGINT COMMENT '广告展现补偿数(去重)'
+      ,correct_cpm_cost         DOUBLE COMMENT '广告主CPM补偿花费(单位:美元)'
+      ,correct_cpm_income       DOUBLE COMMENT '媒体主CPM补偿收益(单位:美元)'
+      ,pre_ctr                  DOUBLE COMMENT '预估ctr(单位:美元)'
+      ,pre_cost                 DOUBLE COMMENT '预估CPM(单位:美元)'
+      ,correct_click_num        BIGINT COMMENT '有广告展现的补偿请求数'
+      ,correct_click_cnt        BIGINT COMMENT '广告补偿展现数(去重)'
+      ,correct_cpc_cost         DOUBLE COMMENT '广告主CPC补偿花费(单位:美元)'
+      ,correct_cpc_income       DOUBLE COMMENT '媒体主CPC补偿收益(单位:美元)'
+      ,style_type               STRING COMMENT '样式类型'
+      ,ad_type                  INT COMMENT '流量类型，0 未知流量 1 api流量（媒体）2 sdk流量 3 h5流量'
+      ,sdk_version              STRING COMMENT 'sdk版本号'
+      ,pre_cost_sum             DOUBLE COMMENT '预估消耗(单位:美元)'
+      ,national_id              STRING COMMENT '国家ID'
+      ,agent_id                 INT COMMENT '代理商id'
+      ,agent_name               STRING COMMENT '代理商名称'
+      ,utc_show_timestamp       TIMESTAMP COMMENT '零时区曝光时间，冗余，以后可任意扩展时区'
+      ,advertiser_dh            STRING COMMENT '广告主要求统计数据的时区，默认为零时区，格式yyyyMMddHH'
+      ,advertiser_utc_set       INT COMMENT '冗余，以后扩展时区时使用，默认为0'
+      ,pre_click_cnt            DOUBLE COMMENT '预估广告点击数'
+      ,is_offline_ad            BIGINT COMMENT '是否离线广告：0.在线广告1.离线广告'
+      ,ad_trigger_status        BIGINT COMMENT '广告触发状态，0-正常，1-没网异常，2-没有云控异常'
+      ,brand                    STRING COMMENT '手机品牌'
+      ,business_line_nm         STRING COMMENT '业务线名称'
+      ,bill_should_cost         DOUBLE COMMENT '计费系统记录的应扣'
+      ,pool_should_cost         DOUBLE COMMENT '资金池记录的实扣'
+      ,cashdeductamount         DOUBLE COMMENT '现金消耗'
+      ,creditdeductamount       DOUBLE COMMENT '信用消耗'
+      ,rebatedeductamount       DOUBLE COMMENT '返货消耗'
+      ,pre_active_pv            DOUBLE COMMENT '预估激活量,2023.1.3增加'
+      ,start_dld_cnt            BIGINT COMMENT '开始下载'
+      ,dld_finished_cnt         BIGINT COMMENT '下载完成'
+      ,install_finish_cnt       BIGINT COMMENT '安装完成'
+      ,queue_dld_cnt            BIGINT COMMENT '加入下载队列数量'
+      ,cpd_cost                 DOUBLE COMMENT 'cpd消耗'
+      ,sdk_version_int          BIGINT COMMENT 'SDK版本号'
+      ,correct_cpd_cost         DOUBLE COMMENT '广告主cpd补偿后计费(单位:美元)'
+      ,correct_cpd_income       DOUBLE COMMENT '媒体主cpd补偿后收益(单位:美元)'
+      ,package_name             STRING COMMENT '物料包名'
+      ,app_package_name         STRING COMMENT '媒体应用的GP包名'
+      ,model                    STRING COMMENT '客户端手机型号'
+      ,req_cnt                  BIGINT COMMENT '请求广告数'
+      ,event_type               STRING COMMENT '事件类型。1-安装，2-激活，3-注册，4-付费'
+      ,pv                       BIGINT COMMENT '转化数'
+      ,conv_src                 STRING COMMENT '用于区分转化来源 1-三方、2-联运、3-表单、4-ps归因'
+      ,channel                  STRING COMMENT '转化渠道'
+      ,pre_download_cnt         DOUBLE COMMENT '预估广告下载数'
+      ,video_play_stage         STRING COMMENT '视频播放进度 error、start、firstQuartile、midpoint、thirdQuartile、complete'
+      ,video_play_pv            BIGINT COMMENT '视频播放数'
+      ,ssp_id                   STRING COMMENT 'SSP ID'
+      ,cpi_cost                 DOUBLE COMMENT 'cpi消耗'
+      ,click_active_cnt         BIGINT COMMENT '点击时间激活数'
+      ,ssp_price                DOUBLE COMMENT '外部SSP收益'
+      ,correct_ssp_price        DOUBLE COMMENT '外部SSP补偿收益'
+      ,res_price                DOUBLE COMMENT '响应广告ecpm出价（千次美元）'
+      ,click_cpi_cost           DOUBLE COMMENT '点击时间cpi消耗'
+      ,correct_bill_should_cost DOUBLE COMMENT '反作弊后 计费系统记录的应扣 - 注意！不含correct_cpm_cost'
+      ,cpi_click_pred_cost      DOUBLE COMMENT 'cpi点击预估消耗'
+      ,budget                   BIGINT COMMENT '日预算'
+      ,bill                     DOUBLE COMMENT '出价(元)'
+      ,cpi_download_pred_cost   DOUBLE COMMENT 'cpi下载预估消耗'
+      ,click_conv_pv            BIGINT COMMENT '点击时间转化数'
+      ,ascribe_channel          STRING COMMENT '归因渠道'
+      ,half_screen_type         STRING COMMENT '半屏样式,默认样式0'
+      ,scale                    STRING COMMENT '尺寸'
+      ,status_v2                STRING COMMENT '投放状态'
+      ,material_type_cn         STRING COMMENT '素材类型'
+      ,material_sub_type_cn     STRING COMMENT '素材细分类型'
+      ,material_format          STRING COMMENT '素材格式'
+      ,cate1_gp                 STRING COMMENT '投放客户所属行业'
+      ,is_direct                STRING COMMENT '0/false 表示直投 1/true表示通投'
+      ,ori_creative_id          STRING COMMENT '原始创意id'
+      ,extend_status_cn         STRING COMMENT '通投状态不派生；待派生广告；派生中 ；通投中；已删除'
+      ,generate_type_cn         STRING COMMENT '创意生成类型：普通创意;原始创意；派生创意'
+      ,transform_target_cn      STRING COMMENT '转化目标'
+      ,game_name                STRING COMMENT '游戏名称'
+      ,material_generate_type_cn STRING COMMENT '物料生成类型'
+      ,is_natural               STRING COMMENT '1 自然量洗量'
+      ,is_inapp_ad              STRING COMMENT '是否内置 0/否 1/是'
+      ,sale_type_cn             STRING COMMENT '竞价 合约'
+      ,ps_app_id                STRING COMMENT '投放应用ps_app_id'
+      ,income                   DOUBLE COMMENT '变现收入'
+      ,attri_dh                 STRING COMMENT '归因日期，仅转化数据有，便于求点击时间指标'
+      ,target_cost              DOUBLE COMMENT '客户预期花费'
+      ,data_source              STRING COMMENT '数据来源'
+      ,app_link_type            STRING COMMENT '投放应用市场'
+      ,is_preferred_traffic_ad  STRING COMMENT '是否优选广告'
+      ,media_source             STRING COMMENT '媒体来源，仅优选广告独有'
+      ,second_code_seat_id      STRING COMMENT '二次分配代码位id'
+      ,active_attr_delta_dt     BIGINT COMMENT '点击到激活间隔天数'
+      ,popularize_app_install_status  STRING COMMENT '26.3.4增加 -1:异常情况取不到是否安装 1.非下载类广告 2.已安装目标下载应用 3.未安装目标下载应用'
+  )
+  COMMENT '程序化广告请求/响应/展现点击/计费结果小时dws汇总表,代码位+广告创意粒度'
+  PARTITIONED BY 
+  (
+      dh                        STRING COMMENT '业务发生小时,GMT+8时区,格式yyyyMMddHH'
+  )
+  LIFECYCLE 36500;
+分区信息:
+  分区字段: dh
+  分区类型: STRING
+  分区说明: 业务发生小时,GMT+8时区,格式yyyyMMddHH
+核心字段详解:
+  advertiser_id:
+    字段名: advertiser_id
+    数据类型: STRING
+    业务含义: 广告主ID，标识广告投放的客户
+    示例值:
+    - '2761'
+    使用注意: 关联广告主维度表获取详细信息
+  account_name:
+    字段名: account_name
+    数据类型: STRING
+    业务含义: 广告主名称
+    示例值:
+    - 'MI_游戏_联运_Stickman Party'
+    使用注意: ''
+  first_industry:
+    字段名: first_industry
+    数据类型: STRING
+    业务含义: 广告主一级行业分类
+    示例值:
+    - 软件应用&网站
+    使用注意: ''
+  second_industry:
+    字段名: second_industry
+    数据类型: STRING
+    业务含义: 广告主二级行业分类
+    示例值:
+    - 一般游戏
+    使用注意: ''
+  third_industry:
+    字段名: third_industry
+    数据类型: STRING
+    业务含义: 广告主三级行业分类
+    示例值:
+    - 其他游戏
+    使用注意: ''
+  ad_plan_id:
+    字段名: ad_plan_id
+    数据类型: STRING
+    业务含义: 广告计划ID
+    示例值:
+    - '9199'
+    使用注意: 关联计划维度表
+  ad_plan_title:
+    字段名: ad_plan_title
+    数据类型: STRING
+    业务含义: 广告计划名称
+    示例值:
+    - 'AHAgames-PSlink-Stickman Party'
+    使用注意: ''
+  purpose_type:
+    字段名: purpose_type
+    数据类型: INT
+    业务含义: 推广目的，1-品牌营销，2-应用推广，3-卡券推广
+    示例值:
+    - '2'
+    使用注意: ''
+  purpose_type_cn:
+    字段名: purpose_type_cn
+    数据类型: STRING
+    业务含义: 推广目的中文描述
+    示例值:
+    - 应用推广
+    使用注意: ''
+  ad_group_id:
+    字段名: ad_group_id
+    数据类型: STRING
+    业务含义: 广告组ID
+    示例值:
+    - '66334'
+    使用注意: 关联广告组维度表
+  ad_group_title:
+    字段名: ad_group_title
+    数据类型: STRING
+    业务含义: 广告组名称
+    示例值:
+    - 'AHAgames-PSlink-Stickman Party-联运'
+    使用注意: ''
+  creativity_id:
+    字段名: creativity_id
+    数据类型: STRING
+    业务含义: 广告创意ID
+    示例值:
+    - '711256'
+    使用注意: 关联创意维度表
+  creativity_title:
+    字段名: creativity_title
+    数据类型: STRING
+    业务含义: 广告创意名称
+    示例值:
+    - 广告_25_10_23_15:31:59_copy
+    使用注意: ''
+  media_id:
+    字段名: media_id
+    数据类型: STRING
+    业务含义: 媒体主ID
+    示例值:
+    - '52'
+    使用注意: ''
+  media_company_name:
+    字段名: media_company_name
+    数据类型: STRING
+    业务含义: 媒体主公司名称
+    示例值:
+    - 传音控股
+    使用注意: ''
+  app_id:
+    字段名: app_id
+    数据类型: STRING
+    业务含义: 应用ID
+    示例值:
+    - 36875cdb6a7f4da783d3714632937d9c
+    使用注意: ''
+  app_name:
+    字段名: app_name
+    数据类型: STRING
+    业务含义: 应用名称
+    示例值:
+    - Palmstore
+    使用注意: ''
+  code_seat_id:
+    字段名: code_seat_id
+    数据类型: STRING
+    业务含义: 代码位ID，标识广告展示位置
+    示例值:
+    - 251103sNia5kB4
+    使用注意: ''
+  code_seat_title:
+    字段名: code_seat_title
+    数据类型: STRING
+    业务含义: 代码位名称
+    示例值:
+    - PS-icon-feeds-推荐合集
+    使用注意: ''
+  code_seat_type:
+    字段名: code_seat_type
+    数据类型: INT
+    业务含义: 代码位类型，1-native/原生，2-banner/横幅，3-插屏，4-开屏，5-激励视频
+    示例值:
+    - '6'
+    使用注意: ''
+  code_seat_type_cn:
+    字段名: code_seat_type_cn
+    数据类型: STRING
+    业务含义: 代码位类型中文
+    示例值:
+    - ICON
+    使用注意: ''
+  is_default_ad:
+    字段名: is_default_ad
+    数据类型: INT
+    业务含义: 是否打底广告，0-否，1-是
+    示例值:
+    - '0'
+    使用注意: ''
+  mcc:
+    字段名: mcc
+    数据类型: STRING
+    业务含义: 国家mcc码
+    示例值:
+    - 未知
+    使用注意: ''
+  country:
+    字段名: country
+    数据类型: STRING
+    业务含义: 国家名称
+    示例值:
+    - Slovenia
+    使用注意: ''
+  country_zh:
+    字段名: country_zh
+    数据类型: STRING
+    业务含义: 国家中文名
+    示例值:
+    - 斯洛文尼亚
+    使用注意: ''
+  continent:
+    字段名: continent
+    数据类型: STRING
+    业务含义: 洲名
+    示例值:
+    - Europe
+    使用注意: ''
+  cost_type:
+    字段名: cost_type
+    数据类型: STRING
+    业务含义: 广告结算方式，cpm/cpc/ocpc/cpd/ocpd/cpi/ocpi/cpa
+    示例值:
+    - ocpi
+    使用注意: ''
+  req_num:
+    字段名: req_num
+    数据类型: BIGINT
+    业务含义: 请求数
+    示例值:
+    - '0'
+    使用注意: ''
+  res_num:
+    字段名: res_num
+    数据类型: BIGINT
+    业务含义: 有广告返回的请求数
+    示例值:
+    - '1'
+    使用注意: ''
+  res_cnt:
+    字段名: res_cnt
+    数据类型: BIGINT
+    业务含义: 广告返回数
+    示例值:
+    - '1'
+    使用注意: ''
+  show_num:
+    字段名: show_num
+    数据类型: BIGINT
+    业务含义: 有广告展现的请求数
+    示例值:
+    - '0'
+    使用注意: ''
+  show_cnt:
+    字段名: show_cnt
+    数据类型: BIGINT
+    业务含义: 广告展现数(去重)
+    示例值:
+    - '0'
+    使用注意: ''
+  click_num:
+    字段名: click_num
+    数据类型: BIGINT
+    业务含义: 有广告点击的请求数
+    示例值:
+    - '0'
+    使用注意: ''
+  click_cnt:
+    字段名: click_cnt
+    数据类型: BIGINT
+    业务含义: 广告点击数(去重)
+    示例值:
+    - '0'
+    使用注意: ''
+  cpm_cost:
+    字段名: cpm_cost
+    数据类型: DOUBLE
+    业务含义: 广告主CPM花费(单位:美元)
+    示例值:
+    - '0.0'
+    使用注意: ''
+  cpc_cost:
+    字段名: cpc_cost
+    数据类型: DOUBLE
+    业务含义: 广告主CPC花费(单位:美元)
+    示例值:
+    - '0.0'
+    使用注意: ''
+  cpm_income:
+    字段名: cpm_income
+    数据类型: DOUBLE
+    业务含义: 媒体主CPM收益(单位:美元)
+    示例值:
+    - '0.0'
+    使用注意: 根据分成比例计算
+  cpc_income:
+    字段名: cpc_income
+    数据类型: DOUBLE
+    业务含义: 媒体主CPC收益(单位:美元)
+    示例值:
+    - '0.0'
+    使用注意: 根据分成比例计算
+  bill_should_cost:
+    字段名: bill_should_cost
+    数据类型: DOUBLE
+    业务含义: 计费系统记录的应扣金额
+    示例值:
+    - '0.0'
+    使用注意: ''
+  pool_should_cost:
+    字段名: pool_should_cost
+    数据类型: DOUBLE
+    业务含义: 资金池记录的实扣金额
+    示例值:
+    - '0.0'
+    使用注意: ''
+  brand:
+    字段名: brand
+    数据类型: STRING
+    业务含义: 手机品牌，标准化处理后的品牌名称
+    示例值:
+    - tecno
+    使用注意: 包含itel、infinix、tecno、huawei、samsung等主流品牌
+  ad_type:
+    字段名: ad_type
+    数据类型: INT
+    业务含义: 流量类型，0-未知，1-api流量，2-sdk流量，3-h5流量，4-外部SSP
+    示例值:
+    - '2'
+    使用注意: ''
+  sdk_version:
+    字段名: sdk_version
+    数据类型: STRING
+    业务含义: SDK版本号，1.x版本合并为1.*
+    示例值:
+    - 3.4.1.1_S
+    使用注意: ''
+  is_offline_ad:
+    字段名: is_offline_ad
+    数据类型: BIGINT
+    业务含义: 是否离线广告，0-在线广告，1-离线广告
+    示例值:
+    - '0'
+    使用注意: ''
+  ssp_id:
+    字段名: ssp_id
+    数据类型: STRING
+    业务含义: SSP ID，外部流量来源标识
+    示例值:
+    - '52'
+    使用注意: ''
+  income:
+    字段名: income
+    数据类型: DOUBLE
+    业务含义: 变现收入
+    示例值:
+    - '0.0'
+    使用注意: ''
+  data_source:
+    字段名: data_source
+    数据类型: STRING
+    业务含义: 数据来源标识
+    示例值:
+    - 德国
+    使用注意: ''
+  is_preferred_traffic_ad:
+    字段名: is_preferred_traffic_ad
+    数据类型: STRING
+    业务含义: 是否优选广告，0-否，1-是
+    示例值:
+    - '0'
+    使用注意: ''
+  media_source:
+    字段名: media_source
+    数据类型: STRING
+    业务含义: 媒体来源，仅优选广告独有
+    示例值:
+    - None
+    使用注意: ''
+  active_attr_delta_dt:
+    字段名: active_attr_delta_dt
+    数据类型: BIGINT
+    业务含义: 点击到激活间隔天数
+    示例值:
+    - '0'
+    使用注意: ''
+  popularize_app_install_status:
+    字段名: popularize_app_install_status
+    数据类型: STRING
+    业务含义: 推广应用安装状态，-1-异常，1-非下载类，2-已安装，3-未安装
+    示例值:
+    - '3'
+    使用注意: 2026.3.4新增
+常用查询场景:
+  示例查询:
+    场景名称: 按小时统计广告消耗
+    SQL模板: SELECT dh, SUM(bill_should_cost) as cost FROM com_cdm.dws_tracker_ad_cpc_cost_hi WHERE dh >= '{{start_dh}}' AND dh <= '{{end_dh}}' GROUP BY dh
+    参数:
+      start_dh: 开始小时
+      end_dh: 结束小时
+数据质量规则:
+  异常值识别: {}
+
+数据生产逻辑:
+  概述: |
+    本表是程序化广告的核心DWS汇总表，汇总了请求、响应、展现、点击、计费等多阶段数据。
+    数据粒度为代码位+广告创意+小时，支持多维度的广告效果分析和计费结算。
+    数据来源于多个DWD层表，经过关联维度表和计算收益后形成。
+  
+  输入数据源:
+    - com_cdm.dws_dsp_adserver_request_hi: DSP请求小时表，提供请求数据
+    - com_cdm.dws_dsp_adserver_response_hi: DSP响应小时表，提供响应数据
+    - com_cdm.dws_dsp_adserver_show_hi: DSP展现小时表，提供展现数据
+    - com_cdm.dws_dsp_adserver_click_hi: DSP点击小时表，提供点击数据
+    - com_cdm.dws_dsp_adserver_billing_hi: DSP计费小时表，提供计费数据
+    - com_cdm.dws_dsp_adserver_cpd_hi: CPD计费小时表
+    - com_cdm.dws_dsp_adserver_cpi_hi: CPI计费小时表
+    - com_cdm.dim_creativity_dd: 创意维度表
+    - com_cdm.dim_ad_group_dd: 广告组维度表
+    - com_cdm.dim_ad_plan_dd: 计划维度表
+    - com_cdm.dim_advertiser_account_dd: 广告主账户维度表
+    - com_cdm.dim_code_seat_dd: 代码位维度表
+    - com_cdm.dim_media_app_dd: 媒体应用维度表
+    - com_cdm.dim_media_account_dd: 媒体账户维度表
+    - com_cdm.dim_media_commission_ratio_dd: 媒体分成比例维度表
+    - com_cdm.dim_pub_mcc_and_region_info: MCC区域信息维度表
+    - com_cdm.dim_country_info: 国家信息维度表
+    - com_cdm.dim_pkg_app_all_di: 应用包名维度表
+  
+  核心处理流程:
+    阶段1_数据准备(多源数据UNION):
+      - stat_request: 从dws_dsp_adserver_request_hi获取请求数据
+      - stat_response: 从dws_dsp_adserver_response_hi获取响应数据
+      - stat_show: 从dws_dsp_adserver_show_hi获取展现数据
+      - stat_click: 从dws_dsp_adserver_click_hi获取点击数据
+      - stat_billing: 从dws_dsp_adserver_billing_hi获取计费数据
+      - stat_cpd: 从dws_dsp_adserver_cpd_hi获取CPD数据
+      - stat_cpi: 从dws_dsp_adserver_cpi_hi获取CPI数据
+      - 以上数据通过UNION ALL合并
+    
+    阶段2_数据聚合(reduce_info):
+      - 按所有维度字段GROUP BY汇总
+      - 计算请求数、响应数、展现数、点击数、消耗等核心指标
+      - 处理补偿数据(correct_前缀字段)
+    
+    阶段3_维度关联:
+      - 关联创意维度表(dim_creativity_dd)获取创意信息
+      - 关联广告组维度表(dim_ad_group_dd)获取广告组信息
+      - 关联计划维度表(dim_ad_plan_dd)获取计划信息
+      - 关联广告主维度表(dim_advertiser_account_dd)获取广告主信息
+      - 关联代码位维度表(dim_code_seat_dd)获取代码位信息
+      - 关联媒体应用维度表(dim_media_app_dd)获取应用信息
+      - 关联媒体账户维度表(dim_media_account_dd)获取媒体信息
+    
+    阶段4_收益计算:
+      - 关联分成比例维度表(dim_media_commission_ratio_dd)
+      - 按代码位、应用、媒体三个层级计算分成比例
+      - 计算媒体主收益(cpm_income/cpc_income/cpd_income)
+      - 公式: 广告主花费 * 分成比例 / 100
+      - 外部SSP流量(ad_type=4)特殊处理
+    
+    阶段5_补充维度:
+      - 关联MCC区域信息表获取国家信息
+      - 关联国家信息表获取中文国家名和洲名
+      - 关联应用包名表获取应用分类
+      - 处理品牌名称标准化
+  
+  输出字段生成逻辑:
+    - advertiser_id~third_industry: 来自广告主维度表
+    - ad_plan_id~purpose_type_cn: 来自计划维度表
+    - ad_group_id~ad_group_title: 来自广告组维度表
+    - creativity_id~creativity_title: 来自创意维度表
+    - media_id~media_company_name: 来自媒体维度表
+    - app_id~app_name: 来自媒体应用维度表
+    - code_seat_id~code_seat_type_cn: 来自代码位维度表
+    - country~continent: 来自MCC和国家维度表
+    - cpm_income/cpc_income/cpd_income: 广告主花费 * 分成比例
+    - brand: 标准化处理后的品牌名称
+    - 其他指标字段: 来自各DWS源表的SUM聚合
+  
+  时间参数说明:
+    - ${startdt_gmt8}: 开始日期(GMT+8)
+    - ${enddt_gmt8}: 结束日期(GMT+8)
+    - dh: 小时分区，格式yyyyMMddHH，GMT+8时区
+
+ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/com_cdm_dws_tracker_ad_cpc_cost_hi.sql
+
+业务备注:
+  ID字段:
+    - advertiser_id
+    - ad_plan_id
+    - ad_group_id
+    - creativity_id
+    - media_id
+    - app_id
+    - code_seat_id
+    - agent_id
+    - ori_creative_id
+  标签字段:
+    - purpose_type
+    - purpose_type_cn
+    - code_seat_type
+    - code_seat_type_cn
+    - is_default_ad
+    - is_offline_ad
+    - is_direct
+    - is_natural
+    - is_inapp_ad
+    - is_preferred_traffic_ad
+    - sale_type_cn
+  计费字段:
+    - cost_type
+    - cpm_cost
+    - cpc_cost
+    - cpm_income
+    - cpc_income
+    - correct_cpm_cost
+    - correct_cpc_cost
+    - correct_cpm_income
+    - correct_cpc_income
+    - bill_should_cost
+    - pool_should_cost
+    - cashdeductamount
+    - creditdeductamount
+    - rebatedeductamount
+    - cpd_cost
+    - correct_cpd_cost
+    - correct_cpd_income
+    - cpi_cost
+    - click_cpi_cost
+    - correct_bill_should_cost
+    - income
+  时间字段:
+    - dh
+    - utc_show_timestamp
+    - advertiser_dh
+    - attri_dh
+    - active_attr_delta_dt
+生成时间: '2026-03-18 17:42:40'
+更新时间: '2026-03-18 22:20:36'

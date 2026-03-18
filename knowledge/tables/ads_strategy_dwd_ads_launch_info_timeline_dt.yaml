@@ -1,51 +1,73 @@
 基本信息:
   表名: ads_strategy.dwd_ads_launch_info_timeline_dt
-  业务名称: ''
-  数据粒度: ''
-  更新频率: 未知
-  保留周期: 未知
+  业务名称: 在投广告信息变更表时间轴化
+  数据粒度: ID(广告组/计划/广告主)+包名+操作类型
+  更新频率: 日
+  保留周期: 100天
   项目: mi_ads_dmp
   列数: 5
   分区数: 1
+建表语句: |
+  create table if not exists dwd_ads_launch_info_timeline_dt ( 
+        id_cate            String    Comment "id，可能是广告主ID 计划ID或者广告组ID" 
+        ,pkg               String    COMMENT "包名" 
+        ,opera_type        string    comment '操作类型' 
+        ,opera_lift        double    comment '变化幅度' 
+        ,id_type           string     comment 'advertiser_id plan_id ad_group_id' 
+  ) COMMENT "在投广告信息变更表 时间轴化" 
+  PARTITIONED by ( 
+      dt STRING COMMENT "yyyymmdd" 
+  ) LIFECYCLE 100;
 分区信息:
   分区字段: dt
   分区类型: STRING
-  分区说明: 日期/小时分区
+  分区说明: 日期分区，格式yyyymmdd
 核心字段详解:
   id_cate:
     字段名: id_cate
     数据类型: STRING
-    业务含义: 广告组ID
-    示例值: []
-    使用注意: ''
+    业务含义: ID标识，可能是广告主ID、计划ID或广告组ID，根据id_type字段区分
+    示例值:
+    - '69121'
+    - '10086'
+    使用注意: 需结合id_type字段判断ID类型
   pkg:
     字段名: pkg
     数据类型: STRING
-    业务含义: 包名
+    业务含义: 应用包名，标识广告投放的目标应用
     示例值:
+    - com.zk.magicalpets.mi
     - None
-    使用注意: ''
+    使用注意: 广告主维度时可能为空
   opera_type:
     字段名: opera_type
     数据类型: STRING
-    业务含义: 操作类型
+    业务含义: 操作类型或诊断类型，描述发生的变更或异常
     示例值:
     - 激活率过低(0.0)
-    使用注意: ''
+    - 上调出价(0.2->0.25)
+    - 下调预算(1000->800)
+    - 定向国家数变多(5->10)
+    - 掉量(响应量1000->500)
+    使用注意: 包含人工操作和系统自动诊断两类信息
   opera_lift:
     字段名: opera_lift
     数据类型: DOUBLE
-    业务含义: 变化幅度
+    业务含义: 变化幅度或指标值，用于量化操作或诊断的影响程度
     示例值:
     - '0.0'
-    使用注意: ''
+    - '0.25'
+    - '-0.2'
+    使用注意: 正值表示增加/上涨，负值表示减少/下降
   id_type:
     字段名: id_type
     数据类型: STRING
-    业务含义: advertiser_id plan_id ad_group_id
+    业务含义: ID类型标识，说明id_cate对应的是哪种ID
     示例值:
     - ad_group_id
-    使用注意: ''
+    - plan_id
+    - advertiser_id
+    使用注意: 用于区分数据维度，关联不同维度表
 常用查询场景:
   示例查询:
     场景名称: 示例查询
@@ -55,10 +77,93 @@
       dh: 分区值
 数据质量规则:
   异常值识别: {}
+
+数据生产逻辑:
+  概述: |
+    本表将广告在投期间的各类变更操作和系统诊断结果时间轴化，
+    记录广告组、计划、广告主三个维度的操作历史和异常诊断。
+    数据来源包括操作日志、投放数据、诊断指标等，用于广告问题追溯和投放分析。
+  
+  输入数据源:
+    - ads_strategy.dwd_ads_launch_info_dt: 在投广告信息变更主表，提供基础变更数据
+    - com_ods.ods_common_operation_log_field_operation_log_dd: 操作日志表，记录人工操作
+    - com_ods.ods_common_operation_log_entity_operation_log_dd: 实体操作日志表
+    - com_ads.ads_tracker_ad_cpc_cost_hi: 点击激活统计表，提供效果数据
+    - com_ads.ads_group_budget_cost_di: 广告组预算消耗日表
+    - com_ads.ads_advertiser_min_budget_cost_di: 广告主最小预算消耗表
+    - com_ads.ads_dsp_req_filter_hi: DSP请求过滤统计表
+    - ads_strategy.install_ceil_estimate_di: 安装上限预估表
+    - com_cdm.dim_creativity_dd: 创意维度表
+    - com_cdm.dim_ad_group_dd: 广告组维度表
+    - com_cdm.dwd_log_dsp_adserver_request_hi: DSP请求日志表
+    - ads_strategy_dev.dwd_ew_assist_group_indices_hf: 学习期辅助指标表
+    - com_ods.ods_eagllwin_fundpool_fund_pool_di: 资金池余额表
+  
+  核心处理流程:
+    阶段1_操作日志预处理:
+      - tmp_group_direcion_change: 解析定向变更（国家、人群包、已安装）
+      - tmp_launch_change: 解析投放日期变更
+      - tmp_budget_change_tbl: 解析预算变更
+      - 从ods_common_operation_log_field_operation_log_dd解析JSON字段
+    
+    阶段2_诊断指标计算:
+      - tmp_direction_pass_rate_tbl: 计算定向通过率（广告组维度）
+      - tmp_direction_pass_rate_tbl_adv: 计算定向通过率（广告主维度）
+      - tmp_direction_pass_rate_tbl_plan: 计算定向通过率（计划维度）
+      - tmp_resp_down_tbl: 计算响应量变化（掉量检测）
+      - tmp_cost_down_cont_tbl: 计算消耗变化（衰减检测）
+      - tmp_compe_suc_tbl: 计算引擎竞胜率
+      - tmp_ctvr_tbl: 计算CTR/CVR指标
+    
+    阶段3_广告组维度事件生成:
+      - 出价调整: 从操作日志解析出价变更
+      - 预算调整: 对比新旧预算值
+      - 定向变更: 人群包个数/用户量、媒体类别、国家、代码位类型
+      - 创意变更: 在投创意数变化
+      - 余额变更: 充值、余额不足预警
+      - 已安装变更: 定向/排除已安装开关
+      - 激活率突变: 点击时间激活率骤降检测
+      - 扶持状态: 扶持开始/结束
+      - 召回异常: 在线/离线召回突增骤降、SSP请求突变
+      - 前置诊断: 定向过窄、命中打压、素材重复、素材缺失、定向通过率、预算限制
+      - 整体诊断: 掉量、衰减、学习期失败、起量困难、竞胜率、点击率、激活率
+    
+    阶段4_广告主维度事件生成:
+      - 召回过少检测: 召回UV<1000
+      - 掉量/衰减/学习期失败/起量困难: 聚合广告组维度诊断
+      - 竞胜率/点击率/激活率: 聚合计算
+      - 预算限制: 最小预算限制、预算消耗率95%+
+      - 操作汇总: 创建计划/广告组/创意、暂停/开启、修改出价、审核通过
+      - 充值/余额不足: 资金池余额变化
+    
+    阶段5_计划维度事件生成:
+      - 类似广告组维度的诊断指标计算
+      - 计划层级操作记录
+  
+  输出字段生成逻辑:
+    - id_cate: 根据维度取ad_group_id、ad_plan_id或advertiser_id
+    - pkg: 包名，广告主维度通常为空
+    - opera_type: 根据变更类型生成描述文本，如"上调出价(0.2->0.25)"
+    - opera_lift: 计算变化幅度，如(new-old)/(old+0.000001)
+    - id_type: 标识ID类型，值为'ad_group_id'、'plan_id'或'advertiser_id'
+  
+  时间参数说明:
+    - ${cur_dt}: 当前日期（数据日期）
+    - ${pre_1_dt}: 昨日
+    - ${pre_2_dt}: 前天
+    - ${pre_3_dt}: 大前天
+    - ${pre_1d}: 明日（用于操作日志时间范围）
+
+ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/ads_strategy_dwd_ads_launch_info_timeline_dt.sql
+
 业务备注:
-  ID字段: []
-  标签字段: []
-  计费字段: []
-  时间字段: []
+  ID字段:
+    - id_cate
+  标签字段:
+    - id_type
+  计费字段:
+    - opera_lift
+  时间字段:
+    - dt
 生成时间: '2026-03-18 17:58:27'
-更新时间: '2026-03-18 20:09:43'
+更新时间: '2026-03-18 22:20:36'

@@ -1,12 +1,35 @@
 基本信息:
   表名: ads_strategy.dwd_ads_competition_rank_simple_hi
-  业务名称: ''
-  数据粒度: ''
-  更新频率: 未知
-  保留周期: 未知
-  项目: mi_ads_dmp
+  业务名称: 广告竞价排名简表
+  数据粒度: 广告组+包名+国家+代码位+小时
+  更新频率: 小时
+  保留周期: 100天
+  项目: ads_strategy
   列数: 14
   分区数: 1
+建表语句: |
+  create table if not exists dwd_ads_competition_rank_simple_hi 
+  ( 
+      ad_group_id  STRING comment '广告组ID', 
+      package_name STRING comment '投放包名', 
+      national_id  STRING comment '国家ID', 
+      code_seat_id STRING comment '代码位ID', 
+      recall_nums  STRING comment '召回量', 
+      rank_nums    STRING comment '进精排量', 
+      resp_nums    STRING comment '响应量', 
+      pos1_nums    STRING comment '排名第一位的响应量', 
+      pos2_nums    STRING comment '排名第二位的响应量', 
+      pos3_nums    STRING comment '排名第三位的响应量', 
+      pos4_nums    STRING comment '排名第四位的响应量', 
+      pos5_nums    STRING comment '排名第五位的响应量', 
+      code_seat_title string comment '代码位名称', 
+      country_name  string comment '国家中文名' 
+  ) 
+  COMMENT "广告竞价排名简表" 
+  PARTITIONED by ( 
+      dh              STRING COMMENT "yyyymmddhh，法兰克福时间" 
+  ) 
+  LIFECYCLE 100;
 分区信息:
   分区字段: dh
   分区类型: STRING
@@ -15,87 +38,87 @@
   ad_group_id:
     字段名: ad_group_id
     数据类型: STRING
-    业务含义: ''
+    业务含义: 广告组ID，标识一个广告活动组
     示例值: []
-    使用注意: ''
+    使用注意: 关联广告组维度表获取投放策略信息
   package_name:
     字段名: package_name
     数据类型: STRING
-    业务含义: ''
-    示例值: []
-    使用注意: ''
+    业务含义: 投放包名，标识广告投放的目标应用包名
+    示例值: ['com.transsion.weather', 'com.transsion.calendar']
+    使用注意: 用于区分不同应用的数据
   national_id:
     字段名: national_id
     数据类型: STRING
-    业务含义: ''
-    示例值: []
-    使用注意: ''
+    业务含义: 国家ID，标识广告投放的国家/地区代码
+    示例值: ['CN', 'US', 'IN', 'NG']
+    使用注意: 关联国家维度表获取国家名称和区域信息
   code_seat_id:
     字段名: code_seat_id
     数据类型: STRING
-    业务含义: ''
+    业务含义: 代码位ID，标识广告展示的具体位置ID
     示例值: []
-    使用注意: ''
+    使用注意: 关联代码位维度表获取广告位名称和类型
   recall_nums:
     字段名: recall_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 召回量，广告创意被召回参与竞价的不同请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 从dwd_ads_competition_rank_hi汇总得到，反映竞价参与度
   rank_nums:
     字段名: rank_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 进精排量，进入精准排名阶段的不同请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 用于计算从召回到排名的转化效率
   resp_nums:
     字段名: resp_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 响应量，成功响应竞价的不同请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 反映竞价成功后的实际响应次数
   pos1_nums:
     字段名: pos1_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 排名第一位的响应量，竞价排名第一位(stage_rank=0)的请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 排名第一表示最优竞价位置
   pos2_nums:
     字段名: pos2_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 排名第二位的响应量，竞价排名第二位(stage_rank=1)的请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 反映排名第二位的竞价成功次数
   pos3_nums:
     字段名: pos3_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 排名第三位的响应量，竞价排名第三位(stage_rank=2)的请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 反映排名第三位的竞价成功次数
   pos4_nums:
     字段名: pos4_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 排名第四位的响应量，竞价排名第四位(stage_rank=3)的请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 反映排名第四位的竞价成功次数
   pos5_nums:
     字段名: pos5_nums
     数据类型: STRING
-    业务含义: ''
+    业务含义: 排名第五位的响应量，竞价排名第五位(stage_rank=4)的请求数汇总
     示例值: []
-    使用注意: ''
+    使用注意: 反映排名第五位的竞价成功次数
   code_seat_title:
     字段名: code_seat_title
     数据类型: STRING
-    业务含义: 代码位名称
-    示例值: []
-    使用注意: ''
+    业务含义: 代码位名称，广告展示位置的中文名称
+    示例值: ['开屏广告位', '信息流广告位']
+    使用注意: 从dim_code_seat_dd维度表关联获取，便于业务理解
   country_name:
     字段名: country_name
     数据类型: STRING
-    业务含义: 国家中文名
-    示例值: []
-    使用注意: ''
+    业务含义: 国家中文名，国家/地区的中文名称
+    示例值: ['中国', '美国', '印度', '尼日利亚']
+    使用注意: 从ods_advertiser_member_option_item_dd关联获取，便于报表展示
 常用查询场景:
   示例查询:
     场景名称: 示例查询
@@ -105,6 +128,68 @@
       dh: 分区值
 数据质量规则:
   异常值识别: {}
+ETL代码: |
+  insert OVERWRITE table dwd_ads_competition_rank_simple_hi PARTITION (dh="${dh}") 
+  SELECT 
+      ad_group_id 
+      ,package_name 
+      ,national_id 
+      ,t1.code_seat_id 
+      ,sum(recall_nums) recall_nums 
+      ,sum(rank_nums) rank_nums 
+      ,sum(resp_nums) resp_nums 
+      ,sum(pos1_nums) pos1_nums 
+      ,sum(pos2_nums) pos2_nums 
+      ,sum(pos3_nums) pos3_nums 
+      ,sum(pos4_nums) pos4_nums 
+      ,sum(pos5_nums) pos5_nums 
+      ,code_seat_title 
+      ,country_name 
+  from ( 
+      select ad_group_id 
+          ,package_name 
+          ,national_id 
+          ,code_seat_id 
+          ,recall_nums 
+          ,rank_nums 
+          ,resp_nums 
+          ,pos1_nums 
+          ,pos2_nums 
+          ,pos3_nums 
+          ,pos4_nums 
+          ,pos5_nums 
+          from ads_strategy.dwd_ads_competition_rank_hi where dh="${dh}" 
+  ) t1 
+     JOIN    ( 
+              SELECT  sid 
+                      ,title code_seat_title 
+              FROM    com_cdm.dim_code_seat_dd 
+              WHERE   dt = MAX_PT('com_cdm.dim_code_seat_dd') 
+          ) t2 
+  ON      t1.code_seat_id = t2.sid 
+  join ( 
+      select code_seat_id, SUM(bill_should_cost) AS adcost 
+      FROM    com_ads.ads_tracker_ad_cpc_cost_hi 
+      where dh >= '${pre_3_dt}' 
+      and substr(advertiser_dh, 1, 8) = '${pre_1_dt}' 
+      group by code_seat_id 
+      order by SUM(bill_should_cost) desc 
+      limit 50 
+  ) t3 on t1.code_seat_id = t3.code_seat_id 
+  join ( 
+      select item_code, item_name country_name 
+      from com_ods.ods_advertiser_member_option_item_dd 
+      where dt = '${pre_1_dt}' 
+  ) t4 on t1.national_id = t4.item_code 
+  group by 
+      ad_group_id 
+      ,package_name 
+      ,national_id 
+      ,t1.code_seat_id 
+      ,code_seat_title 
+      ,country_name 
+  ;
+
 业务备注:
   ID字段:
   - ad_group_id
