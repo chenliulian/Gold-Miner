@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from tabulate import tabulate
 
+from .auto_improvement import get_auto_improvement_manager
 from .business_knowledge import get_knowledge_manager
 from .config import Config
 from .llm import OpenAICompatibleClient
@@ -238,6 +239,8 @@ class SqlAgent:
             self.state.last_error = err
             self.state.notes.append(f"SQL error: {err}")
             self.memory.add_step("tool", f"SQL error: {err}\nSQL: {sql}")
+            # 自动检测并记录错误
+            self._auto_log_error(err, "sql_execution", sql)
             return
         preview = _df_preview(df)
         self.state.results.append(
@@ -264,7 +267,7 @@ class SqlAgent:
             result = self.skills.call(skill, **skill_args)
             self.state.notes.append(f"Skill {skill} result: {result}")
             self.memory.add_step("tool", f"Skill {skill} result: {result}", visible=not is_invisible)
-            
+
             if skill_def and skill_def.hooks:
                 self._run_hooks(skill, result, skill_def.hooks)
         except Exception as exc:
@@ -272,6 +275,8 @@ class SqlAgent:
             self.state.last_error = f"Skill '{skill}' error: {err}"
             self.state.notes.append(f"Skill {skill} error: {err}")
             self.memory.add_step("tool", f"Skill {skill} error: {err}\nSkill args: {skill_args}", visible=True)
+            # 自动检测并记录错误
+            self._auto_log_error(err, f"skill_execution:{skill}", skill_args=str(skill_args), skill_name=skill)
 
     def _handle_search_skills(self, keywords: str) -> None:
         import os
@@ -338,6 +343,36 @@ class SqlAgent:
                     pass
             except Exception as e:
                 print(f"[Hooks] Error running hook '{hook}': {e}")
+
+    def _auto_log_error(
+        self,
+        error_message: str,
+        context: str,
+        sql: Optional[str] = None,
+        skill_args: Optional[str] = None,
+        skill_name: Optional[str] = None,
+    ) -> None:
+        """自动检测并记录错误到 self_improvement"""
+        try:
+            manager = get_auto_improvement_manager()
+            improvement_entry = manager.detect_error(
+                error_message=error_message,
+                context=context,
+                sql=sql,
+                skill_name=skill_name,
+            )
+
+            if improvement_entry:
+                print(f"\n[AutoImprovement] 检测到错误，自动记录到学习日志")
+                self._handle_skill("self_improvement", improvement_entry)
+
+                # 检查是否需要触发学习回顾
+                if manager.should_trigger_learning_review():
+                    stats = manager.get_error_stats()
+                    print(f"\n[AutoImprovement] 错误统计: {stats['error_counts']}")
+        except Exception as e:
+            # 自动改进机制不应影响主流程
+            print(f"\n[AutoImprovement] 记录错误时出错: {e}")
 
     def _maybe_update_memory_summary(self) -> None:
         context = self.memory.get_context()
