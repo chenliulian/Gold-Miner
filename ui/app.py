@@ -51,21 +51,67 @@ def chat():
     agent = get_agent()
     
     def generate():
-        try:
-            agent.memory.add_step("user", user_message)
-            yield f"data: {json.dumps({'type': 'message', 'role': 'user', 'content': user_message})}\n\n"
-            
-            def status_callback(status):
-                if isinstance(status, dict):
-                    yield f"data: {json.dumps(status)}\n\n"
-                elif status == "starting":
-                    yield f"data: {json.dumps({'type': 'status', 'content': '开始处理...'})}\n\n"
-                elif status == "done":
-                    yield f"data: {json.dumps({'type': 'status', 'content': '完成'})}\n\n"
-            
-            report_path = agent.run(user_message, status_cb=status_callback)
-            
+        import queue
+        import threading
+        
+        log_queue = queue.Queue()
+        result_holder = {"report_path": None, "error": None, "done": False}
+        
+        def status_callback(status):
+            """状态回调函数，将日志放入队列"""
+            if isinstance(status, dict):
+                log_queue.put({"type": "log", "content": status.get("content", str(status))})
+            elif status == "starting":
+                log_queue.put({"type": "log", "content": "🚀 开始处理任务..."})
+            elif status == "finalizing":
+                log_queue.put({"type": "log", "content": "📝 生成报告..."})
+            elif status == "done":
+                log_queue.put({"type": "log", "content": "✅ 任务完成"})
+            elif status == "cancelled":
+                log_queue.put({"type": "log", "content": "🛑 任务已取消"})
+        
+        def run_agent():
+            """在后台线程中运行 agent"""
+            try:
+                agent.memory.add_step("user", user_message)
+                report_path = agent.run(user_message, status_cb=status_callback, clear_memory=False)
+                result_holder["report_path"] = report_path
+                result_holder["done"] = True
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                result_holder["error"] = str(e)
+                result_holder["done"] = True
+        
+        # 启动 agent 线程
+        agent_thread = threading.Thread(target=run_agent)
+        agent_thread.start()
+        
+        # 发送用户消息确认
+        yield f"data: {json.dumps({'type': 'message', 'role': 'user', 'content': user_message})}\n\n"
+        
+        # 循环读取日志队列
+        while not result_holder["done"] or not log_queue.empty():
+            try:
+                # 等待日志消息，最多等待 0.1 秒
+                log_data = log_queue.get(timeout=0.1)
+                yield f"data: {json.dumps(log_data)}\n\n"
+            except queue.Empty:
+                # 检查 agent 是否完成
+                if result_holder["done"] and log_queue.empty():
+                    break
+                continue
+        
+        # 等待 agent 线程完成
+        agent_thread.join()
+        
+        # 处理结果
+        if result_holder["error"]:
+            yield f"data: {json.dumps({'type': 'error', 'content': result_holder['error']})}\n\n"
+        else:
+            report_path = result_holder["report_path"]
             response_text = ""
+            
             if report_path and os.path.exists(report_path):
                 with open(report_path, "r", encoding="utf-8") as f:
                     response_text = f.read()
@@ -76,12 +122,8 @@ def chat():
             agent.memory._save()
             
             yield f"data: {json.dumps({'type': 'message', 'role': 'assistant', 'content': response_text})}\n\n"
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
-            
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+        
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
     if stream:
         return Response(generate(), mimetype='text/event-stream')

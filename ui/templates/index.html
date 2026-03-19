@@ -357,6 +357,42 @@
             background: var(--accent-light);
         }
 
+        /* Log Message Styles */
+        .log-message .message-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .log-header {
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .log-content {
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-line {
+            padding: 4px 0;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .log-line:last-child {
+            border-bottom: none;
+        }
+
+        .log-line:hover {
+            background: var(--bg-hover);
+        }
+
         .message-text {
             font-size: 15px;
             line-height: 1.6;
@@ -929,7 +965,7 @@
             if (page === 'learnings') loadLearnings();
         }
 
-        // 发送消息
+        // 发送消息 - 使用流式输出
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const message = input.value.trim();
@@ -943,25 +979,115 @@
             isProcessing = true;
             updateSendButton();
             
+            // 创建日志消息容器
+            const logContainer = addLogMessage();
+            
             try {
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message, stream: false })
+                    body: JSON.stringify({ message, stream: true })
                 });
                 
-                const data = await response.json();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+                let hasReceivedContent = false;
                 
-                if (data.success) {
-                    addMessage(data.response, 'assistant');
-                } else {
-                    addMessage('抱歉，处理请求时出错：' + (data.error || '未知错误'), 'assistant');
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                
+                                if (data.type === 'status' || data.type === 'log') {
+                                    // 更新日志
+                                    appendLog(logContainer, data.content);
+                                } else if (data.type === 'message' && data.role === 'assistant') {
+                                    // 最终响应
+                                    fullResponse = data.content;
+                                    hasReceivedContent = true;
+                                } else if (data.type === 'error') {
+                                    appendLog(logContainer, '错误: ' + data.content);
+                                } else if (data.type === 'done') {
+                                    // 完成
+                                }
+                            } catch (e) {
+                                // 忽略解析错误
+                            }
+                        }
+                    }
                 }
+                
+                // 移除日志容器，显示最终结果
+                logContainer.remove();
+                
+                if (hasReceivedContent && fullResponse) {
+                    addMessage(fullResponse, 'assistant');
+                } else {
+                    addMessage('任务执行完成', 'assistant');
+                }
+                
             } catch (error) {
-                addMessage('网络错误，请稍后重试', 'assistant');
+                logContainer.remove();
+                addMessage('网络错误，请稍后重试: ' + error.message, 'assistant');
             } finally {
                 isProcessing = false;
                 updateSendButton();
+            }
+        }
+        
+        // 添加日志消息容器
+        function addLogMessage() {
+            const container = document.getElementById('chat-messages');
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message log-message';
+            messageDiv.id = 'log-' + Date.now();
+            
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar assistant">◈</div>
+                <div class="message-content assistant">
+                    <div class="message-text">
+                        <div class="log-header">🔄 正在执行任务...</div>
+                        <div class="log-content"></div>
+                    </div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            return messageDiv;
+        }
+        
+        // 追加日志内容
+        function appendLog(logContainer, text) {
+            const logContent = logContainer.querySelector('.log-content');
+            if (logContent) {
+                const line = document.createElement('div');
+                line.className = 'log-line';
+                line.textContent = text;
+                logContent.appendChild(line);
+                
+                // 限制日志行数
+                const lines = logContent.querySelectorAll('.log-line');
+                if (lines.length > 50) {
+                    lines[0].remove();
+                }
+                
+                // 滚动到底部
+                const container = document.getElementById('chat-messages');
+                container.scrollTop = container.scrollHeight;
             }
         }
 
