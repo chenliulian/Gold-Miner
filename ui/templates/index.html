@@ -750,6 +750,83 @@
             background: transparent;
             padding: 0;
         }
+
+        /* Table Styles - Doubao-like */
+        .table-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-width: 100%;
+            max-height: 400px;
+            margin: 16px 0;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 500px;
+        }
+
+        .table-container thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-container th {
+            background: #f8f9fa;
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .table-container td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+            vertical-align: top;
+        }
+
+        .table-container tr:hover {
+            background: #f8f9fa;
+        }
+
+        .table-container tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Table horizontal scroll indicator */
+        .table-container::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Table caption/title */
+        .table-caption {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -1110,10 +1187,13 @@
             
             const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
             
+            // 处理文本中的表格
+            const processedText = sender === 'assistant' ? processMessageText(text) : escapeHtml(text).replace(/\n/g, '<br>');
+            
             messageDiv.innerHTML = `
                 <div class="message-avatar ${sender}">${sender === 'user' ? '👤' : '◈'}</div>
                 <div class="message-content ${sender}">
-                    <div class="message-text">${escapeHtml(text)}</div>
+                    <div class="message-text">${processedText}</div>
                     <div class="message-time">${time}</div>
                 </div>
             `;
@@ -1127,6 +1207,139 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // 解析 Markdown 表格
+        function parseMarkdownTable(text) {
+            const lines = text.split('\n');
+            const tables = [];
+            let currentTable = null;
+            let tableStart = -1;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // 检测表格行 (以 | 开头和结尾)
+                if (line.startsWith('|') && line.endsWith('|')) {
+                    if (currentTable === null) {
+                        currentTable = [];
+                        tableStart = i;
+                    }
+                    currentTable.push(line);
+                } else if (currentTable !== null) {
+                    // 表格结束
+                    if (currentTable.length >= 2) {
+                        tables.push({
+                            start: tableStart,
+                            end: i,
+                            rows: currentTable
+                        });
+                    }
+                    currentTable = null;
+                }
+            }
+
+            // 处理文件末尾的表格
+            if (currentTable !== null && currentTable.length >= 2) {
+                tables.push({
+                    start: tableStart,
+                    end: lines.length,
+                    rows: currentTable
+                });
+            }
+
+            return tables;
+        }
+
+        // 渲染表格为 HTML
+        function renderTable(rows) {
+            if (rows.length < 2) return null;
+
+            // 解析表头
+            const headerRow = rows[0];
+            const headers = headerRow.split('|').slice(1, -1).map(h => h.trim()).filter(h => h);
+
+            // 跳过分隔行 (第二行通常是 |---|---|)
+            let dataStartIndex = 1;
+            if (rows[1].includes('---') || rows[1].includes(':--')) {
+                dataStartIndex = 2;
+            }
+
+            // 解析数据行
+            const dataRows = [];
+            for (let i = dataStartIndex; i < rows.length; i++) {
+                const cells = rows[i].split('|').slice(1, -1).map(c => c.trim());
+                if (cells.some(c => c)) {
+                    dataRows.push(cells);
+                }
+            }
+
+            if (headers.length === 0 || dataRows.length === 0) return null;
+
+            // 生成 HTML
+            let html = '<div class="table-container"><table>';
+            
+            // 表头
+            html += '<thead><tr>';
+            headers.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead>';
+
+            // 表体
+            html += '<tbody>';
+            dataRows.forEach(row => {
+                html += '<tr>';
+                row.forEach((cell, index) => {
+                    html += `<td>${escapeHtml(cell)}</td>`;
+                });
+                // 补齐列数
+                for (let i = row.length; i < headers.length; i++) {
+                    html += '<td></td>';
+                }
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+
+            return html;
+        }
+
+        // 处理文本中的表格
+        function processMessageText(text) {
+            const tables = parseMarkdownTable(text);
+            if (tables.length === 0) {
+                return escapeHtml(text).replace(/\n/g, '<br>');
+            }
+
+            let result = '';
+            let lastIndex = 0;
+            const lines = text.split('\n');
+
+            tables.forEach(table => {
+                // 添加表格前的文本
+                const beforeTable = lines.slice(lastIndex, table.start).join('\n');
+                if (beforeTable.trim()) {
+                    result += escapeHtml(beforeTable).replace(/\n/g, '<br>') + '<br>';
+                }
+
+                // 添加表格
+                const tableHtml = renderTable(table.rows);
+                if (tableHtml) {
+                    result += tableHtml;
+                } else {
+                    result += escapeHtml(table.rows.join('\n')).replace(/\n/g, '<br>');
+                }
+
+                lastIndex = table.end;
+            });
+
+            // 添加最后一个表格后的文本
+            const afterTable = lines.slice(lastIndex).join('\n');
+            if (afterTable.trim()) {
+                result += '<br>' + escapeHtml(afterTable).replace(/\n/g, '<br>');
+            }
+
+            return result;
         }
 
         // 键盘事件
