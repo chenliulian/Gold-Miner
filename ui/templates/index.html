@@ -3,660 +3,1253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoldMiner AI</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>GoldMiner - 数据智能助手</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0f0f1a;
-            --bg-card: #1a1a2e;
-            --bg-sidebar: #16162a;
-            --text-primary: #ffffff;
-            --text-secondary: #8b8b9e;
-            --accent: #6366f1;
-            --accent-hover: #4f46e5;
-            --accent-glow: rgba(99, 102, 241, 0.3);
-            --user-msg: #4f46e5;
-            --border: #2d2d44;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
+            --bg-primary: #f5f5f7;
+            --bg-secondary: #ffffff;
+            --bg-sidebar: #ffffff;
+            --bg-hover: #f0f0f2;
+            --bg-active: #e8e8eb;
+            --accent-primary: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #e0e7ff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border-color: #e5e7eb;
+            --border-light: #f3f4f6;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
         }
-        
-        * { box-sizing: border-box; }
-        
-        body {
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
         }
-        
+
         .app-container {
             display: flex;
             height: 100vh;
         }
-        
+
+        /* Sidebar */
         .sidebar {
-            width: 220px;
+            width: 260px;
             background: var(--bg-sidebar);
-            border-right: 1px solid var(--border);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 20px 0;
         }
-        
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
         .logo {
-            padding: 0 20px 20px;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--accent);
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
-        
-        .nav-item {
-            padding: 12px 20px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
         }
-        
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.1);
-            color: var(--accent);
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent-primary), #7c3aed);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
         }
-        
-        .nav-item i { font-size: 1.1rem; }
-        
+
+        .new-chat-btn {
+            margin: 16px 20px;
+            padding: 12px 16px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px;
+        }
+
+        .nav-section-title {
+            padding: 12px 8px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            margin: 2px 0;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--accent-light);
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .user-status {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--bg-dark);
+            overflow: hidden;
         }
-        
-        .chat-container {
+
+        /* Header */
+        .header {
+            height: 64px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Content Area */
+        .content-area {
             flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .page.active {
             display: flex;
             flex-direction: column;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            padding: 20px;
         }
-        
-        .chat-messages {
+
+        /* Chat Page */
+        .chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 0;
-            scroll-behavior: smooth;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
-        
+
+        .welcome-section {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .quick-action-btn {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-action-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
         .message {
-            margin-bottom: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            gap: 12px;
             animation: fadeIn 0.3s ease;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        .message.user {
-            text-align: right;
-        }
-        
-        .message-bubble {
-            display: inline-block;
-            max-width: 75%;
-            padding: 14px 20px;
-            border-radius: 18px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            text-align: left;
-        }
-        
-        .message.user .message-bubble {
-            background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
-            color: white;
-            border-bottom-right-radius: 4px;
-            box-shadow: 0 4px 15px var(--accent-glow);
-        }
-        
-        .message.assistant .message-bubble {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-bottom-left-radius: 4px;
-        }
-        
-        .message pre {
-            background: #0d0d14;
-            padding: 12px;
-            border-radius: 10px;
-            overflow-x: auto;
-            font-size: 0.85rem;
-            margin: 10px 0;
-            border: 1px solid var(--border);
-        }
-        
-        .message code {
-            background: rgba(99, 102, 241, 0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-        
-        .message table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 0.85rem;
-        }
-        
-        .message th, .message td {
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            text-align: left;
-        }
-        
-        .message th {
-            background: rgba(99, 102, 241, 0.15);
-        }
-        
-        .input-container {
-            background: var(--bg-card);
-            border-radius: 20px;
-            padding: 16px 20px;
-            border: 1px solid var(--border);
-        }
-        
-        .input-row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        
-        #user-input {
-            flex: 1;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 16px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        
-        #user-input:focus {
-            border-color: var(--accent);
-        }
-        
-        #interrupt-input {
-            flex: 1;
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 12px;
-            padding: 10px 16px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            outline: none;
-        }
-        
-        #interrupt-input::placeholder {
-            color: var(--warning);
-        }
-        
-        .btn-send {
-            background: var(--accent);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        
-        .btn-send:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-        }
-        
-        .btn-interrupt {
-            background: rgba(245, 158, 11, 0.2);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            color: var(--warning);
-            padding: 12px 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-interrupt:hover {
-            background: rgba(245, 158, 11, 0.3);
-        }
-        
-        .progress-message {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-        
-        .progress-header {
-            padding: 14px 20px;
-            background: rgba(99, 102, 241, 0.1);
-            cursor: pointer;
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            color: var(--accent);
-            transition: background 0.2s;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
         }
-        
-        .progress-header:hover {
-            background: rgba(99, 102, 241, 0.15);
+
+        .message-avatar.user {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
         }
-        
-        .progress-icon {
-            font-size: 0.8rem;
-            transition: transform 0.2s;
+
+        .message-avatar.assistant {
+            background: linear-gradient(135deg, var(--accent-primary), #7c3aed);
         }
-        
-        .progress-content {
-            padding: 16px 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .progress-step {
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .progress-step:last-child { border-bottom: none; }
-        
-        .progress-step .icon { flex-shrink: 0; width: 20px; }
-        .progress-step.note .icon { color: #a78bfa; }
-        .progress-step.action .icon { color: var(--accent); }
-        .progress-step.error .icon { color: var(--error); }
-        .progress-step.success .icon { color: var(--success); }
-        
-        .page { display: none; }
-        .page.active { display: block; }
-        
-        .skill-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+
+        .message-content {
+            flex: 1;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
             padding: 16px;
-            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message-content.user {
+            background: var(--accent-light);
+        }
+
+        .message-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 24px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .input-box {
+            width: 100%;
+            min-height: 56px;
+            max-height: 200px;
+            padding: 16px 56px 16px 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            font-size: 15px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            resize: none;
+            outline: none;
             transition: all 0.2s;
         }
-        
-        .skill-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
+
+        .input-box:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-light);
         }
-        
-        .skill-name {
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 6px;
+
+        .input-box::placeholder {
+            color: var(--text-muted);
         }
-        
-        .skill-desc {
-            font-size: 0.85rem;
+
+        .send-btn {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 40px;
+            height: 40px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .input-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            padding: 0 4px;
+        }
+
+        .toolbar-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Skills Page */
+        .skills-page {
+            padding: 24px;
+        }
+
+        .page-header-section {
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
             color: var(--text-secondary);
         }
-        
-        .content-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            max-height: calc(100vh - 100px);
-            overflow-y: auto;
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            max-width: 1200px;
         }
-        
+
+        .skill-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .skill-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .skill-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .skill-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .skill-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .skill-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Tables Section */
+        .tables-section {
+            margin-top: 32px;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 32px 0;
+        }
+
+        /* Memory Page */
+        .memory-page {
+            padding: 24px;
+        }
+
+        .memory-list {
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .memory-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+        }
+
+        .memory-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .memory-content {
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        /* Learnings Page */
+        .learnings-page {
+            padding: 24px;
+        }
+
+        .learnings-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .learning-tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .learning-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .learning-tab.active {
+            background: var(--accent-light);
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+
+        /* Status Indicators */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #d1fae5;
+            color: #065f46;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: var(--text-secondary);
         }
-        
-        .empty-state i {
-            font-size: 3rem;
+
+        .empty-state-icon {
+            font-size: 48px;
             margin-bottom: 16px;
             opacity: 0.5;
         }
-        
-        .typing-indicator {
-            display: inline-flex;
-            gap: 4px;
-            padding: 10px;
+
+        .empty-state-text {
+            font-size: 16px;
         }
-        
-        .typing-indicator span {
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out;
         }
-        
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Code blocks */
+        pre {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 12px 0;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-hover);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <div class="sidebar">
-            <div class="logo">💎 GoldMiner</div>
-            <div class="nav-item active" onclick="switchPage('chat')">
-                <i class="bi bi-chat-dots"></i> 对话
-            </div>
-            <div class="nav-item" onclick="switchPage('skills')">
-                <i class="bi bi-lightning"></i> 技能
-            </div>
-            <div class="nav-item" onclick="switchPage('memory')">
-                <i class="bi bi-memory"></i> 记忆
-            </div>
-            <div class="nav-item" onclick="switchPage('learnings')">
-                <i class="bi bi-book"></i> 学习
-            </div>
-        </div>
-        
-        <div class="main-content">
-            <div id="page-chat" class="page chat-container active">
-                <div id="chat-messages" class="chat-messages">
-                    <div class="message assistant">
-                        <div class="message-bubble">你好！我是 GoldMiner 数据分析助手 🤖
-
-我可以帮你：
-• 分析 MaxCompute (ODPS) 数据
-• 执行 SQL 查询
-• 进行 CTR/CVR 模型偏差分析
-• 智能总结和分析数据
-
-有什么数据分析需求尽管问我！</div>
-                    </div>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">◈</div>
+                    <span>GoldMiner</span>
                 </div>
-                
-                <div class="input-container">
-                    <div class="input-row mb-2">
-                        <input type="text" id="user-input" placeholder="输入你的数据分析需求..." 
-                               onkeypress="handleKeyPress(event)">
-                        <button class="btn-send" onclick="sendMessage()">发送</button>
-                    </div>
-                    <div class="input-row">
-                        <input type="text" id="interrupt-input" placeholder="💡 在Agent工作时输入提示词插话..." 
-                               onkeypress="handleInterruptKeyPress(event)">
-                        <button class="btn-interrupt" onclick="interruptAgent()" title="发送插话">
-                            <i class="bi bi-chat-dots"></i>
-                        </button>
+            </div>
+
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <span>+</span>
+                <span>新对话</span>
+            </button>
+
+            <nav class="nav-section">
+                <div class="nav-section-title">功能</div>
+                <div class="nav-item active" onclick="switchPage('chat', this)">
+                    <span class="nav-icon">💬</span>
+                    <span>对话</span>
+                </div>
+                <div class="nav-item" onclick="switchPage('skills', this)">
+                    <span class="nav-icon">🛠</span>
+                    <span>技能模块</span>
+                </div>
+                <div class="nav-item" onclick="switchPage('memory', this)">
+                    <span class="nav-icon">🧠</span>
+                    <span>记忆</span>
+                </div>
+                <div class="nav-item" onclick="switchPage('learnings', this)">
+                    <span class="nav-icon">📚</span>
+                    <span>学习数据</span>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">U</div>
+                    <div>
+                        <div class="user-name">用户</div>
+                        <div class="user-status">在线</div>
                     </div>
                 </div>
             </div>
-            
-            <div id="page-skills" class="page" style="padding: 20px;">
-                <h4 style="margin-bottom: 20px;">🛠️ 可用技能</h4>
-                <div id="skills-list"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 class="header-title" id="page-title">对话</h1>
+                <div class="header-actions">
+                    <span class="status-badge">
+                        <span class="status-dot"></span>
+                        ODPS 已连接
+                    </span>
+                    <button class="header-btn" onclick="clearChat()">清空对话</button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Chat Page -->
+                <div id="page-chat" class="page active">
+                    <div class="chat-container" id="chat-messages">
+                        <div class="welcome-section">
+                            <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
+                            <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" onclick="sendQuickMessage('分析广告组漏斗数据')">
+                                    📊 分析广告组漏斗
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('查看可用数据表')">
+                                    📋 查看数据表
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('执行 SQL 查询')">
+                                    🔍 执行 SQL
+                                </button>
+                                <button class="quick-action-btn" onclick="sendQuickMessage('探索表血缘关系')">
+                                    🔗 探索表血缘
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-area">
+                        <div class="input-container">
+                            <textarea 
+                                class="input-box" 
+                                id="user-input"
+                                placeholder="输入你的问题..."
+                                rows="1"
+                                onkeypress="handleKeyPress(event)"
+                            ></textarea>
+                            <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                                ➤
+                            </button>
+                        </div>
+                        <div class="input-toolbar">
+                            <button class="toolbar-btn" onclick="attachFile()">
+                                📎 附件
+                            </button>
+                            <button class="toolbar-btn" onclick="useSkill()">
+                                🛠 技能
+                            </button>
+                            <button class="toolbar-btn" onclick="selectTable()">
+                                📋 数据表
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Page -->
+                <div id="page-skills" class="page skills-page">
+                    <div class="page-header-section">
+                        <h2 class="page-title">技能模块</h2>
+                        <p class="page-subtitle">系统可用的技能和工具</p>
+                    </div>
+                    <div class="skills-grid" id="skills-list">
+                        <div class="empty-state">
+                            <div class="loading-spinner"></div>
+                            <p class="empty-state-text">加载中...</p>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <div class="page-header-section">
+                        <h2 class="page-title">数据表</h2>
+                        <p class="page-subtitle">知识库中可用的数据表</p>
+                    </div>
+                    <div class="skills-grid" id="tables-list">
+                        <div class="empty-state">
+                            <div class="loading-spinner"></div>
+                            <p class="empty-state-text">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Page -->
+                <div id="page-memory" class="page memory-page">
+                    <div class="page-header-section">
+                        <h2 class="page-title">记忆库</h2>
+                        <p class="page-subtitle">系统记录的记忆和上下文</p>
+                    </div>
+                    <div class="memory-list" id="memory-content">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧠</div>
+                            <p class="empty-state-text">暂无记忆记录</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learnings Page -->
+                <div id="page-learnings" class="page learnings-page">
+                    <div class="page-header-section">
+                        <h2 class="page-title">学习数据</h2>
+                        <p class="page-subtitle">系统学习的内容和改进记录</p>
+                    </div>
+                    <div class="learnings-tabs">
+                        <button class="learning-tab active" onclick="switchLearningTab('learnings', this)">学习记录</button>
+                        <button class="learning-tab" onclick="switchLearningTab('errors', this)">错误记录</button>
+                        <button class="learning-tab" onclick="switchLearningTab('features', this)">功能请求</button>
+                    </div>
+                    <div class="memory-list" id="learnings-content">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📚</div>
+                            <p class="empty-state-text">暂无学习记录</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <div id="page-memory" class="page" style="padding: 20px;">
-                <h4 style="margin-bottom: 20px;">🧠 记忆</h4>
-                <div class="content-card" id="memory-content"></div>
-            </div>
-            
-            <div id="page-learnings" class="page" style="padding: 20px;">
-                <h4 style="margin-bottom: 20px;">📚 学习记录</h4>
-                <div class="content-card" id="learnings-content"></div>
-            </div>
-        </div>
+        </main>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
+
     <script>
+        let currentPage = 'chat';
         let isProcessing = false;
-        
-        function switchPage(page) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + page).classList.add('active');
-            event.target.closest('.nav-item').classList.add('active');
+        let currentLearningTab = 'learnings';
+
+        // 页面切换
+        function switchPage(page, element) {
+            currentPage = page;
             
-            if (page === 'skills') loadSkills();
+            // 更新页面显示
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            
+            // 更新导航高亮
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            // 更新标题
+            const titles = {
+                'chat': '对话',
+                'skills': '技能模块',
+                'memory': '记忆库',
+                'learnings': '学习数据'
+            };
+            document.getElementById('page-title').textContent = titles[page];
+            
+            // 加载对应数据
+            if (page === 'skills') {
+                loadSkills();
+                loadTables();
+            }
             if (page === 'memory') loadMemory();
             if (page === 'learnings') loadLearnings();
         }
-        
+
+        // 发送消息
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const message = input.value.trim();
+            
+            if (!message || isProcessing) return;
+            
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+            
+            isProcessing = true;
+            updateSendButton();
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, stream: false })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addMessage(data.response, 'assistant');
+                } else {
+                    addMessage('抱歉，处理请求时出错：' + (data.error || '未知错误'), 'assistant');
+                }
+            } catch (error) {
+                addMessage('网络错误，请稍后重试', 'assistant');
+            } finally {
+                isProcessing = false;
+                updateSendButton();
+            }
+        }
+
+        // 添加快捷消息
+        function sendQuickMessage(message) {
+            document.getElementById('user-input').value = message;
+            sendMessage();
+        }
+
+        // 添加消息到聊天区
+        function addMessage(text, sender) {
+            const container = document.getElementById('chat-messages');
+            
+            // 隐藏欢迎区域
+            const welcome = container.querySelector('.welcome-section');
+            if (welcome) welcome.style.display = 'none';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar ${sender}">${sender === 'user' ? '👤' : '◈'}</div>
+                <div class="message-content ${sender}">
+                    <div class="message-text">${escapeHtml(text)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 键盘事件
         function handleKeyPress(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
             }
         }
-        
-        function handleInterruptKeyPress(e) {
-            if (e.key === 'Enter') {
-                interruptAgent();
-            }
+
+        // 更新发送按钮状态
+        function updateSendButton() {
+            const btn = document.getElementById('send-btn');
+            btn.disabled = isProcessing;
+            btn.innerHTML = isProcessing ? '<div class="loading-spinner"></div>' : '➤';
         }
-        
-        function addMessage(content, role) {
-            const container = document.getElementById('chat-messages');
-            const div = document.createElement('div');
-            div.className = `message ${role}`;
-            div.innerHTML = `<div class="message-bubble">${content}</div>`;
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-            return div;
-        }
-        
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const message = input.value.trim();
-            if (!message || isProcessing) return;
-            
-            isProcessing = true;
-            addMessage(message, 'user');
-            input.value = '';
-            
-            const container = document.getElementById('chat-messages');
-            
-            const progressDiv = document.createElement('div');
-            progressDiv.className = 'progress-message';
-            progressDiv.innerHTML = `
-                <div class="progress-header" onclick="toggleProgress(this)">
-                    <span class="progress-icon">▶</span>
-                    <span>执行过程</span>
+
+        // 新对话
+        function startNewChat() {
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="welcome-section">
+                    <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
+                    <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="sendQuickMessage('分析广告组漏斗数据')">
+                            📊 分析广告组漏斗
+                        </button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('查看可用数据表')">
+                            📋 查看数据表
+                        </button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('执行 SQL 查询')">
+                            🔍 执行 SQL
+                        </button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('探索表血缘关系')">
+                            🔗 探索表血缘
+                        </button>
+                    </div>
                 </div>
-                <div class="progress-content" style="display: none;"></div>
             `;
-            container.appendChild(progressDiv);
-            container.scrollTop = container.scrollHeight;
-            
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message, stream: true})
-                });
-                
-                if (!response.ok) throw new Error('请求失败');
-                
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-                
-                while (true) {
-                    const {done, value} = await reader.read();
-                    if (done) break;
-                    
-                    buffer += decoder.decode(value, {stream: true});
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() || '';
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6));
-                                handleStreamData(data, progressDiv);
-                            } catch (e) {}
-                        }
-                    }
-                }
-            } catch (e) {
-                addMessage('请求失败: ' + e.message, 'assistant');
-            } finally {
-                isProcessing = false;
+            switchPage('chat', document.querySelector('.nav-item'));
+        }
+
+        // 清空对话
+        function clearChat() {
+            if (confirm('确定要清空当前对话吗？')) {
+                startNewChat();
             }
         }
-        
-        function handleStreamData(data, progressDiv) {
-            const contentDiv = progressDiv.querySelector('.progress-content');
-            const headerIcon = progressDiv.querySelector('.progress-icon');
-            
-            if (data.type === 'note') {
-                contentDiv.innerHTML += `<div class="progress-step note"><span class="icon">📝</span>${escapeHtml(data.content)}</div>`;
-            }
-            else if (data.type === 'action') {
-                contentDiv.innerHTML += `<div class="progress-step action"><span class="icon">⚡</span>${escapeHtml(data.content)}</div>`;
-            }
-            else if (data.type === 'error') {
-                contentDiv.innerHTML += `<div class="progress-step error"><span class="icon">❌</span>${escapeHtml(data.content)}</div>`;
-            }
-            else if (data.type === 'sql_result' || data.type === 'skill_result') {
-                contentDiv.innerHTML += `<div class="progress-step success"><span class="icon">✅</span>${escapeHtml(data.content)}</div>`;
-            }
-            else if (data.type === 'status') {
-                contentDiv.innerHTML += `<div class="progress-step"><span class="icon">📌</span>${escapeHtml(data.content)}</div>`;
-            }
-            else if (data.type === 'message' && data.role === 'assistant') {
-                progressDiv.remove();
-                addMessage(data.content, 'assistant');
-            }
-            
-            contentDiv.style.display = 'block';
-            headerIcon.textContent = '▼';
-            
-            document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
-        }
-        
-        function toggleProgress(header) {
-            const content = header.nextElementSibling;
-            const icon = header.querySelector('.progress-icon');
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                icon.textContent = '▼';
-            } else {
-                content.style.display = 'none';
-                icon.textContent = '▶';
-            }
-        }
-        
-        async function interruptAgent() {
-            const input = document.getElementById('interrupt-input');
-            const message = input.value.trim();
-            if (!message) return;
-            
-            try {
-                const response = await fetch('/interrupt', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message})
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    addMessage(`💡 [插话]: ${message}`, 'user');
-                    input.value = '';
-                }
-            } catch (e) {
-                alert('发送失败: ' + e);
-            }
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
+
+        // 加载技能
         async function loadSkills() {
+            const container = document.getElementById('skills-list');
+            
             try {
-                const res = await fetch('/skills');
-                const data = await res.json();
-                const container = document.getElementById('skills-list');
-                if (data.success) {
-                    container.innerHTML = data.skills.map(s => `
-                        <div class="skill-card">
-                            <div class="skill-name">${s.name}</div>
-                            <div class="skill-desc">${s.description || '暂无描述'}</div>
-                        </div>
-                    `).join('');
-                }
-            } catch (e) {
-                document.getElementById('skills-list').innerHTML = '<div class="text-danger">加载失败</div>';
-            }
-        }
-        
-        async function loadMemory() {
-            try {
-                const res = await fetch('/memory');
-                const data = await res.json();
-                const container = document.getElementById('memory-content');
-                if (data.success) {
-                    const mem = data.memory;
+                const response = await fetch('/api/skills');
+                const data = await response.json();
+                
+                if (!data.success || !data.skills || data.skills.length === 0) {
                     container.innerHTML = `
-                        <h6>总结</h6>
-                        <p class="text-secondary">${mem.summary || '暂无'}</p>
-                        <h6 class="mt-3">最近对话 (${mem.recent_steps?.length || 0}条)</h6>
-                        ${(mem.recent_steps || []).map(s => `
-                            <div class="mb-2"><strong>${s.role}:</strong> ${s.content.substring(0, 100)}...</div>
-                        `).join('')}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🛠</div>
+                            <p class="empty-state-text">暂无可用技能</p>
+                        </div>
                     `;
+                    return;
                 }
-            } catch (e) {
-                document.getElementById('memory-content').innerHTML = '<div class="text-danger">加载失败</div>';
+                
+                container.innerHTML = data.skills.map(skill => {
+                    let desc = skill.description || '暂无描述';
+                    desc = desc.replace(/[#*`\[\]]/g, '').substring(0, 120);
+                    if (skill.description && skill.description.length > 120) desc += '...';
+                    
+                    return `
+                        <div class="skill-card" onclick="useSkillByName('${skill.name}')">
+                            <div class="skill-header">
+                                <div class="skill-icon">🛠</div>
+                                <div class="skill-title">${skill.name}</div>
+                            </div>
+                            <div class="skill-desc">${desc}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p class="empty-state-text">加载失败</p>
+                    </div>
+                `;
             }
         }
-        
-        async function loadLearnings() {
+
+        // 加载数据表
+        async function loadTables() {
+            const container = document.getElementById('tables-list');
+            
             try {
-                const res = await fetch('/learnings');
-                const data = await res.json();
-                const container = document.getElementById('learnings-content');
-                if (data.success) {
-                    container.innerHTML = data.learnings.length ? 
-                        data.learnings.map(l => `<div class="mb-3 p-3 border rounded">${escapeHtml(l)}</div>`).join('') :
-                        '<div class="text-secondary">暂无学习记录</div>';
+                const response = await fetch('/api/tables');
+                const data = await response.json();
+                
+                if (!data.success || !data.tables || data.tables.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p class="empty-state-text">暂无数据表</p>
+                        </div>
+                    `;
+                    return;
                 }
-            } catch (e) {
-                document.getElementById('learnings-content').innerHTML = '<div class="text-danger">加载失败</div>';
+                
+                container.innerHTML = data.tables.map(table => {
+                    let desc = table.description || '暂无描述';
+                    desc = desc.substring(0, 120);
+                    if (table.description && table.description.length > 120) desc += '...';
+                    
+                    return `
+                        <div class="skill-card">
+                            <div class="skill-header">
+                                <div class="skill-icon">📋</div>
+                                <div class="skill-title">${table.name}</div>
+                            </div>
+                            <div class="skill-desc">${desc}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p class="empty-state-text">加载失败</p>
+                    </div>
+                `;
             }
         }
+
+        // 加载记忆
+        async function loadMemory() {
+            const container = document.getElementById('memory-content');
+            
+            try {
+                const response = await fetch('/memory');
+                const data = await response.json();
+                
+                if (!data.success || !data.memory || data.memory.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧠</div>
+                            <p class="empty-state-text">暂无记忆记录</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = data.memory.map(item => `
+                    <div class="memory-item">
+                        <div class="memory-time">${item.timestamp || '未知时间'}</div>
+                        <div class="memory-content">${item.content || item}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p class="empty-state-text">加载失败</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 加载学习数据
+        async function loadLearnings() {
+            const container = document.getElementById('learnings-content');
+            
+            try {
+                const response = await fetch('/learnings');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📚</div>
+                            <p class="empty-state-text">暂无学习记录</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let content = '';
+                if (currentLearningTab === 'learnings') content = data.learnings;
+                else if (currentLearningTab === 'errors') content = data.errors;
+                else if (currentLearningTab === 'features') content = data.features;
+                
+                if (!content || content.trim() === '') {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📚</div>
+                            <p class="empty-state-text">暂无记录</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `<div class="memory-item"><div class="memory-content"><pre>${escapeHtml(content)}</pre></div></div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p class="empty-state-text">加载失败</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 切换学习标签
+        function switchLearningTab(tab, element) {
+            currentLearningTab = tab;
+            document.querySelectorAll('.learning-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            loadLearnings();
+        }
+
+        // 使用技能
+        function useSkill() {
+            switchPage('skills', document.querySelectorAll('.nav-item')[1]);
+        }
+
+        function useSkillByName(name) {
+            switchPage('chat', document.querySelector('.nav-item'));
+            document.getElementById('user-input').value = `使用 ${name} 技能`;
+        }
+
+        // 选择数据表
+        function selectTable() {
+            switchPage('skills', document.querySelectorAll('.nav-item')[1]);
+        }
+
+        // 附件功能
+        function attachFile() {
+            alert('附件功能开发中...');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 自动调整输入框高度
+            const input = document.getElementById('user-input');
+            input.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            });
+        });
     </script>
 </body>
 </html>

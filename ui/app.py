@@ -246,6 +246,62 @@ def get_learnings():
     })
 
 
+@app.route("/api/tables", methods=["GET"])
+def get_tables():
+    """获取知识库中所有可用的表"""
+    try:
+        project_root = Path(__file__).parent.parent
+        tables_dir = project_root / "knowledge" / "tables"
+        
+        tables = []
+        if tables_dir.exists():
+            for yaml_file in tables_dir.glob("*.yaml"):
+                try:
+                    import yaml
+                    with open(yaml_file, "r", encoding="utf-8") as f:
+                        table_info = yaml.safe_load(f)
+                        if table_info:
+                            tables.append({
+                                "name": table_info.get("表名", yaml_file.stem),
+                                "description": table_info.get("描述", ""),
+                                "file": yaml_file.name
+                            })
+                except Exception as e:
+                    print(f"Error loading table {yaml_file}: {e}")
+        
+        return jsonify({
+            "success": True,
+            "tables": tables
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/api/skills", methods=["GET"])
+def get_skills():
+    """获取所有可用的技能"""
+    agent = get_agent()
+    
+    try:
+        # agent.skills.list() 返回的是字典列表
+        skills_list = agent.skills.list()
+        
+        return jsonify({
+            "success": True,
+            "skills": skills_list
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
