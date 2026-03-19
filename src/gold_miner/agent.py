@@ -326,12 +326,8 @@ class SqlAgent:
         return self.llm.chat(messages, temperature=0.3)
 
     def _finalize(self, report_markdown: str, output_path: Optional[str]) -> str:
-        # 只有当用户明确指定 output_path 时才保存报告
-        if output_path:
-            return write_report(report_markdown, self.config.reports_dir, output_path)
-        else:
-            # 不保存报告，只返回报告内容
-            return report_markdown
+        # 总是保存报告到文件，如果用户指定了 output_path 则使用指定路径，否则使用默认路径
+        return write_report(report_markdown, self.config.reports_dir, output_path)
 
     def _run_hooks(self, skill_name: str, result: Any, hooks: List[str]) -> None:
         print(f"\n[Hooks] Running hooks for skill '{skill_name}': {hooks}")

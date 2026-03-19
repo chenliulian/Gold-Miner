@@ -79,15 +79,17 @@ Eagllwin广告服务器(AdServer)是一个完整的程序化广告交易平台(S
 | `ads_strategy.dwd_ads_competition_rank_simple_hi` | 简化竞价表 | success_cnt(胜出), fail_cnt(失败) |
 | `ads_strategy.dwd_ew_request_sample_hi` | 请求采样表 | stage(阶段), request_id(请求ID) |
 
-### 2. 漏斗下游（投放侧）
+### 2. 漏斗下游（投放侧）- 曝光及之后数据
 
 | 表名 | 作用 | 核心字段 | 数据逻辑 |
 |------|------|----------|---------|
-| `mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi` | **漏斗分析主表** - 严格分层聚合 | show_label, click_label, dld_label, conv_label_*, ctr, cvr, billing_actual_deduction_price | 曝光 left join 点击 left join 转化，保留request_id粒度，支持漏斗各层严格归因分析 |
+| `mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi` | **曝光后漏斗分析主表** - 包含曝光、点击、下载、转化数据 | show_label, click_label, dld_label, conv_label_*, ctr, cvr, billing_actual_deduction_price | 曝光 left join 点击 left join 转化，保留request_id粒度。注意：**该表只包含曝光及之后的数据，不包含曝光前的召回/精排/响应数据** |
 | `com_cdm.dws_tracker_ad_cpc_cost_hi` | **业务数据汇总表** - 业务视角统计 | req_num, res_num, show_cnt, click_cnt, cost, cpm_cost, cpc_cost | 曝光 union 点击 union 转化后聚合统计，用于业务数据看数，**不适合模型偏差分析** |
 
 **重要说明**:
-- **漏斗分析/模型预估偏差分析**: 必须使用 `dwd_ew_ads_show_res_clk_dld_conv_hi`，该表保留完整的漏斗链路关系
+- **曝光后漏斗分析（曝光→点击→下载→转化）**: 使用 `dwd_ew_ads_show_res_clk_dld_conv_hi`，统计时使用 `SUM(show_label)`, `SUM(click_label)`, `SUM(dld_label)`，**不要使用 COUNT(DISTINCT request_id)**
+- **曝光前漏斗分析（召回→精排→响应）**: 使用 `ads_strategy.dwd_ads_engine_compe_suc_req_hi` 竞胜率表
+- **完整漏斗分析**: 需要联合使用曝光前表 + 曝光后表
 - **业务数据查看/消耗统计**: 使用 `dws_tracker_ad_cpc_cost_hi`，该表是业务侧常用的汇总表
 - **消耗波动归因**: 若需从模型预估偏差维度解释，必须基于 `dwd_ew_ads_show_res_clk_dld_conv_hi` 计算PCOC指标
 
@@ -165,57 +167,57 @@ AND ad_group_id = '{{ad_group_id}}';
 
 ### Step 2: 全链路漏斗分析
 
+**注意**: `dwd_ew_ads_show_res_clk_dld_conv_hi` 表只包含曝光及之后的数据，曝光前数据（召回/精排/响应）需要从竞胜率表获取。
+
 ```sql
--- 7层漏斗核心指标
-WITH funnel_data AS (
+-- 曝光后漏斗核心指标（使用 SUM(label) 统计，不要用 COUNT(DISTINCT)）
+WITH show_funnel AS (
     SELECT 
-        -- 召回层（从请求采样表）
-        COUNT(DISTINCT request_id) as recall_cnt,
-        
-        -- 过滤后进精排
-        COUNT(DISTINCT CASE WHEN stage = 'RANK' THEN request_id END) as rank_cnt,
-        
-        -- 精排后响应
-        COUNT(DISTINCT CASE WHEN stage = 'RESP' THEN request_id END) as resp_cnt,
-        
-        -- 响应后曝光
-        COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-        
-        -- 曝光后点击
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
-        
-        -- 点击后下载
-        COUNT(DISTINCT CASE WHEN dld_label = 1 THEN request_id END) as dld_cnt,
-        
-        -- 下载后转化（以激活为例）
-        COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) as conv_cnt,
-        
+        -- 曝光数
+        SUM(show_label) as show_cnt,
+        -- 点击数
+        SUM(click_label) as click_cnt,
+        -- 下载数
+        SUM(dld_label) as dld_cnt,
+        -- 转化数（以激活为例）
+        SUM(conv_label_active) as conv_cnt,
         -- 消耗数据
-        SUM(billing_actual_deduction_price) / 1e5 as total_cost,
-        AVG(billing_actual_deduction_price) / 1e5 as avg_cost_per_show
-        
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost
     FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
     WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
     AND ad_group_id = '{{ad_group_id}}'
+),
+-- 曝光前漏斗数据（从竞胜率表获取）
+engine_funnel AS (
+    SELECT 
+        SUM(rank_req_cnt) as rank_req_cnt,  -- 进精排数
+        SUM(resp_req_cnt) as resp_req_cnt   -- 响应数
+    FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+    WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
+    AND id_type = 'ad_group_id'
+    AND id_value = '{{ad_group_id}}'
 )
 SELECT 
-    recall_cnt,
-    rank_cnt,
-    ROUND(rank_cnt * 100.0 / recall_cnt, 2) as recall_to_rank_rate,
-    resp_cnt,
-    ROUND(resp_cnt * 100.0 / rank_cnt, 2) as rank_to_resp_rate,
-    show_cnt,
-    ROUND(show_cnt * 100.0 / resp_cnt, 2) as resp_to_show_rate,
-    click_cnt,
-    ROUND(click_cnt * 100.0 / show_cnt, 2) as show_to_click_rate,
-    dld_cnt,
-    ROUND(dld_cnt * 100.0 / click_cnt, 2) as click_to_dld_rate,
-    conv_cnt,
-    ROUND(conv_cnt * 100.0 / dld_cnt, 2) as dld_to_conv_rate,
-    total_cost,
-    ROUND(total_cost / click_cnt, 4) as cpc,
-    ROUND(total_cost / show_cnt * 1000, 4) as cpm
-FROM funnel_data;
+    -- 曝光前漏斗
+    e.rank_req_cnt,
+    e.resp_req_cnt,
+    (e.rank_req_cnt - e.resp_req_cnt) as cutoff_cnt,
+    ROUND(e.resp_req_cnt * 100.0 / NULLIF(e.rank_req_cnt, 0), 2) as win_rate,
+    -- 曝光后漏斗
+    s.show_cnt,
+    s.click_cnt,
+    s.dld_cnt,
+    s.conv_cnt,
+    ROUND(s.click_cnt * 100.0 / NULLIF(s.show_cnt, 0), 2) as ctr_pct,
+    ROUND(s.dld_cnt * 100.0 / NULLIF(s.click_cnt, 0), 2) as dld_rate_pct,
+    ROUND(s.conv_cnt * 100.0 / NULLIF(s.dld_cnt, 0), 2) as conv_rate_pct,
+    -- 消耗指标
+    ROUND(s.total_cost, 2) as total_cost_usd,
+    ROUND(s.total_cost / NULLIF(s.click_cnt, 0), 4) as cpc_usd,
+    ROUND(s.total_cost / NULLIF(s.show_cnt, 0) * 1000, 4) as cpm_usd,
+    ROUND(s.total_cost / NULLIF(s.conv_cnt, 0), 4) as cpa_usd
+FROM show_funnel s
+CROSS JOIN engine_funnel e;
 ```
 
 ### Step 3: 召回率与响应率分析
@@ -401,16 +403,16 @@ ORDER BY dh DESC, win_rate ASC;
 ### Step 6: 消耗数据分析
 
 ```sql
--- 消耗数据分析
+-- 消耗数据分析（使用 SUM(label) 统计，不要用 COUNT(DISTINCT)）
 WITH cost_stats AS (
     SELECT 
         SUBSTR(dh, 1, 8) as dt,
         -- 曝光数
-        COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
+        SUM(show_label) as show_cnt,
         -- 点击数
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
+        SUM(click_label) as click_cnt,
         -- 转化数（以激活为例）
-        COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) as conv_cnt,
+        SUM(conv_label_active) as conv_cnt,
         -- 总消耗（美元）
         SUM(billing_actual_deduction_price) / 1e5 as total_cost,
         -- 平均eCPM
@@ -429,9 +431,9 @@ SELECT
     conv_cnt,
     ROUND(total_cost, 2) as total_cost_usd,
     ROUND(total_cost * 7.2, 2) as total_cost_cny,  -- 假设汇率7.2
-    ROUND(total_cost / click_cnt, 4) as cpc_usd,
-    ROUND(total_cost / show_cnt * 1000, 4) as cpm_usd,
-    ROUND(total_cost / conv_cnt, 4) as cpa_usd,
+    ROUND(total_cost / NULLIF(click_cnt, 0), 4) as cpc_usd,
+    ROUND(total_cost / NULLIF(show_cnt, 0) * 1000, 4) as cpm_usd,
+    ROUND(total_cost / NULLIF(conv_cnt, 0), 4) as cpa_usd,
     ROUND(avg_ecpm, 4) as avg_ecpm_usd,
     ROUND(avg_bid_price, 2) as avg_bid_price
 FROM cost_stats
@@ -441,15 +443,15 @@ ORDER BY dt;
 ### Step 7: CTR模型预估偏差分析 (PCOC)
 
 ```sql
--- CTR模型预估偏差分析
+-- CTR模型预估偏差分析（使用 SUM(label) 统计曝光和点击）
 WITH ctr_stats AS (
     SELECT 
         SUBSTR(dh, 1, 8) as dt,
         -- 曝光数
-        COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_num,
+        SUM(show_label) as show_num,
         -- 点击数
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as clk_num,
-        -- 原始pCTR求和
+        SUM(click_label) as clk_num,
+        -- 原始pCTR求和（只对曝光样本求和）
         SUM(CASE WHEN show_label = 1 THEN ctr_raw ELSE 0 END) as pctr_raw_sum,
         -- 校准后pCTR求和
         SUM(CASE WHEN show_label = 1 THEN ctr ELSE 0 END) as pctr_sum
@@ -489,22 +491,22 @@ ORDER BY dt;
 ### Step 8: CVR模型预估偏差分析 (PCOC)
 
 ```sql
--- CVR模型预估偏差分析
+-- CVR模型预估偏差分析（使用 SUM(label) 统计点击和转化）
 WITH cvr_stats AS (
     SELECT 
         SUBSTR(dh, 1, 8) as dt,
         transform_target_cn,
         -- 点击数
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as clk_num,
-        -- 转化数（根据转化目标动态选择）
-        COUNT(DISTINCT CASE 
-            WHEN transform_target_cn LIKE '%激活%' AND conv_label_active = 1 THEN request_id
-            WHEN transform_target_cn LIKE '%注册%' AND conv_label_register = 1 THEN request_id
-            WHEN transform_target_cn = '付费' AND conv_label_pay = 1 THEN request_id
-            WHEN transform_target_cn = '首次付费' AND conv_label_first_pay = 1 THEN request_id
-            ELSE NULL 
+        SUM(click_label) as clk_num,
+        -- 转化数（根据转化目标动态选择，使用 SUM 统计）
+        SUM(CASE 
+            WHEN transform_target_cn LIKE '%激活%' THEN conv_label_active
+            WHEN transform_target_cn LIKE '%注册%' THEN conv_label_register
+            WHEN transform_target_cn = '付费' THEN conv_label_pay
+            WHEN transform_target_cn = '首次付费' THEN conv_label_first_pay
+            ELSE 0 
         END) as conv_num,
-        -- 原始pCVR求和
+        -- 原始pCVR求和（只对点击样本求和）
         SUM(CASE WHEN click_label = 1 THEN cvr_raw ELSE 0 END) as pcvr_raw_sum,
         -- 校准后pCVR求和
         SUM(CASE WHEN click_label = 1 THEN cvr ELSE 0 END) as pcvr_sum
@@ -548,64 +550,56 @@ ORDER BY dt, transform_target_cn;
 #### 9.1 按国家维度
 
 ```sql
--- 分国家漏斗分析
+-- 分国家漏斗分析（使用 SUM(label) 统计）
 SELECT 
     country_zh,
-    COUNT(DISTINCT request_id) as recall_cnt,
-    COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-    COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
-    ROUND(COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) * 100.0 
-          / COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END), 2) as ctr,
-    COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) as conv_cnt,
-    ROUND(COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) * 100.0 
-          / COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END), 2) as cvr,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    ROUND(SUM(click_label) * 100.0 / NULLIF(SUM(show_label), 0), 2) as ctr,
+    SUM(conv_label_active) as conv_cnt,
+    ROUND(SUM(conv_label_active) * 100.0 / NULLIF(SUM(click_label), 0), 2) as cvr,
     SUM(billing_actual_deduction_price) / 1e5 as cost_usd
 FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
 WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
 AND ad_group_id = '{{ad_group_id}}'
 GROUP BY country_zh
-ORDER BY recall_cnt DESC;
+ORDER BY show_cnt DESC;
 ```
 
 #### 9.2 按代码位类型维度
 
 ```sql
--- 分代码位类型漏斗
+-- 分代码位类型漏斗（使用 SUM(label) 统计）
 SELECT 
     code_seat_type,
-    COUNT(DISTINCT request_id) as recall_cnt,
-    COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-    COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
-    ROUND(COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) * 100.0 
-          / NULLIF(COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END), 0), 2) as ctr,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    ROUND(SUM(click_label) * 100.0 / NULLIF(SUM(show_label), 0), 2) as ctr,
     SUM(billing_actual_deduction_price) / 1e5 as cost_usd
 FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
 WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
 AND ad_group_id = '{{ad_group_id}}'
 GROUP BY code_seat_type
-ORDER BY recall_cnt DESC;
+ORDER BY show_cnt DESC;
 ```
 
 #### 9.3 按业务线维度
 
 ```sql
--- 分业务线漏斗
+-- 分业务线漏斗（使用 SUM(label) 统计）
 SELECT 
     busniess_line,
-    COUNT(DISTINCT request_id) as recall_cnt,
-    COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-    COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
-    ROUND(COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) * 100.0 
-          / NULLIF(COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END), 0), 2) as ctr,
-    COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) as conv_cnt,
-    ROUND(COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) * 100.0 
-          / NULLIF(COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END), 0), 2) as cvr,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    ROUND(SUM(click_label) * 100.0 / NULLIF(SUM(show_label), 0), 2) as ctr,
+    SUM(conv_label_active) as conv_cnt,
+    ROUND(SUM(conv_label_active) * 100.0 / NULLIF(SUM(click_label), 0), 2) as cvr,
     SUM(billing_actual_deduction_price) / 1e5 as cost_usd
 FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
 WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
 AND ad_group_id = '{{ad_group_id}}'
 GROUP BY busniess_line
-ORDER BY recall_cnt DESC;
+ORDER BY show_cnt DESC;
 ```
 
 ### Step 10: 竞价排名分析
@@ -628,13 +622,12 @@ ORDER BY rank_level;
 ### Step 11: 异常检测
 
 ```sql
--- 漏斗异常检测
+-- 漏斗异常检测（使用 SUM(label) 统计）
 WITH daily_funnel AS (
     SELECT 
         SUBSTR(dh, 1, 8) as dt,
-        COUNT(DISTINCT request_id) as recall_cnt,
-        COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
         SUM(billing_actual_deduction_price) / 1e5 as cost_usd
     FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
     WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
@@ -643,7 +636,6 @@ WITH daily_funnel AS (
 )
 SELECT 
     dt,
-    recall_cnt,
     show_cnt,
     click_cnt,
     ROUND(cost_usd, 2) as cost_usd,

@@ -29,13 +29,13 @@ def run(
     # 基础SQL模板
     sql_templates = {
         "full_funnel": """
--- 全链路漏斗分析
+-- 全链路漏斗分析（使用 SUM(label) 统计，不要用 COUNT(DISTINCT)）
 WITH funnel_data AS (
     SELECT 
-        COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
-        COUNT(DISTINCT CASE WHEN dld_label = 1 THEN request_id END) as dld_cnt,
-        COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) as conv_cnt,
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_cnt,
         SUM(billing_actual_deduction_price) / 1e5 as total_cost
     FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
     WHERE dh BETWEEN '{start_dh}' AND '{end_dh}'
@@ -44,20 +44,20 @@ WITH funnel_data AS (
 SELECT 
     show_cnt,
     click_cnt,
-    ROUND(click_cnt * 100.0 / show_cnt, 2) as ctr_pct,
+    ROUND(click_cnt * 100.0 / NULLIF(show_cnt, 0), 2) as ctr_pct,
     dld_cnt,
     conv_cnt,
     ROUND(total_cost, 2) as cost_usd
 FROM funnel_data;
 """,
         "cost": """
--- 消耗数据分析
+-- 消耗数据分析（使用 SUM(label) 统计）
 SELECT 
     SUBSTR(dh, 1, 8) as dt,
-    COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_cnt,
-    COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as click_cnt,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
     SUM(billing_actual_deduction_price) / 1e5 as total_cost,
-    ROUND(SUM(billing_actual_deduction_price) / 1e5 / COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END), 4) as cpc_usd
+    ROUND(SUM(billing_actual_deduction_price) / 1e5 / NULLIF(SUM(click_label), 0), 4) as cpc_usd
 FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
 WHERE dh BETWEEN '{start_dh}' AND '{end_dh}'
 AND ad_group_id = '{ad_group_id}'
@@ -65,11 +65,11 @@ GROUP BY SUBSTR(dh, 1, 8)
 ORDER BY dt;
 """,
         "ctr_pcoc": """
--- CTR模型预估偏差分析
+-- CTR模型预估偏差分析（使用 SUM(label) 统计曝光和点击）
 WITH ctr_stats AS (
     SELECT 
-        COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END) as show_num,
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as clk_num,
+        SUM(show_label) as show_num,
+        SUM(click_label) as clk_num,
         SUM(CASE WHEN show_label = 1 THEN ctr ELSE 0 END) as pctr_sum
     FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
     WHERE dh BETWEEN '{start_dh}' AND '{end_dh}'
@@ -78,17 +78,17 @@ WITH ctr_stats AS (
 SELECT 
     show_num,
     clk_num,
-    ROUND(clk_num * 100.0 / show_num, 4) as ctr_actual_pct,
-    ROUND(pctr_sum * 100.0 / show_num, 4) as pctr_pct,
-    ROUND(pctr_sum / clk_num, 4) as pcoc
+    ROUND(clk_num * 100.0 / NULLIF(show_num, 0), 4) as ctr_actual_pct,
+    ROUND(pctr_sum * 100.0 / NULLIF(show_num, 0), 4) as pctr_pct,
+    ROUND(pctr_sum / NULLIF(clk_num, 0), 4) as pcoc
 FROM ctr_stats;
 """,
         "cvr_pcoc": """
--- CVR模型预估偏差分析
+-- CVR模型预估偏差分析（使用 SUM(label) 统计点击和转化）
 WITH cvr_stats AS (
     SELECT 
-        COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) as clk_num,
-        COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) as conv_num,
+        SUM(click_label) as clk_num,
+        SUM(conv_label_active) as conv_num,
         SUM(CASE WHEN click_label = 1 THEN cvr ELSE 0 END) as pcvr_sum
     FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
     WHERE dh BETWEEN '{start_dh}' AND '{end_dh}'
@@ -97,9 +97,9 @@ WITH cvr_stats AS (
 SELECT 
     clk_num,
     conv_num,
-    ROUND(conv_num * 100.0 / clk_num, 4) as cvr_actual_pct,
-    ROUND(pcvr_sum * 100.0 / clk_num, 4) as pcvr_pct,
-    ROUND(pcvr_sum / conv_num, 4) as pcoc
+    ROUND(conv_num * 100.0 / NULLIF(clk_num, 0), 4) as cvr_actual_pct,
+    ROUND(pcvr_sum * 100.0 / NULLIF(clk_num, 0), 4) as pcvr_pct,
+    ROUND(pcvr_sum / NULLIF(conv_num, 0), 4) as pcoc
 FROM cvr_stats;
 """,
         "win_rate": """

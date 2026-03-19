@@ -522,6 +522,3 @@ MIT License
 - 项目地址：https://github.com/chenliulian/Gold-Miner
 - 问题反馈：[Issues](https://github.com/chenliulian/Gold-Miner/issues)
 
----
-
-> 💡 **提示**：首次使用建议先阅读 `docs/business_knowledge_system.md` 了解业务知识管理系统的详细设计。
