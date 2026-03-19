@@ -199,6 +199,94 @@ class OdpsClient:
             except Exception:
                 return pd.DataFrame(), instance_id
 
+    def execute_sql_with_priority(
+        self, sql: str, priority: int = 7, limit: int = 2000, enable_log: bool = True, cancel_event=None
+    ) -> Tuple[pd.DataFrame, str]:
+        """
+        使用 priority 参数执行 SQL（替代 hints 方式）
+        
+        Args:
+            sql: SQL 语句
+            priority: 任务优先级 (1-9, 1最高, 9最低)
+            limit: 返回结果行数限制
+            enable_log: 是否启用日志
+            cancel_event: 取消事件
+            
+        Returns:
+            (DataFrame, instance_id) 元组
+        """
+        if enable_log:
+            self._log(f"正在提交... (priority={priority})")
+            if self.config.quota:
+                self._log(f"使用计算配额: {self.config.quota}")
+        
+        # 使用 priority 参数替代 hints
+        hints = {}
+        if self.config.quota:
+            hints["odps.sql.quota"] = self.config.quota
+        
+        def execute_with_timeout():
+            return self.odps.execute_sql(sql, priority=priority, hints=hints)
+        
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(execute_with_timeout)
+                instance = None
+                for _ in range(60):
+                    if cancel_event is not None and cancel_event.is_set():
+                        future.cancel()
+                        raise InterruptedError("Task cancelled by user during submission")
+                    try:
+                        instance = future.result(timeout=1)
+                        break
+                    except TimeoutError:
+                        continue
+                if instance is None:
+                    future.cancel()
+                    raise TimeoutError("SQL submission timeout after 60 seconds")
+        except TimeoutError:
+            if enable_log:
+                self._log("提交超时 (60秒)，请检查网络连接或ODPS服务状态")
+            raise TimeoutError("SQL submission timeout after 60 seconds")
+        
+        instance_id = instance.id
+        
+        if enable_log:
+            self._log(f"提交任务成功, Instance ID: {instance_id}")
+            self._log("Awaiting for the task submitting...")
+        
+        while not instance.is_terminated():
+            if cancel_event is not None and cancel_event.is_set():
+                if enable_log:
+                    self._log("Task cancelled by user")
+                instance.stop()
+                raise InterruptedError("Task cancelled by user")
+            
+            if enable_log:
+                status = instance.status
+                if status == "running":
+                    self._log("Current task status: RUNNING")
+                    for task_name in instance.get_task_names():
+                        progress = instance.get_task_progress(task_name)
+                        self._log(f"  Task: {task_name}, Progress: {progress}")
+                elif status == "waiting":
+                    self._log("Awaiting in the cloud gateway for resources")
+            time.sleep(3)
+        
+        if enable_log:
+            self._log(f"Task finished with status: {instance.status}")
+            logview_url = self.get_logview_url(instance)
+            self._log(f"Logview: {logview_url}")
+        
+        with instance.open_reader() as reader:
+            try:
+                df = reader.to_pandas()
+                if limit and len(df) > limit:
+                    return df.head(limit), instance_id
+                return df, instance_id
+            except Exception:
+                return pd.DataFrame(), instance_id
+
     def run_script_with_progress(
         self, sql: str, limit: int = 2000, enable_log: bool = True, cancel_event=None
     ) -> Tuple[pd.DataFrame, str]:

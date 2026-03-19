@@ -227,7 +227,8 @@ class SqlAgent:
         self.state.last_error = None
         try:
             print("\n[SQL] Executing:\n" + sql)
-            df, instance_id = self.odps.run_script_with_progress(sql, cancel_event=self._cancel_event)
+            # 使用 execute_sql_with_priority 替代 run_script_with_progress，默认 priority=5
+            df, instance_id = self.odps.execute_sql_with_priority(sql, priority=5, cancel_event=self._cancel_event)
             print(f"[SQL] Instance ID: {instance_id}")
         except InterruptedError:
             # Task was cancelled
