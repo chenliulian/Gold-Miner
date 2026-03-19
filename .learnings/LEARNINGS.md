@@ -571,3 +571,42 @@ self_improvement 入参纠正：entry_type 不支持 'correction'（仅支持 le
 - Tags: self_improvement, entry_type_validation, correction, dedup
 
 ---
+
+## [LRN-20260319-462] knowledge_gap
+
+**Logged**: 2026-03-19T14:00:33
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-19T14:00:33.939700
+
+相关 SQL:
+```sql
+WITH funnel_data AS (
+  SELECT
+    COUNT(DISTINCT CASE WHEN show_label = 1 THEN request_id END)  AS show_cnt,
+    COUNT(DISTINCT CASE WHEN click_label = 1 THEN request_id END) AS click_cnt,
+    COUNT(DISTINCT CASE WHEN dld_label = 1 THEN request_id END)   AS dld_cnt,
+    COUNT(DISTINCT CASE WHEN conv_label_active = 1 THEN request_id END) AS conv_active_cnt,
+    SUM(billing_actual_deduction_price) / 1e5 AS cost_usd
+  FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+  WHERE dh BETWEEN '20260315
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
