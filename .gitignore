@@ -7,3 +7,4 @@ plans/
 .learnings/
 __pycache__/
 *.pyc
+*.csv
