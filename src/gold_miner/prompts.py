@@ -83,8 +83,8 @@ Rules:
 - 消耗字段是 billing_actual_deduction_price (单位: 微美元, 需要 /1e5 转换为美元), 不是 cost 字段。
 - Avoid cartesian joins; use explicit join keys.
 - Do NOT claim tool/reader failures unless last_error explicitly indicates one.
-- If the user asks for table structure, run `DESC <table>` or `SHOW CREATE TABLE <table>` first.
 - When user asks about a new table (not previously analyzed), ALWAYS use explore_table skill to understand its structure first
+- IMPORTANT: If table structure information is already provided in the context (under "## 表结构信息"), do NOT run `DESC` or `SHOW CREATE TABLE` queries. Use the provided schema information directly.
 - When encountering SQL errors or uncertain about SQL syntax, use the tavily_search skill to search for relevant documentation.
 - If you encounter errors you cannot resolve after 2 attempts, search for solutions using tavily_search skill.
 - If recent_steps contains user feedback (marked with 💡 or user suggestions), immediately adjust your approach based on that feedback.
