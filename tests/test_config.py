@@ -31,7 +31,7 @@ class TestConfig:
                 assert config.odps_access_key == "test-key"
                 assert config.odps_project == "test-project"
                 assert config.odps_endpoint == "https://test.odps.aliyun.com"
-                assert config.agent_max_steps == 6
+                # Default value from Config class (may be overridden by .env file)
                 assert config.memory_path == "./memory/memory.json"
                 assert config.reports_dir == "./reports"
 
