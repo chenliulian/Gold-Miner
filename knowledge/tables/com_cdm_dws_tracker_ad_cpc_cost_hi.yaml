@@ -1053,6 +1053,26 @@
   - ${enddt_gmt8}: 结束日期(GMT+8)
   - dh: 小时分区，格式yyyyMMddHH，GMT+8时区
 ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/com_cdm_dws_tracker_ad_cpc_cost_hi.sql
+常见查询场景:
+  场景1_申转目标广告组转化数统计:
+    场景说明: 统计申转目标广告组（注册/申贷/付费/首次付费）的转化数
+    SQL示例: |
+      SET odps.instance.priority = 7;
+      
+      select substr(dh, 1, 8) as dt,
+             sum(case when event_type like '%申贷%' then click_conv_pv else 0 end) as apploan_num
+      from com_cdm.dws_tracker_ad_cpc_cost_hi
+      where dh between '2026031900' and '2026032023'
+        and ad_group_id='80554'
+      group by substr(dh, 1, 8);
+    关键字段:
+      - event_type: 事件类型，用于筛选转化类型（如'%申贷%'、'%注册%'、'%付费%'）
+      - click_conv_pv: 点击时间转化数
+      - ad_group_id: 广告组ID，用于筛选目标广告组
+    注意事项:
+      - event_type 支持模糊匹配，如 '%申贷%' 可匹配所有申贷相关事件
+      - 转化数按 click_conv_pv 统计，表示点击时间归因的转化数
+      - dh 分区字段必须指定，格式为 yyyyMMddHH
 业务备注:
   ID字段:
   - advertiser_id
