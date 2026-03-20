@@ -29,8 +29,6 @@ from api_v2 import api_v2, init_config
 init_config(_config)
 app.register_blueprint(api_v2)
 
-init_schedulers()
-
 CONFIG = None
 AGENT = None
 
@@ -113,6 +111,10 @@ def init_schedulers():
     )
 
     print(f"[App] Schedulers started: review_interval={_config.scheduler_review_interval_hours}h, session_review={_config.scheduler_session_review_hours}h")
+
+
+# Initialize schedulers after all functions are defined
+init_schedulers()
 
 
 @app.route("/")
