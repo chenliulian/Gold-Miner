@@ -393,6 +393,75 @@
             background: var(--bg-hover);
         }
 
+        /* Collapsible Log Styles */
+        .log-collapsible {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .log-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: #f8f9fa;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .log-toggle:hover {
+            background: #e9ecef;
+        }
+
+        .log-toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .log-toggle-icon {
+            font-size: 12px;
+            transition: transform 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .log-toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .log-count {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .log-content-wrapper {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: var(--bg-secondary);
+        }
+
+        .log-content-wrapper.expanded {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-content-inner {
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
         .message-text {
             font-size: 15px;
             line-height: 1.6;
@@ -1102,9 +1171,11 @@
                     }
                 }
                 
-                // 移除日志容器，显示最终结果
-                logContainer.remove();
+                // 完成日志记录（折叠日志，保留供用户查看）
+                const success = hasReceivedContent;
+                finalizeLog(logContainer, success);
                 
+                // 显示最终结果
                 if (hasReceivedContent && fullResponse) {
                     addMessage(fullResponse, 'assistant');
                 } else {
@@ -1112,7 +1183,8 @@
                 }
                 
             } catch (error) {
-                logContainer.remove();
+                // 完成日志记录（标记为失败）
+                finalizeLog(logContainer, false);
                 addMessage('网络错误，请稍后重试: ' + error.message, 'assistant');
             } finally {
                 isProcessing = false;
@@ -1120,7 +1192,7 @@
             }
         }
         
-        // 添加日志消息容器
+        // 添加日志消息容器（可折叠）
         function addLogMessage() {
             const container = document.getElementById('chat-messages');
             
@@ -1133,9 +1205,17 @@
             messageDiv.innerHTML = `
                 <div class="message-avatar assistant">◈</div>
                 <div class="message-content assistant">
-                    <div class="message-text">
-                        <div class="log-header">🔄 正在执行任务...</div>
-                        <div class="log-content"></div>
+                    <div class="log-collapsible">
+                        <div class="log-toggle" onclick="toggleLog(this)">
+                            <div class="log-toggle-left">
+                                <span class="log-toggle-icon">▶</span>
+                                <span>🔄 执行日志</span>
+                            </div>
+                            <span class="log-count">0 条</span>
+                        </div>
+                        <div class="log-content-wrapper">
+                            <div class="log-content-inner"></div>
+                        </div>
                     </div>
                     <div class="message-time">${time}</div>
                 </div>
@@ -1147,25 +1227,64 @@
             return messageDiv;
         }
         
+        // 切换日志展开/折叠
+        function toggleLog(toggleElement) {
+            const icon = toggleElement.querySelector('.log-toggle-icon');
+            const wrapper = toggleElement.nextElementSibling;
+            
+            icon.classList.toggle('expanded');
+            wrapper.classList.toggle('expanded');
+        }
+        
         // 追加日志内容
         function appendLog(logContainer, text) {
-            const logContent = logContainer.querySelector('.log-content');
-            if (logContent) {
+            const logInner = logContainer.querySelector('.log-content-inner');
+            const logCount = logContainer.querySelector('.log-count');
+            
+            if (logInner) {
                 const line = document.createElement('div');
                 line.className = 'log-line';
                 line.textContent = text;
-                logContent.appendChild(line);
+                logInner.appendChild(line);
                 
-                // 限制日志行数
-                const lines = logContent.querySelectorAll('.log-line');
-                if (lines.length > 50) {
+                // 更新日志计数
+                const lines = logInner.querySelectorAll('.log-line');
+                if (logCount) {
+                    logCount.textContent = lines.length + ' 条';
+                }
+                
+                // 限制日志行数（保留最新的100条）
+                if (lines.length > 100) {
                     lines[0].remove();
                 }
                 
-                // 滚动到底部
+                // 如果日志已展开，滚动到底部
+                const wrapper = logContainer.querySelector('.log-content-wrapper');
+                if (wrapper && wrapper.classList.contains('expanded')) {
+                    wrapper.scrollTop = wrapper.scrollHeight;
+                }
+                
+                // 滚动消息容器到底部
                 const container = document.getElementById('chat-messages');
                 container.scrollTop = container.scrollHeight;
             }
+        }
+        
+        // 完成日志记录（将日志折叠起来）
+        function finalizeLog(logContainer, success = true) {
+            const toggle = logContainer.querySelector('.log-toggle');
+            const icon = toggle.querySelector('.log-toggle-icon');
+            const wrapper = logContainer.querySelector('.log-content-wrapper');
+            const leftText = toggle.querySelector('.log-toggle-left span:last-child');
+            
+            // 更新标题
+            if (leftText) {
+                leftText.textContent = success ? '✅ 执行完成（点击展开查看日志）' : '❌ 执行失败（点击展开查看日志）';
+            }
+            
+            // 确保日志是折叠状态
+            icon.classList.remove('expanded');
+            wrapper.classList.remove('expanded');
         }
 
         // 添加快捷消息

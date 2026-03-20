@@ -240,3 +240,105 @@ WITH daily AS (
 - Related Files: 
 
 ---
+
+## [ERR-20260320-642] skill_or_command
+
+**Logged**: 2026-03-20T11:55:00
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ParseError: RequestId: 69BCC5149BB7980BD52CE7CE Tag: ODPS Endpoint: http://servi...
+
+### Error
+```
+错误类型: unknown
+错误信息: ParseError: RequestId: 69BCC5149BB7980BD52CE7CE Tag: ODPS Endpoint: http://service.eu-central-1.maxcompute.aliyun.com/api
+SQL Statement: -- 1) 先按知识文件核对：申贷目标下“有转化”的行，pv / click_conv_pv / 时间字段分别长什么样
+SELECT
+  dh,
+  advertiser_dh,
+  attri_dh,
+  advertiser_id,
+  ad_group_id,
+  transform_target_cn,
+  event_type,
+  conv_src,
+  channel,
+  pv,
+  click_conv_pv,
+  dld_finished_cnt,
+  click_active_cnt,
+  pool_should_cost,
+  correct_bill_should_cost
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh BETWEEN '2
+上下文: sql_execution
+时间: 2026-03-20T11:55:00.236546
+
+相关 SQL:
+```sql
+-- 1) 先按知识文件核对：申贷目标下“有转化”的行，pv / click_conv_pv / 时间字段分别长什么样
+SELECT
+  dh,
+  advertiser_dh,
+  attri_dh,
+  advertiser_id,
+  ad_group_id,
+  transform_target_cn,
+  event_type,
+  conv_src,
+  channel,
+  pv,
+  click_conv_pv,
+  dld_finished_cnt,
+  click_active_cnt,
+  pool_should_cost,
+  correct_bill_should_cost
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh BETWEEN '2026031900' AND '2026032023'
+  AND advertiser_id='2368'
+  AND transform_target_cn LIKE '%申贷%'
+  AND (COALESCE(pv,0) > 0 OR COALESCE(click_
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260320-201] skill_or_command
+
+**Logged**: 2026-03-20T11:55:24
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS 不支持默认多语句提交；需要拆成单条 SQL 执行或开启 odps.sql.submit.mode=script。
+
+### Error
+```
+尝试在一次 run_sql 中写了多个 SELECT/CTE 语句，报错提示 'Please add put { "odps.sql.submit.mode" : "script"} for multi-statement query in settings.'
+```
+
+### Context
+- Source: error
+
+### Suggested Fix
+后续每次 run_sql 只提交一条 SQL（一个 SELECT/CTE），需要多步时拆成多次 run_sql。
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---

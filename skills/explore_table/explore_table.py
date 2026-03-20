@@ -93,7 +93,7 @@ def run(
             try:
                 partition_sql = f"SHOW PARTITIONS {full_table_name}"
                 print(f"[explore_table] Executing SHOW PARTITIONS: {partition_sql}")
-                partition_df = client.run_sql(partition_sql, enable_log=False)
+                partition_df, _ = client.execute_sql_with_priority(partition_sql, priority=7, enable_log=False)
                 if not partition_df.empty:
                     first_partition = str(partition_df.iloc[0, 0])
                     if "=" in first_partition:
@@ -116,7 +116,7 @@ def run(
 
         sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows}"
         print(f"[explore_table] Getting sample data: {sample_sql}")
-        sample_df = client.run_sql(sample_sql, enable_log=False)
+        sample_df, _ = client.execute_sql_with_priority(sample_sql, priority=7, enable_log=False)
 
         if not sample_df.empty:
             # 从 DataFrame 和 SDK 获取的注释构建列信息
@@ -198,7 +198,7 @@ def run(
 
             sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows}"
             print(f"[explore_table] Executing sample query: {sample_sql}")
-            sample_df = client.run_sql(sample_sql, enable_log=False)
+            sample_df, _ = client.execute_sql_with_priority(sample_sql, priority=7, enable_log=False)
 
             if not sample_df.empty:
                 result["sample_data"] = {
