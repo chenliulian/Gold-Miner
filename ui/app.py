@@ -545,5 +545,147 @@ def metrics():
         return f"# Error generating metrics: {e}", 500
 
 
+# =============================================================================
+# Learning Review Endpoints
+# =============================================================================
+
+@app.route("/learnings/review", methods=["POST"])
+def trigger_learnings_review():
+    """Manually trigger a learnings review and append to memory."""
+    try:
+        from gold_miner.learning_reviewer import get_learning_reviewer
+
+        reviewer = get_learning_reviewer(
+            learnings_dir=".learnings",
+            memory_path="./memory/memory.md",
+        )
+
+        report = reviewer.trigger_review()
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "total_records": report.total_records,
+                "pending_high_priority": len(report.pending_high_priority),
+                "by_type": report.by_type,
+                "by_area": report.by_area,
+                "recommendations": report.recommendations,
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/learnings/pending", methods=["GET"])
+def get_pending_learnings():
+    """Get pending learning records with optional filters."""
+    try:
+        from gold_miner.learning_reviewer import get_learning_reviewer
+
+        area = request.args.get("area")
+        priority = request.args.get("priority")
+        limit = int(request.args.get("limit", 10))
+
+        reviewer = get_learning_reviewer(
+            learnings_dir=".learnings",
+            memory_path="./memory/memory.md",
+        )
+
+        records = reviewer.get_pending_records(
+            area=area,
+            priority=priority,
+            limit=limit,
+        )
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "count": len(records),
+                "records": [
+                    {
+                        "id": r.id,
+                        "type": r.type,
+                        "area": r.area,
+                        "priority": r.priority,
+                        "summary": r.summary,
+                        "suggested_action": r.suggested_action,
+                        "logged_at": r.logged_at.isoformat(),
+                    }
+                    for r in records
+                ]
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/learnings/update/<record_id>", methods=["POST"])
+def update_learning_status(record_id):
+    """Update status of a learning record."""
+    try:
+        from gold_miner.learning_reviewer import get_learning_reviewer, ReviewStatus
+
+        data = request.json or {}
+        new_status = data.get("status", "pending")
+        review_notes = data.get("review_notes", "")
+
+        reviewer = get_learning_reviewer(
+            learnings_dir=".learnings",
+            memory_path="./memory/memory.md",
+        )
+
+        success = reviewer.update_record_status(
+            record_id,
+            ReviewStatus(new_status),
+            review_notes,
+        )
+
+        if success:
+            return jsonify({
+                "success": True,
+                "message": f"Record {record_id} updated to {new_status}"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": f"Record {record_id} not found"
+            }), 404
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/learnings/stats", methods=["GET"])
+def get_learnings_stats():
+    """Get learning review scheduler statistics."""
+    try:
+        from gold_miner.learning_reviewer import get_learning_reviewer
+
+        reviewer = get_learning_reviewer(
+            learnings_dir=".learnings",
+            memory_path="./memory/memory.md",
+        )
+
+        stats = reviewer.get_stats()
+
+        return jsonify({
+            "success": True,
+            "data": stats
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
