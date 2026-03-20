@@ -396,3 +396,120 @@ ODPS 不支持一次提交多条 SQL；需要拆成单条或设置 odps.sql.subm
 - Related Files: 
 
 ---
+
+## [ERR-20260320-343] skill_or_command
+
+**Logged**: 2026-03-20T17:04:37
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260320090434780gu7ji5f7oqg
+ODPS-0130071:[23,14] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260320090434780gu7ji5f7oqg
+ODPS-0130071:[23,14] Semantic analysis exception - column dt cannot be resolved
+ODPS-0130071:[12,9] Semantic analysis exception - column dt cannot be resolved
+
+上下文: sql_execution
+时间: 2026-03-20T17:04:37.556029
+
+相关 SQL:
+```sql
+WITH dim_ag AS (
+    SELECT 
+        ad_group_id,
+        MAX(ad_group_title) AS ad_group_title
+    FROM com_cdm.dim_creativity_dd
+    WHERE dt = MAX_PT('com_cdm.dim_creativity_dd')
+      AND advertiser_id = 23
+    GROUP BY ad_group_id
+),
+agg AS (
+    SELECT
+        dt,
+        ad_group_id,
+        SUM(click_label) AS click_cnt,
+        SUM(dld_label) AS dld_cnt,
+        SUM(conv_label_active) AS active_cnt,
+        SUM(conv_label_register) AS register_cnt,
+        SUM(conv_label_apply_loan) AS 
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260320-584] skill_or_command
+
+**Logged**: 2026-03-20T17:21:47
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 2026032009214583gyb6mjx4aio2
+ODPS-0130071:[12,9] Seman...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 2026032009214583gyb6mjx4aio2
+ODPS-0130071:[12,9] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[3,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[4,5] Semantic analysis exception - column ad_group_title cannot be resolved
+ODPS-0130071:[7,5] Semantic analysis exception - column purpose_type_cn cannot be resolved
+ODPS-0130071:[9,5] Semantic analysis exception - column status_v2 cannot be resolved; Di
+上下文: sql_execution
+时间: 2026-03-20T17:21:47.795372
+
+相关 SQL:
+```sql
+WITH ag AS (
+  SELECT
+    CAST(ad_group_id AS BIGINT) AS ad_group_id,
+    ad_group_title,
+    advertiser_id,
+    ad_plan_id,
+    purpose_type_cn,
+    transform_target_cn,
+    status_v2
+  FROM com_cdm.dim_ad_group_dd
+  WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd')
+    AND ad_group_id = 80554
+),
+show_funnel AS (
+  SELECT
+    SUBSTR(dh, 1, 8) AS dt,
+    CAST(ad_group_id AS BIGINT) AS ad_group_id,
+    SUM(show_label) AS show_cnt,
+    SUM(click_label) AS click_cnt,
+    SUM(download_label) AS dld_cnt,
+
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---

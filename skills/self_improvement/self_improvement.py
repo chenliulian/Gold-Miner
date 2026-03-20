@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 import os
 
 
-LEARNINGS_DIR = Path("/Users/shmichenliulian/GoldMiner/.learnings")
+LEARNINGS_DIR = Path(__file__).parent / "references"
 LEARNINGS_FILE = LEARNINGS_DIR / "LEARNINGS.md"
 ERRORS_FILE = LEARNINGS_DIR / "ERRORS.md"
 FEATURE_REQUESTS_FILE = LEARNINGS_DIR / "FEATURE_REQUESTS.md"

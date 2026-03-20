@@ -29,6 +29,8 @@ from api_v2 import api_v2, init_config
 init_config(_config)
 app.register_blueprint(api_v2)
 
+init_schedulers()
+
 CONFIG = None
 AGENT = None
 
@@ -83,6 +85,34 @@ def get_agent():
         )
     
     return AGENT
+
+
+def init_schedulers():
+    """Initialize background schedulers based on config."""
+    if not _config.scheduler_auto_start:
+        print("[App] Scheduler auto-start is disabled")
+        return
+
+    from gold_miner.learning_reviewer import get_learning_reviewer
+    from gold_miner.session_summarizer import get_session_summarizer
+
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    get_learning_reviewer(
+        learnings_dir=os.path.join(project_root, "skills/self_improvement/references"),
+        memory_path=os.path.join(project_root, "memory/memory.md"),
+        review_interval_hours=_config.scheduler_review_interval_hours,
+        auto_start=True,
+    )
+
+    get_session_summarizer(
+        sessions_dir=os.path.join(project_root, "sessions"),
+        memory_path=os.path.join(project_root, "memory/memory.json"),
+        review_interval_hours=_config.scheduler_session_review_hours,
+        auto_start=True,
+    )
+
+    print(f"[App] Schedulers started: review_interval={_config.scheduler_review_interval_hours}h, session_review={_config.scheduler_session_review_hours}h")
 
 
 @app.route("/")
