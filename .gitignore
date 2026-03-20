@@ -3,5 +3,7 @@ memory/
 reports/
 src/reports/
 knowledge/etl/
+plans/
+.learnings/
 __pycache__/
 *.pyc
