@@ -557,7 +557,6 @@ def trigger_learnings_review():
 
         reviewer = get_learning_reviewer(
             learnings_dir=".learnings",
-            memory_path="./memory/memory.md",
         )
 
         report = reviewer.trigger_review()
@@ -591,7 +590,6 @@ def get_pending_learnings():
 
         reviewer = get_learning_reviewer(
             learnings_dir=".learnings",
-            memory_path="./memory/memory.md",
         )
 
         records = reviewer.get_pending_records(
@@ -637,7 +635,6 @@ def update_learning_status(record_id):
 
         reviewer = get_learning_reviewer(
             learnings_dir=".learnings",
-            memory_path="./memory/memory.md",
         )
 
         success = reviewer.update_record_status(
@@ -671,7 +668,6 @@ def get_learnings_stats():
 
         reviewer = get_learning_reviewer(
             learnings_dir=".learnings",
-            memory_path="./memory/memory.md",
         )
 
         stats = reviewer.get_stats()
