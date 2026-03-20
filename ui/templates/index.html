@@ -462,6 +462,133 @@
             line-height: 1.6;
         }
 
+        /* Collapsible SQL Styles */
+        .sql-collapsible {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .sql-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #f0f4f8;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .sql-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        .sql-toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .sql-toggle-icon {
+            font-size: 12px;
+            transition: transform 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .sql-toggle-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .sql-content-wrapper {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .sql-content-wrapper.expanded {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .sql-content-inner {
+            padding: 16px;
+        }
+
+        .sql-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+            word-wrap: normal;
+            margin: 0;
+        }
+
+        .sql-block code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        /* SQL Syntax Highlighting */
+        .sql-keyword {
+            color: #c678dd;
+            font-weight: 600;
+        }
+
+        .sql-string {
+            color: #98c379;
+        }
+
+        .sql-number {
+            color: #d19a66;
+        }
+
+        .sql-comment {
+            color: #5c6370;
+            font-style: italic;
+        }
+
+        /* SQL Copy Button */
+        .sql-copy-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-left: 8px;
+        }
+
+        .sql-copy-btn:hover {
+            background: #2563eb;
+        }
+
+        .sql-info {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .sql-info-item {
+            margin: 4px 0;
+        }
+
         .message-text {
             font-size: 15px;
             line-height: 1.6;
@@ -1423,17 +1550,73 @@
             return html;
         }
 
-        // 处理文本中的表格
+        // 处理文本中的表格和SQL代码块
         function processMessageText(text) {
+            // 首先处理SQL代码块（在Markdown表格之前处理）
+            text = processSqlBlocks(text);
+            
+            // 检查是否包含SQL折叠组件HTML，如果包含需要特殊处理
+            const hasSqlCollapsible = text.includes('<div class="sql-collapsible">');
+            
             const tables = parseMarkdownTable(text);
-            if (tables.length === 0) {
+            if (tables.length === 0 && !hasSqlCollapsible) {
                 return escapeHtml(text).replace(/\n/g, '<br>');
             }
 
             let result = '';
             let lastIndex = 0;
+            
+            // 如果包含SQL折叠组件，使用基于HTML标签的分割方式
+            if (hasSqlCollapsible) {
+                // 分割文本：保留SQL组件HTML，转义其他文本
+                const parts = text.split(/(<div class="sql-collapsible">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>)/);
+                
+                parts.forEach(part => {
+                    if (part.startsWith('<div class="sql-collapsible">')) {
+                        // 保留SQL组件HTML
+                        result += part;
+                    } else {
+                        // 转义普通文本
+                        const lines = part.split('\n');
+                        let textResult = '';
+                        let textLastIndex = 0;
+                        
+                        // 处理表格
+                        const textTables = parseMarkdownTable(part);
+                        if (textTables.length > 0) {
+                            textTables.forEach(table => {
+                                const beforeTable = lines.slice(textLastIndex, table.start).join('\n');
+                                if (beforeTable.trim()) {
+                                    textResult += escapeHtml(beforeTable).replace(/\n/g, '<br>') + '<br>';
+                                }
+                                
+                                const tableHtml = renderTable(table.rows);
+                                if (tableHtml) {
+                                    textResult += tableHtml;
+                                } else {
+                                    textResult += escapeHtml(table.rows.join('\n')).replace(/\n/g, '<br>');
+                                }
+                                
+                                textLastIndex = table.end;
+                            });
+                            
+                            const afterTable = lines.slice(textLastIndex).join('\n');
+                            if (afterTable.trim()) {
+                                textResult += '<br>' + escapeHtml(afterTable).replace(/\n/g, '<br>');
+                            }
+                        } else {
+                            textResult = escapeHtml(part).replace(/\n/g, '<br>');
+                        }
+                        
+                        result += textResult;
+                    }
+                });
+                
+                return result;
+            }
+            
+            // 原有逻辑（不含SQL组件时）
             const lines = text.split('\n');
-
             tables.forEach(table => {
                 // 添加表格前的文本
                 const beforeTable = lines.slice(lastIndex, table.start).join('\n');
@@ -1459,6 +1642,159 @@
             }
 
             return result;
+        }
+
+        // 处理SQL代码块，转换为可折叠组件
+        function processSqlBlocks(text) {
+            let result = text;
+            let sqlIndex = 0;
+            const sqlBlocks = [];
+            
+            // 1. 匹配 ```sql ... ``` 代码块（支持换行或不换行）
+            const sqlBlockRegex = /```sql\s*\n?([\s\S]*?)```/g;
+            let match;
+            while ((match = sqlBlockRegex.exec(text)) !== null) {
+                sqlBlocks.push({
+                    fullMatch: match[0],
+                    sql: match[1].trim(),
+                    index: match.index,
+                    type: 'codeblock'
+                });
+            }
+            
+            // 2. 匹配以 "本次跑数 SQL" 或类似标题开头的 SQL 代码块（不带 ```sql 标记）
+            // 匹配模式：标题行 + 换行 + SQL语句（以 WITH/SELECT/INSERT/UPDATE/DELETE 开头，以分号或空行结束）
+            const sqlHeaderPatterns = [
+                /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(WITH\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi,
+                /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(SELECT\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi,
+                /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(INSERT\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi,
+                /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(UPDATE\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi,
+                /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(DELETE\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi
+            ];
+            
+            sqlHeaderPatterns.forEach(pattern => {
+                while ((match = pattern.exec(text)) !== null) {
+                    // 检查这个位置是否已经被之前的匹配占用
+                    const isOverlapping = sqlBlocks.some(block => 
+                        (match.index >= block.index && match.index < block.index + block.fullMatch.length) ||
+                        (block.index >= match.index && block.index < match.index + match[0].length)
+                    );
+                    
+                    if (!isOverlapping) {
+                        sqlBlocks.push({
+                            fullMatch: match[0],
+                            sql: match[1].trim(),
+                            index: match.index,
+                            type: 'plaintext'
+                        });
+                    }
+                }
+            });
+            
+            // 按索引排序，从后向前替换
+            sqlBlocks.sort((a, b) => b.index - a.index);
+            
+            for (let i = 0; i < sqlBlocks.length; i++) {
+                const block = sqlBlocks[i];
+                const sqlId = 'sql-' + Date.now() + '-' + i;
+                const sqlNumber = sqlBlocks.length - i;
+                const sqlHtml = createSqlCollapsible(block.sql, sqlId, sqlNumber);
+                
+                result = result.substring(0, block.index) + sqlHtml + result.substring(block.index + block.fullMatch.length);
+            }
+            
+            return result;
+        }
+
+        // 创建可折叠的SQL组件
+        function createSqlCollapsible(sql, sqlId, sqlNumber) {
+            // 格式化SQL代码，添加语法高亮
+            const formattedSql = formatSqlCode(sql);
+            return `<div class="sql-collapsible">
+                <div class="sql-toggle" onclick="toggleSql(this)">
+                    <div class="sql-toggle-left">
+                        <span class="sql-toggle-icon">▶</span>
+                        <span>🗄️ SQL ${sqlNumber}（点击查看）</span>
+                    </div>
+                    <button class="sql-copy-btn" onclick="copySql(event, '${sqlId}')" title="复制SQL">
+                        📋 复制
+                    </button>
+                </div>
+                <div class="sql-content-wrapper" id="${sqlId}">
+                    <div class="sql-content-inner">
+                        <pre class="sql-block"><code>${formattedSql}</code></pre>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // 格式化SQL代码，添加简单语法高亮
+        function formatSqlCode(sql) {
+            let formatted = escapeHtml(sql);
+            
+            // SQL关键字高亮
+            const keywords = ['SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'NULL', 'IS', 'IN', 'EXISTS', 
+                             'BETWEEN', 'LIKE', 'AS', 'ON', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 
+                             'FULL', 'CROSS', 'UNION', 'ALL', 'GROUP', 'BY', 'ORDER', 'HAVING', 'LIMIT',
+                             'WITH', 'RECURSIVE', 'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
+                             'CREATE', 'TABLE', 'DROP', 'ALTER', 'INDEX', 'VIEW', 'TRIGGER', 'PROCEDURE',
+                             'FUNCTION', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'IF', 'WHILE', 'FOR',
+                             'SUM', 'COUNT', 'AVG', 'MAX', 'MIN', 'ROUND', 'COALESCE', 'CAST', 'CONVERT',
+                             'DISTINCT', 'OVER', 'PARTITION', 'ROW_NUMBER', 'RANK', 'DENSE_RANK'];
+            
+            keywords.forEach(keyword => {
+                const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+                formatted = formatted.replace(regex, match => `<span class="sql-keyword">${match}</span>`);
+            });
+            
+            // 字符串高亮
+            formatted = formatted.replace(/('[^']*')/g, '<span class="sql-string">$1</span>');
+            
+            // 数字高亮
+            formatted = formatted.replace(/\b(\d+)\b/g, '<span class="sql-number">$1</span>');
+            
+            // 注释高亮
+            formatted = formatted.replace(/(--.*$)/gm, '<span class="sql-comment">$1</span>');
+            
+            return formatted;
+        }
+
+        // 复制SQL代码
+        function copySql(event, sqlId) {
+            event.stopPropagation(); // 防止触发折叠/展开
+            const wrapper = document.getElementById(sqlId);
+            const codeBlock = wrapper.querySelector('code');
+            const sqlText = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(sqlText).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+
+        // 切换SQL展开/折叠
+        function toggleSql(toggleElement) {
+            const icon = toggleElement.querySelector('.sql-toggle-icon');
+            const wrapper = toggleElement.nextElementSibling;
+            const leftText = toggleElement.querySelector('.sql-toggle-left span:last-child');
+            
+            icon.classList.toggle('expanded');
+            wrapper.classList.toggle('expanded');
+            
+            // 更新文本
+            if (leftText) {
+                if (wrapper.classList.contains('expanded')) {
+                    leftText.textContent = leftText.textContent.replace('（点击查看）', '（点击折叠）');
+                } else {
+                    leftText.textContent = leftText.textContent.replace('（点击折叠）', '（点击查看）');
+                }
+            }
         }
 
         // 键盘事件

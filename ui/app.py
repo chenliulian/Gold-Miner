@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, session, Response
 from dotenv import load_dotenv
@@ -12,24 +13,74 @@ app = Flask(
     template_folder="templates",
     static_folder="static"
 )
-app.secret_key = os.getenv("SESSION_SECRET", "gold-miner-secret-key")
+
+from gold_miner.config import Config
+
+# Validate and set session secret before creating app
+_config = Config.from_env()
+_config.validate_security()
+app.secret_key = _config.session_secret
 
 from gold_miner.agent import SqlAgent
-from gold_miner.config import Config
+from gold_miner.rate_limiter import RateLimitExceeded, get_chat_limiter, get_default_limiter
+
+# Import and register API v2
+from api_v2 import api_v2, init_config
+init_config(_config)
+app.register_blueprint(api_v2)
 
 CONFIG = None
 AGENT = None
 
 
+def get_client_ip():
+    """Get client IP address from request."""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    elif request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    else:
+        return request.remote_addr
+
+
+def check_rate_limit(limiter_type="default"):
+    """Check rate limit for current request."""
+    client_ip = get_client_ip()
+    
+    if limiter_type == "chat":
+        limiter = get_chat_limiter()
+    else:
+        limiter = get_default_limiter()
+    
+    allowed, info = limiter.is_allowed(client_ip)
+    
+    if not allowed:
+        raise RateLimitExceeded(
+            f"Rate limit exceeded. Please try again after {int(info['reset'] - time.time())} seconds."
+        )
+    
+    return info
+
+
 def get_agent():
     global AGENT, CONFIG
     if AGENT is None:
-        CONFIG = Config.from_env()
+        CONFIG = _config
         CONFIG.validate()
         
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         skills_dir = os.path.join(project_root, "skills")
-        AGENT = SqlAgent(CONFIG, skills_dir)
+        # 会话文件保存到 ui/sessions 目录
+        sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+        AGENT = SqlAgent(CONFIG, skills_dir, sessions_dir=sessions_dir)
+        
+        # Initialize agent pool for API v2
+        from gold_miner.services import get_agent_pool
+        get_agent_pool(
+            config=CONFIG,
+            skills_dir=skills_dir,
+            sessions_dir=sessions_dir,
+        )
     
     return AGENT
 
@@ -41,14 +92,26 @@ def index():
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    # Check rate limit for chat endpoint
+    try:
+        rate_info = check_rate_limit("chat")
+    except RateLimitExceeded as e:
+        return jsonify({"error": str(e)}), 429
+    
     data = request.json
     user_message = data.get("message", "")
     stream = data.get("stream", False)
+    new_session = data.get("new_session", False)  # 是否开启新会话
     
     if not user_message:
         return jsonify({"error": "Empty message"}), 400
     
     agent = get_agent()
+    
+    # 如果需要开启新会话
+    if new_session or agent.session.get_current_session_id() is None:
+        session_title = user_message[:30] + "..." if len(user_message) > 30 else user_message
+        agent.start_new_session(title=session_title)
     
     def generate():
         import queue
@@ -73,7 +136,7 @@ def chat():
         def run_agent():
             """在后台线程中运行 agent"""
             try:
-                agent.memory.add_step("user", user_message)
+                agent.session.add_step("user", user_message)
                 report_path = agent.run(user_message, status_cb=status_callback, clear_memory=False)
                 result_holder["report_path"] = report_path
                 result_holder["done"] = True
@@ -118,8 +181,7 @@ def chat():
             else:
                 response_text = str(report_path) if report_path else "任务完成"
             
-            agent.memory.add_step("assistant", response_text)
-            agent.memory._save()
+            agent.session.add_step("assistant", response_text)
             
             yield f"data: {json.dumps({'type': 'message', 'role': 'assistant', 'content': response_text})}\n\n"
         
@@ -130,7 +192,7 @@ def chat():
     
     # Non-streaming mode
     try:
-        agent.memory.add_step("user", user_message)
+        agent.session.add_step("user", user_message)
         
         report_path = agent.run(user_message)
         
@@ -141,8 +203,7 @@ def chat():
         else:
             response_text = str(report_path) if report_path else "任务完成"
         
-        agent.memory.add_step("assistant", response_text)
-        agent.memory._save()
+        agent.session.add_step("assistant", response_text)
         
         return jsonify({
             "success": True,
@@ -158,8 +219,73 @@ def chat():
         }), 500
 
 
+@app.route("/sessions", methods=["GET"])
+def list_sessions():
+    """获取所有历史会话列表"""
+    agent = get_agent()
+    
+    try:
+        sessions = agent.session.list_sessions(limit=50)
+        return jsonify({
+            "success": True,
+            "sessions": sessions
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/sessions/<session_id>", methods=["GET"])
+def get_session(session_id):
+    """获取特定会话的详情"""
+    agent = get_agent()
+    
+    try:
+        # 临时加载指定会话
+        success = agent.session.load_session(session_id)
+        if not success:
+            return jsonify({
+                "success": False,
+                "error": "Session not found"
+            }), 404
+        
+        context = agent.session.get_context()
+        return jsonify({
+            "success": True,
+            "session": context
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/sessions/new", methods=["POST"])
+def new_session():
+    """开启新会话"""
+    agent = get_agent()
+    
+    try:
+        data = request.json or {}
+        title = data.get("title", "")
+        session_id = agent.start_new_session(title=title)
+        return jsonify({
+            "success": True,
+            "session_id": session_id
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @app.route("/memory", methods=["GET"])
 def get_memory():
+    """获取长期记忆内容"""
     agent = get_agent()
     
     try:
@@ -176,10 +302,43 @@ def get_memory():
 
 @app.route("/memory/clear", methods=["POST"])
 def clear_memory():
+    """清空长期记忆（谨慎使用）"""
     agent = get_agent()
     
     try:
         agent.memory.clear()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/memory/save", methods=["POST"])
+def save_to_memory():
+    """手动保存内容到长期记忆"""
+    agent = get_agent()
+    
+    try:
+        data = request.json
+        content_type = data.get("type")  # "table", "metric", "background", "conversation"
+        
+        if content_type == "table":
+            table_name = data.get("table_name")
+            columns = data.get("columns", [])
+            agent.memory.save_table_schema(table_name, columns)
+        elif content_type == "metric":
+            metric_name = data.get("metric_name")
+            definition = data.get("definition")
+            agent.memory.save_metric_definition(metric_name, definition)
+        elif content_type == "background":
+            item = data.get("item")
+            agent.memory.save_business_background(item)
+        elif content_type == "conversation":
+            content = data.get("content")
+            context = data.get("context", "")
+            agent.memory.save_conversation_point(content, context)
+        else:
+            return jsonify({"success": False, "error": "Unknown content type"}), 400
+        
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -199,7 +358,7 @@ def interrupt_agent():
         if hasattr(agent, 'cancel_event') and agent.cancel_event:
             agent.cancel_event.set()
         
-        agent.memory.add_step("user", f"[用户插话] {message}")
+        agent.session.add_step("user", f"[用户插话] {message}")
         
         return jsonify({
             "success": True,
@@ -249,102 +408,142 @@ def call_skill(skill_name):
 
 @app.route("/config", methods=["GET"])
 def get_config():
-    get_agent()
-    
-    return jsonify({
-        "success": True,
-        "config": {
-            "llm_model": CONFIG.llm_model,
-            "llm_base_url": CONFIG.llm_base_url,
-            "odps_project": CONFIG.odps_project,
-            "max_steps": CONFIG.agent_max_steps,
-        }
-    })
-
-
-@app.route("/learnings", methods=["GET"])
-def get_learnings():
-    learnings_dir = Path(".learnings")
-    
-    if not learnings_dir.exists():
-        return jsonify({
-            "success": True,
-            "learnings": [],
-            "errors": [],
-            "features": []
-        })
-    
-    def read_file(filename):
-        path = learnings_dir / filename
-        if path.exists():
-            return path.read_text(encoding="utf-8")
-        return ""
-    
-    return jsonify({
-        "success": True,
-        "learnings": read_file("LEARNINGS.md"),
-        "errors": read_file("ERRORS.md"),
-        "features": read_file("FEATURE_REQUESTS.md")
-    })
-
-
-@app.route("/api/tables", methods=["GET"])
-def get_tables():
-    """获取知识库中所有可用的表"""
-    try:
-        project_root = Path(__file__).parent.parent
-        tables_dir = project_root / "knowledge" / "tables"
-        
-        tables = []
-        if tables_dir.exists():
-            for yaml_file in tables_dir.glob("*.yaml"):
-                try:
-                    import yaml
-                    with open(yaml_file, "r", encoding="utf-8") as f:
-                        table_info = yaml.safe_load(f)
-                        if table_info:
-                            tables.append({
-                                "name": table_info.get("表名", yaml_file.stem),
-                                "description": table_info.get("描述", ""),
-                                "file": yaml_file.name
-                            })
-                except Exception as e:
-                    print(f"Error loading table {yaml_file}: {e}")
-        
-        return jsonify({
-            "success": True,
-            "tables": tables
-        })
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
-
-
-@app.route("/api/skills", methods=["GET"])
-def get_skills():
-    """获取所有可用的技能"""
+    """获取当前配置信息（不包含敏感信息）"""
     agent = get_agent()
     
     try:
-        # agent.skills.list() 返回的是字典列表
-        skills_list = agent.skills.list()
-        
         return jsonify({
             "success": True,
-            "skills": skills_list
+            "config": {
+                "llm_model": agent.config.llm_model,
+                "llm_base_url": agent.config.llm_base_url,
+                "odps_project": agent.config.odps_project,
+                "odps_endpoint": agent.config.odps_endpoint,
+                "reports_dir": agent.config.reports_dir,
+                "memory_path": agent.config.memory_path,
+            }
         })
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({
             "success": False,
             "error": str(e)
         }), 500
 
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint for monitoring."""
+    try:
+        agent = get_agent()
+
+        # Basic health checks
+        health_status = {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "checks": {
+                "agent": "ok",
+                "memory": "ok",
+                "session": "ok",
+            }
+        }
+
+        return jsonify(health_status), 200
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time(),
+        }), 503
+
+
+@app.route("/health/detailed", methods=["GET"])
+def health_check_detailed():
+    """Detailed health check with component status."""
+    try:
+        from gold_miner.circuit_breaker import get_all_circuit_breakers
+        from gold_miner.rate_limiter import get_default_limiter, get_chat_limiter
+
+        agent = get_agent()
+
+        # Get circuit breaker status
+        circuit_breakers = {}
+        for name, breaker in get_all_circuit_breakers().items():
+            circuit_breakers[name] = breaker.get_stats()
+
+        # Get rate limiter status
+        default_limiter = get_default_limiter()
+        chat_limiter = get_chat_limiter()
+
+        health_status = {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "components": {
+                "agent": {
+                    "status": "ok",
+                    "config": {
+                        "llm_model": agent.config.llm_model,
+                        "odps_project": agent.config.odps_project,
+                    }
+                },
+                "memory": {
+                    "status": "ok",
+                    "tables": len(agent.memory.state.table_schemas),
+                    "metrics": len(agent.memory.state.metric_definitions),
+                },
+                "session": {
+                    "status": "ok",
+                    "current_session": agent.session.get_current_session_id(),
+                },
+                "circuit_breakers": circuit_breakers,
+                "rate_limiters": {
+                    "default": default_limiter.is_allowed("health_check")[1],
+                    "chat": chat_limiter.is_allowed("health_check")[1],
+                },
+            }
+        }
+
+        return jsonify(health_status), 200
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time(),
+        }), 503
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    """Prometheus-style metrics endpoint."""
+    try:
+        from gold_miner.circuit_breaker import get_all_circuit_breakers
+
+        agent = get_agent()
+        lines = []
+
+        # Agent metrics
+        lines.append(f'# HELP goldminer_agent_state_size Agent state size')
+        lines.append(f'# TYPE goldminer_agent_state_size gauge')
+        lines.append(f'goldminer_agent_state_size{{type="results"}} {len(agent.state.results)}')
+        lines.append(f'goldminer_agent_state_size{{type="notes"}} {len(agent.state.notes)}')
+        lines.append(f'goldminer_agent_state_size{{type="executed_sqls"}} {len(agent.state.executed_sqls)}')
+
+        # Memory metrics
+        lines.append(f'# HELP goldminer_memory_size Memory store size')
+        lines.append(f'# TYPE goldminer_memory_size gauge')
+        lines.append(f'goldminer_memory_size{{type="tables"}} {len(agent.memory.state.table_schemas)}')
+        lines.append(f'goldminer_memory_size{{type="metrics"}} {len(agent.memory.state.metric_definitions)}')
+        lines.append(f'goldminer_memory_size{{type="background"}} {len(agent.memory.state.business_background)}')
+
+        # Circuit breaker metrics
+        for name, breaker in get_all_circuit_breakers().items():
+            stats = breaker.get_stats()
+            lines.append(f'goldminer_circuit_breaker_state{{name="{name}"}} {1 if stats["state"] == "closed" else 0}')
+            lines.append(f'goldminer_circuit_breaker_failures{{name="{name}"}} {stats["failure_count"]}')
+
+        return '\n'.join(lines), 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        return f"# Error generating metrics: {e}", 500
+
+
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5000))
-    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    app.run(host="0.0.0.0", port=5000)

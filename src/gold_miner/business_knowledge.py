@@ -78,12 +78,11 @@ class BusinessKnowledgeManager:
     统一管理业务知识的加载、检索和应用
     """
     
-    def __init__(self, knowledge_dir: str = None, skills_dir: str = None):
+    def __init__(self, knowledge_dir: str = None):
         """初始化知识管理器
         
         Args:
             knowledge_dir: 知识库目录路径，默认为项目根目录下的 knowledge
-            skills_dir: skills目录路径，用于发现maxcompute表
         """
         if knowledge_dir is None:
             # 默认路径：项目根目录/knowledge
@@ -97,22 +96,13 @@ class BusinessKnowledgeManager:
         self.tables_dir = self.knowledge_dir / "tables"
         self.rules_dir = self.knowledge_dir / "rules"
         
-        # skills目录（用于发现maxcompute表）
-        if skills_dir is None:
-            project_root = Path(__file__).resolve().parent.parent.parent
-            skills_dir = project_root / "skills"
-        self.skills_dir = Path(skills_dir).resolve()
-        self.maxcompute_dir = self.skills_dir / "maxcompute"
-        
         # 缓存
         self._glossary_cache: Dict[str, BusinessTerm] = {}
         self._table_cache: Dict[str, TableKnowledge] = {}
         self._rules_cache: List[QueryRule] = []
-        self._maxcompute_tables_cache: Dict[str, Dict] = {}  # 缓存maxcompute表信息
         
         # 加载知识
         self._load_all_knowledge()
-        self._load_maxcompute_tables()
     
     def _load_all_knowledge(self):
         """加载所有知识文件"""
@@ -173,130 +163,10 @@ class BusinessKnowledgeManager:
         except Exception as e:
             print(f"[Knowledge] 加载规则文件失败: {e}")
     
-    def _load_maxcompute_tables(self):
-        """加载 skills/maxcompute 目录下的表信息
-        
-        从 SKILL.md 文件中提取表名、字段、业务备注等信息
-        """
-        if not self.maxcompute_dir.exists():
-            return
-        
-        for table_dir in self.maxcompute_dir.iterdir():
-            if not table_dir.is_dir():
-                continue
-            
-            skill_md = table_dir / "SKILL.md"
-            if not skill_md.exists():
-                continue
-            
-            try:
-                with open(skill_md, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                # 解析表名
-                table_name = self._extract_table_name_from_skill(content, table_dir.name)
-                if not table_name:
-                    continue
-                
-                # 提取字段信息
-                fields = self._extract_fields_from_skill(content)
-                
-                # 提取分区字段
-                partition_field = self._extract_partition_from_skill(content)
-                
-                # 提取业务备注
-                business_notes = self._extract_business_notes(content)
-                
-                self._maxcompute_tables_cache[table_name] = {
-                    'table_name': table_name,
-                    'skill_dir': table_dir.name,
-                    'fields': fields,
-                    'partition_field': partition_field,
-                    'business_notes': business_notes,
-                }
-            except Exception as e:
-                print(f"[Knowledge] 加载maxcompute表失败 {table_dir}: {e}")
-    
-    def _extract_table_name_from_skill(self, content: str, dir_name: str) -> Optional[str]:
-        """从SKILL.md内容中提取表名"""
-        # 尝试从 **表名**: xxx 格式提取
-        match = re.search(r'\*\*表名\*\*:\s*([\w\.]+)', content)
-        if match:
-            return match.group(1)
-        
-        # 尝试从 表名: xxx 格式提取
-        match = re.search(r'表名:\s*([\w\.]+)', content)
-        if match:
-            return match.group(1)
-        
-        # 从目录名推断
-        if dir_name.startswith('table_'):
-            # table_mi_ads_dmp_dwd_dld_loancvr_model_train_data_di
-            # -> mi_ads_dmp.dwd_dld_loancvr_model_train_data_di
-            parts = dir_name[6:].split('_')  # 去掉 'table_'
-            if len(parts) >= 3:
-                return f"{parts[0]}_{parts[1]}.{'_'.join(parts[2:])}"
-        
-        return None
-    
-    def _extract_fields_from_skill(self, content: str) -> List[Dict]:
-        """从SKILL.md内容中提取字段信息"""
-        fields = []
-        
-        # 匹配字段说明行: - **field_name**: TYPE (示例: value)
-        pattern = r'- \*\*(\w+)\*\*:\s*(\w+)\s*(?:\(示例:\s*([^)]+)\))?'
-        matches = re.findall(pattern, content)
-        
-        for match in matches:
-            field_name, data_type, example = match
-            fields.append({
-                'name': field_name,
-                'type': data_type,
-                'example': example.strip() if example else ''
-            })
-        
-        return fields
-    
-    def _extract_partition_from_skill(self, content: str) -> Optional[str]:
-        """从SKILL.md内容中提取分区字段"""
-        match = re.search(r'分区字段:\s*\*\*(\w+)\*\*', content)
-        if match:
-            return match.group(1)
-        
-        # 从业务备注中查找
-        match = re.search(r'分区字段:\s*(\w+)', content)
-        if match:
-            return match.group(1)
-        
-        return None
-    
-    def _extract_business_notes(self, content: str) -> Dict:
-        """从SKILL.md内容中提取业务备注"""
-        notes = {
-            'id_fields': [],
-            'label_fields': [],
-            'metric_fields': [],
-        }
-        
-        # 提取ID字段
-        id_match = re.search(r'ID字段:\s*([^\n]+)', content)
-        if id_match:
-            notes['id_fields'] = [f.strip() for f in id_match.group(1).split(',')]
-        
-        # 提取标签字段
-        label_match = re.search(r'标签字段:\s*([^\n]+)', content)
-        if label_match:
-            notes['label_fields'] = [f.strip() for f in label_match.group(1).split(',')]
-        
-        # 提取计费/指标字段
-        metric_match = re.search(r'计费/指标字段:\s*([^\n]+)', content)
-        if metric_match:
-            notes['metric_fields'] = [f.strip() for f in metric_match.group(1).split(',')]
-        
-        return notes
-    
     def find_matching_tables(self, question: str) -> List[Dict]:
-        """根据用户问题查找匹配的maxcompute表
+        """根据用户问题查找匹配的表
+        
+        从 knowledge/tables 目录下的 YAML 文件中匹配
         
         Args:
             question: 用户问题
@@ -304,62 +174,63 @@ class BusinessKnowledgeManager:
         Returns:
             匹配的表信息列表，按相关度排序
         """
-        if not self._maxcompute_tables_cache:
-            return []
-        
         matches = []
         question_lower = question.lower()
         
-        # 定义关键词映射
-        keyword_mappings = {
-            'loancvr': ['loan', 'cvr', '贷款', '借贷', '金融'],
-            'ads_show': ['ads', 'show', 'click', '广告', '展示', '点击', '曝光'],
-            'creativity': ['creative', 'creativity', '创意', '素材'],
-        }
+        # 遍历 knowledge/tables 目录下的所有 YAML 文件
+        if not self.tables_dir.exists():
+            return matches
         
-        for table_name, table_info in self._maxcompute_tables_cache.items():
-            score = 0
-            table_name_lower = table_name.lower()
-            
-            # 1. 检查表名是否直接出现在问题中
-            if table_name_lower in question_lower:
-                score += 100
-            
-            # 2. 检查表名中的关键词匹配
-            table_keywords = table_name.replace('.', '_').split('_')
-            for keyword in table_keywords:
-                if len(keyword) > 2 and keyword.lower() in question_lower:
-                    score += 20
-            
-            # 3. 检查字段名是否出现在问题中
-            for field in table_info['fields']:
-                if field['name'].lower() in question_lower:
-                    score += 10
-            
-            # 4. 检查业务关键词映射
-            for key, keywords in keyword_mappings.items():
-                if key in table_name_lower:
-                    for kw in keywords:
-                        if kw in question_lower:
-                            score += 30
-                            break
-            
-            # 5. 特殊规则：如果问题包含"广告"相关词汇，优先匹配ads_show表
-            if any(kw in question_lower for kw in ['广告', 'ads', 'show', 'click', '展示', '点击', '曝光']):
-                if 'ads_show' in table_name_lower or 'ads' in table_name_lower:
-                    score += 40
-            
-            # 6. 特殊规则：如果问题包含"贷款"相关词汇，优先匹配loancvr表
-            if any(kw in question_lower for kw in ['贷款', 'loan', '借贷', '金融']):
-                if 'loancvr' in table_name_lower or 'loan' in table_name_lower:
-                    score += 40
-            
-            if score > 0:
-                matches.append({
-                    'table_name': table_name,
-                    'score': score,
-                    'info': table_info
-                })
+        for yaml_file in self.tables_dir.glob("*.yaml"):
+            try:
+                with open(yaml_file, 'r', encoding='utf-8') as f:
+                    data = yaml.safe_load(f)
+                
+                if not data or '基本信息' not in data:
+                    continue
+                
+                basic_info = data['基本信息']
+                table_name = basic_info.get('表名', '')
+                business_name = basic_info.get('业务名称', '')
+                
+                if not table_name:
+                    continue
+                
+                score = 0
+                table_name_lower = table_name.lower()
+                
+                # 1. 检查表名是否直接出现在问题中
+                if table_name_lower in question_lower:
+                    score += 100
+                
+                # 2. 检查业务名称是否出现在问题中
+                if business_name and business_name.lower() in question_lower:
+                    score += 80
+                
+                # 3. 检查表名中的关键词匹配
+                table_keywords = table_name.replace('.', '_').split('_')
+                for keyword in table_keywords:
+                    if len(keyword) > 2 and keyword.lower() in question_lower:
+                        score += 20
+                
+                # 4. 检查核心字段名是否出现在问题中
+                if '核心字段详解' in data:
+                    for field_name, field_data in data['核心字段详解'].items():
+                        if field_name.lower() in question_lower:
+                            score += 10
+                        # 检查字段业务含义
+                        business_meaning = field_data.get('业务含义', '')
+                        if business_meaning and business_meaning.lower() in question_lower:
+                            score += 15
+                
+                if score > 0:
+                    matches.append({
+                        'table_name': table_name,
+                        'score': score,
+                        'business_name': business_name
+                    })
+            except Exception as e:
+                print(f"[Knowledge] 匹配表失败 {yaml_file}: {e}")
         
         # 按分数排序
         matches.sort(key=lambda x: x['score'], reverse=True)
@@ -368,7 +239,7 @@ class BusinessKnowledgeManager:
     def _load_table_knowledge(self, table_name: str) -> Optional[TableKnowledge]:
         """加载表知识
         
-        优先从 knowledge/tables 加载，如果没有则从 maxcompute skills 构建
+        从 knowledge/tables 加载
         """
         # 清理表名
         clean_name = table_name.replace('.', '_').replace('-', '_')
@@ -377,14 +248,10 @@ class BusinessKnowledgeManager:
         if table_name in self._table_cache:
             return self._table_cache[table_name]
         
-        # 首先尝试从 knowledge/tables 加载
+        # 从 knowledge/tables 加载
         knowledge_file = self.tables_dir / f"{clean_name}.yaml"
         if knowledge_file.exists():
             return self._load_from_knowledge_file(table_name, knowledge_file)
-        
-        # 如果没有找到，尝试从 maxcompute skills 构建
-        if table_name in self._maxcompute_tables_cache:
-            return self._build_from_maxcompute(table_name)
         
         return None
     
@@ -454,44 +321,6 @@ class BusinessKnowledgeManager:
             print(f"[Knowledge] 加载表知识失败 {table_name}: {e}")
             return None
     
-    def _build_from_maxcompute(self, table_name: str) -> Optional[TableKnowledge]:
-        """从 maxcompute skills 构建表知识"""
-        if table_name not in self._maxcompute_tables_cache:
-            return None
-        
-        try:
-            info = self._maxcompute_tables_cache[table_name]
-            
-            # 构建核心字段
-            core_fields = {}
-            for field in info['fields']:
-                core_fields[field['name']] = TableField(
-                    name=field['name'],
-                    data_type=field['type'],
-                    business_meaning=f"示例值: {field['example']}" if field['example'] else '',
-                    examples=[field['example']] if field['example'] else []
-                )
-            
-            # 构建表知识对象
-            table_knowledge = TableKnowledge(
-                table_name=table_name,
-                business_name=f"MaxCompute表 ({info['skill_dir']})",
-                data_granularity="未知",
-                update_frequency="未知",
-                retention_period="未知",
-                core_fields=core_fields,
-                common_scenarios=[],
-                quality_rules=[]
-            )
-            
-            # 缓存
-            self._table_cache[table_name] = table_knowledge
-            return table_knowledge
-            
-        except Exception as e:
-            print(f"[Knowledge] 从maxcompute构建表知识失败 {table_name}: {e}")
-            return None
-    
     def extract_terms(self, text: str) -> List[BusinessTerm]:
         """从文本中提取业务术语
         
@@ -516,7 +345,7 @@ class BusinessKnowledgeManager:
     def identify_tables(self, text: str) -> List[str]:
         """从文本中识别可能涉及的表
         
-        优先从maxcompute skills中匹配，如果没有则使用模式匹配
+        从 knowledge/tables 目录下的 YAML 文件中匹配
         
         Args:
             text: 用户输入的文本
@@ -527,15 +356,25 @@ class BusinessKnowledgeManager:
         tables = []
         text_lower = text.lower()
         
-        # 1. 首先检查maxcompute缓存中的表名是否直接出现在文本中
-        for table_name in self._maxcompute_tables_cache.keys():
-            if table_name.lower() in text_lower:
-                tables.append(table_name)
+        # 1. 从 knowledge/tables 目录匹配表名
+        if self.tables_dir.exists():
+            for yaml_file in self.tables_dir.glob("*.yaml"):
+                try:
+                    with open(yaml_file, 'r', encoding='utf-8') as f:
+                        data = yaml.safe_load(f)
+                    
+                    if data and '基本信息' in data:
+                        table_name = data['基本信息'].get('表名', '')
+                        if table_name and table_name.lower() in text_lower:
+                            tables.append(table_name)
+                except Exception as e:
+                    print(f"[Knowledge] 识别表失败 {yaml_file}: {e}")
         
         # 2. 模式匹配：识别表名模式（作为备选）
         if not tables:
             patterns = [
                 r'mi_ads_dmp\.\w+',  # 完整表名
+                r'com_cdm\.\w+',     # com_cdm 表
                 r'dwd_\w+',  # DWD表
                 r'dws_\w+',  # DWS表
                 r'ads_\w+',  # ADS表
@@ -545,15 +384,6 @@ class BusinessKnowledgeManager:
             for pattern in patterns:
                 matches = re.findall(pattern, text, re.IGNORECASE)
                 tables.extend(matches)
-        
-        # 3. 根据术语推断表（如果还没有匹配到）
-        if not tables:
-            terms = self.extract_terms(text)
-            for term in terms:
-                if '消耗' in term.name or '展示' in term.name or '点击' in term.name:
-                    # 这些术语通常涉及明细表
-                    if 'dwd_ew_ads_show_res_clk_dld_conv_hi' not in tables:
-                        tables.append('mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi')
         
         return list(set(tables))
     
@@ -596,10 +426,10 @@ class BusinessKnowledgeManager:
         # 1. 提取业务术语
         context.terms = self.extract_terms(question)
         
-        # 2. 识别涉及的表（优先从maxcompute skills中匹配）
+        # 2. 识别涉及的表（从 knowledge/tables 中匹配）
         table_names = self.identify_tables(question)
         
-        # 3. 如果没有识别到表，尝试从maxcompute skills中匹配
+        # 3. 如果没有识别到表，尝试从 knowledge/tables 中模糊匹配
         if not table_names:
             matched_tables = self.find_matching_tables(question)
             if matched_tables:

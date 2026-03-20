@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
@@ -21,6 +22,25 @@ class Config:
     memory_path: str = "./memory/memory.json"
     reports_dir: str = "./reports"
 
+    # Security settings
+    session_secret: str = ""
+    enable_sql_validation: bool = True
+    max_sql_length: int = 50000
+    request_rate_limit: str = "100 per minute"
+
+    # Agent Pool settings
+    agent_pool_min_size: int = 2
+    agent_pool_max_size: int = 10
+    agent_pool_max_idle_time: int = 3600
+
+    # Rate limiting settings
+    rate_limit_default_per_minute: int = 60
+    rate_limit_chat_per_minute: int = 10
+
+    # Circuit breaker settings
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_recovery_timeout: float = 30.0
+
     @classmethod
     def from_env(cls) -> "Config":
         load_dotenv()
@@ -36,6 +56,20 @@ class Config:
             agent_max_steps=int(os.getenv("AGENT_MAX_STEPS", "6")),
             memory_path=os.getenv("MEMORY_PATH", "./memory/memory.json"),
             reports_dir=os.getenv("REPORTS_DIR", "./reports"),
+            session_secret=os.getenv("SESSION_SECRET", "").strip(),
+            enable_sql_validation=os.getenv("ENABLE_SQL_VALIDATION", "true").lower() == "true",
+            max_sql_length=int(os.getenv("MAX_SQL_LENGTH", "50000")),
+            request_rate_limit=os.getenv("REQUEST_RATE_LIMIT", "100 per minute"),
+            # Agent Pool settings
+            agent_pool_min_size=int(os.getenv("AGENT_POOL_MIN_SIZE", "2")),
+            agent_pool_max_size=int(os.getenv("AGENT_POOL_MAX_SIZE", "10")),
+            agent_pool_max_idle_time=int(os.getenv("AGENT_POOL_MAX_IDLE_TIME", "3600")),
+            # Rate limiting settings
+            rate_limit_default_per_minute=int(os.getenv("RATE_LIMIT_DEFAULT_PER_MINUTE", "60")),
+            rate_limit_chat_per_minute=int(os.getenv("RATE_LIMIT_CHAT_PER_MINUTE", "10")),
+            # Circuit breaker settings
+            circuit_breaker_failure_threshold=int(os.getenv("CIRCUIT_BREAKER_FAILURE_THRESHOLD", "5")),
+            circuit_breaker_recovery_timeout=float(os.getenv("CIRCUIT_BREAKER_RECOVERY_TIMEOUT", "30.0")),
         )
 
     def validate(self) -> None:
@@ -56,3 +90,38 @@ class Config:
             missing.append("ODPS_ENDPOINT")
         if missing:
             raise ValueError(f"Missing required config: {', '.join(missing)}")
+    
+    def validate_security(self) -> None:
+        """Validate security-related configuration."""
+        if not self.session_secret:
+            raise ValueError(
+                "SESSION_SECRET is required for security. "
+                "Please set a strong secret key (at least 32 characters) in your .env file. "
+                "You can generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        
+        if len(self.session_secret) < 32:
+            raise ValueError(
+                f"SESSION_SECRET must be at least 32 characters long (current: {len(self.session_secret)}). "
+                "Please use a stronger secret key."
+            )
+        
+        # Check for common weak secrets
+        weak_secrets = [
+            "gold-miner-secret-key",
+            "secret",
+            "password",
+            "123456",
+            "admin",
+            "default",
+        ]
+        if self.session_secret.lower() in weak_secrets:
+            raise ValueError(
+                f"SESSION_SECRET '{self.session_secret}' is too weak and easily guessable. "
+                "Please use a cryptographically secure random string."
+            )
+
+
+def generate_secure_secret() -> str:
+    """Generate a cryptographically secure session secret."""
+    return secrets.token_hex(32)

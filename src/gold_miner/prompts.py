@@ -91,6 +91,7 @@ Rules:
 - WHEN TO STOP: Once you have successfully executed SQL and obtained the results that answer the user's question, use the "final" action to provide the answer. Do NOT keep executing the same SQL repeatedly.
 - After getting query results, analyze them and provide the final answer using the "final" action with "report_markdown".
 - CHECK BEFORE EXECUTING: Always check results_summary and last_sql before executing SQL. If the same SQL has already been executed successfully, do NOT execute it again - use "final" action to report the existing results.
+- **EXCEPTION - RE-EXECUTE WHEN REQUESTED**: If the user explicitly asks to "重新跑数据" (re-run data), "重新查询" (re-query), "重新统计" (re-calculate), or uses similar phrases indicating they want fresh data, you MUST re-execute the SQL even if it was run before. Ignore previous results and execute fresh SQL queries.
 '''
 
 FINAL_REPORT_PROMPT = """

@@ -1,0 +1,33 @@
+{
+  "session_id": "session_20260320_143543",
+  "start_time": "2026-03-20T14:35:43.468488",
+  "end_time": null,
+  "title": "测试",
+  "steps": [
+    {
+      "role": "user",
+      "content": "测试",
+      "visible": true,
+      "timestamp": "2026-03-20T14:35:43.468930"
+    },
+    {
+      "role": "assistant",
+      "content": "{\n  \"action\": \"final\",\n  \"report_markdown\": \"收到：测试。\\n\\n你想让我帮你做哪类分析？可以直接给：\\n- 目标：例如 CTR/CVR/消耗/漏斗/PCOC/MAE\\n- 时间范围：start_dh~end_dh（YYYYMMDDHH）或日期（YYYYMMDD）\\n- 维度：ad_group_id / 包名 / 国家 / 业务线 等\\n- 涉及表名（如有）\\n\\n示例：分析广告组 12345 在 2026030100~2026030123 的投放漏斗和CTR/CVR PCOC。\",\n  \"notes\": \"等待你给出具体分析需求\",\n  \"visible_context\": true\n}",
+      "visible": true,
+      "timestamp": "2026-03-20T14:35:50.564518"
+    },
+    {
+      "role": "assistant",
+      "content": "收到：测试。\n\n你想让我帮你做哪类分析？可以直接给：\n- 目标：例如 CTR/CVR/消耗/漏斗/PCOC/MAE\n- 时间范围：start_dh~end_dh（YYYYMMDDHH）或日期（YYYYMMDD）\n- 维度：ad_group_id / 包名 / 国家 / 业务线 等\n- 涉及表名（如有）\n\n示例：分析广告组 12345 在 2026030100~2026030123 的投放漏斗和CTR/CVR PCOC。",
+      "visible": true,
+      "timestamp": "2026-03-20T14:35:50.587606"
+    },
+    {
+      "role": "user",
+      "content": "[用户插话] 测试插话",
+      "visible": true,
+      "timestamp": "2026-03-20T14:35:50.637683"
+    }
+  ],
+  "metadata": {}
+}

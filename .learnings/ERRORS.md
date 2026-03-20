@@ -342,3 +342,57 @@ ODPS 不支持默认多语句提交；需要拆成单条 SQL 执行或开启 odp
 - Related Files: 
 
 ---
+
+## [ERR-20260320-983] skill_or_command
+
+**Logged**: 2026-03-20T11:56:59
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS 不支持一次提交多条 SQL；需拆分为单条查询或设置 odps.sql.submit.mode=script
+
+### Error
+```
+在 run_sql 中同时写了多个 SELECT/CTE 语句导致 ParseError: Please add put {"odps.sql.submit.mode":"script"} for multi-statement query.
+```
+
+### Context
+- Source: error
+
+### Suggested Fix
+后续每次 run_sql 仅提交一条 SQL；需要多步对比时拆成多次 run_sql。
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260320-832] skill_or_command
+
+**Logged**: 2026-03-20T11:57:32
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS 不支持一次提交多条 SQL；需要拆成单条或设置 odps.sql.submit.mode=script
+
+### Error
+```
+在一次 run_sql 中包含多个 SELECT/CTE 语句导致 ParseError，提示 'Please add put { "odps.sql.submit.mode" : "script"} for multi-statement query in settings.'
+```
+
+### Context
+- Source: error
+
+### Suggested Fix
+后续将多段 SQL 拆分为多次 run_sql 调用，或在需要时使用脚本模式。
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---

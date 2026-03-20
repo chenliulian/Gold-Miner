@@ -5,18 +5,51 @@ import time
 import requests
 from typing import Any, Dict, List, Optional
 
+from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig
+
 
 class LLMError(RuntimeError):
     pass
 
 
 class OpenAICompatibleClient:
-    def __init__(self, base_url: str, api_key: str, model: str, timeout: int = 60):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        timeout: int = 60,
+        enable_circuit_breaker: bool = True,
+    ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.model = model
         self.timeout = timeout
         self._supports_json_mode: Optional[bool] = None
+
+        # Circuit breaker for LLM API calls
+        if enable_circuit_breaker:
+            # Try to load config from environment
+            try:
+                from .config import Config
+                config = Config.from_env()
+                failure_threshold = config.circuit_breaker_failure_threshold
+                recovery_timeout = config.circuit_breaker_recovery_timeout
+            except Exception:
+                # Fallback to defaults
+                failure_threshold = 5
+                recovery_timeout = 30.0
+
+            self._circuit_breaker = CircuitBreaker(
+                name="llm_api",
+                config=CircuitBreakerConfig(
+                    failure_threshold=failure_threshold,
+                    recovery_timeout=recovery_timeout,
+                    expected_exception=(requests.RequestException, LLMError),
+                ),
+            )
+        else:
+            self._circuit_breaker = None
 
     def chat(
         self,
@@ -25,6 +58,32 @@ class OpenAICompatibleClient:
         enforce_json: bool = False,
         retries: int = 2,
     ) -> str:
+        """Send chat request to LLM with circuit breaker protection."""
+        # Use circuit breaker if available
+        if self._circuit_breaker:
+            return self._circuit_breaker.call(
+                self._chat_with_retry,
+                messages,
+                temperature,
+                enforce_json,
+                retries,
+            )
+        else:
+            return self._chat_with_retry(
+                messages,
+                temperature,
+                enforce_json,
+                retries,
+            )
+
+    def _chat_with_retry(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.2,
+        enforce_json: bool = False,
+        retries: int = 2,
+    ) -> str:
+        """Internal method with retry logic."""
         url = f"{self.base_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -46,11 +105,11 @@ class OpenAICompatibleClient:
         attempt = 0
         last_error: Optional[str] = None
         enforce = enforce_json
-        
+
         # 如果已知后端不支持 JSON mode，且强制要求 JSON，则在 prompt 中添加提示
         if enforce and self._supports_json_mode is False:
             messages = self._add_json_instruction(messages)
-        
+
         while attempt <= retries:
             try:
                 resp = _request(enforce)

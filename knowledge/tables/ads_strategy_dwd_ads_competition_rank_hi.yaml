@@ -144,14 +144,14 @@
     阶段3_竞价排名统计:
       - 按ad_group_id, ad_creative_id, ps_package_name, national_id, code_seat_id分组聚合
       - 统计指标计算:
-        * recall_nums: COUNT(DISTINCT request_id) - 召回次数（所有请求）
-        * rank_nums: COUNT(DISTINCT CASE WHEN stage IN ('RESP','cnt_limit') THEN request_id END) - 进入排名阶段次数
-        * resp_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' THEN request_id END) - 响应次数
-        * pos1_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 0 THEN request_id END) - 排名第1位次数
-        * pos2_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 1 THEN request_id END) - 排名第2位次数
-        * pos3_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 2 THEN request_id END) - 排名第3位次数
-        * pos4_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 3 THEN request_id END) - 排名第4位次数
-        * pos5_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 4 THEN request_id END) - 排名第5位次数
+        - "recall_nums: COUNT(DISTINCT request_id) - 召回次数（所有请求）"
+        - "rank_nums: COUNT(DISTINCT CASE WHEN stage IN ('RESP','cnt_limit') THEN request_id END) - 进入排名阶段次数"
+        - "resp_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' THEN request_id END) - 响应次数"
+        - "pos1_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 0 THEN request_id END) - 排名第1位次数"
+        - "pos2_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 1 THEN request_id END) - 排名第2位次数"
+        - "pos3_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 2 THEN request_id END) - 排名第3位次数"
+        - "pos4_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 3 THEN request_id END) - 排名第4位次数"
+        - "pos5_nums: COUNT(DISTINCT CASE WHEN stage = 'RESP' AND stage_rank = 4 THEN request_id END) - 排名第5位次数"
   
   输出字段生成逻辑:
     - recall_nums: 广告创意被召回参与竞价的不同请求数，反映广告参与竞价竞争的活跃度

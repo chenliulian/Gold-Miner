@@ -1,0 +1,15 @@
+{
+  "session_id": "session_20260320_145022_952287",
+  "start_time": "2026-03-20T14:50:22.952319",
+  "end_time": null,
+  "title": "未命名对话",
+  "steps": [
+    {
+      "role": "user",
+      "content": "[用户插话] 停止",
+      "visible": true,
+      "timestamp": "2026-03-20T14:50:22.952659"
+    }
+  ],
+  "metadata": {}
+}

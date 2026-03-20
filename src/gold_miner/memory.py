@@ -1,132 +1,182 @@
+"""Long-term memory management - only updated when user explicitly requests."""
+
 from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional
+
+from .file_utils import atomic_write_json, safe_read_json
 
 
 @dataclass
 class MemoryState:
-    summary: str = ""
-    recent_steps: List[Dict[str, str]] = field(default_factory=list)
-    table_schemas: Dict[str, List[str]] = field(default_factory=dict)
-    metric_definitions: Dict[str, str] = field(default_factory=dict)
-    business_background: List[str] = field(default_factory=list)
+    """长期记忆状态 - 只保存用户明确要求记住的内容"""
+    summary: str = ""  # 整体摘要
+    table_schemas: Dict[str, List[str]] = field(default_factory=dict)  # 表结构
+    metric_definitions: Dict[str, str] = field(default_factory=dict)  # 指标定义
+    business_background: List[str] = field(default_factory=list)  # 业务背景
+    saved_conversations: List[Dict] = field(default_factory=list)  # 用户要求保存的对话要点
 
 
 class MemoryStore:
-    def __init__(self, path: str, max_recent: int = 50, summary_path: str | None = None):
+    """
+    长期记忆存储 - 只在用户明确要求"记住"时才更新
+    
+    使用方式：
+    1. 用户说"记住这个表结构" -> 保存表结构
+    2. 用户说"保存这个指标定义" -> 保存指标定义
+    3. 用户说"记下来" -> 保存当前对话要点
+    """
+    
+    # 触发记忆保存的关键词
+    REMEMBER_KEYWORDS = [
+        r"记住", r"保存", r"记下来", r"存储", r"记住这个",
+        r"请记住", r"帮我记住", r"记住.+表", r"记住.+指标",
+        r"保存.+定义", r"保存.+口径"
+    ]
+    
+    def __init__(self, path: str, summary_path: str | None = None):
         self.path = path
-        self.max_recent = max_recent
-        self.summary_path = summary_path or os.path.join(os.path.dirname(path), "summary.md")
-        self.total_steps = 0
+        self.summary_path = summary_path or os.path.join(os.path.dirname(path), "memory.md")
         self.state = MemoryState()
         self._load()
 
     def _load(self) -> None:
-        if not os.path.exists(self.path):
-            return
-        with open(self.path, "r", encoding="utf-8") as f:
-            raw = json.load(f)
+        """从文件加载长期记忆"""
+        raw = safe_read_json(self.path, default={})
         self.state.summary = raw.get("summary", "")
-        self.state.recent_steps = raw.get("recent_steps", [])
         self.state.table_schemas = raw.get("table_schemas", {})
         self.state.metric_definitions = raw.get("metric_definitions", {})
         self.state.business_background = raw.get("business_background", [])
+        self.state.saved_conversations = raw.get("saved_conversations", [])
 
     def _save(self) -> None:
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        with open(self.path, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "summary": self.state.summary,
-                    "recent_steps": self.state.recent_steps,
-                    "table_schemas": self.state.table_schemas,
-                    "metric_definitions": self.state.metric_definitions,
-                    "business_background": self.state.business_background,
-                },
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
+        """保存长期记忆到文件 (原子写入)"""
+        data = {
+            "summary": self.state.summary,
+            "table_schemas": self.state.table_schemas,
+            "metric_definitions": self.state.metric_definitions,
+            "business_background": self.state.business_background,
+            "saved_conversations": self.state.saved_conversations,
+        }
+        atomic_write_json(self.path, data)
         self._write_summary_doc()
 
     def _write_summary_doc(self) -> None:
+        """生成可读的 Markdown 摘要文档"""
         lines = []
-        lines.append("# Memory Summary\n")
+        lines.append("# 长期记忆 (Long-term Memory)\n")
+        lines.append(f"*最后更新: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
+        
         if self.state.summary:
-            lines.append("## Conversation Summary\n")
-            lines.append(self.state.summary.strip() + "\n")
+            lines.append("## 整体摘要\n")
+            lines.append(self.state.summary.strip() + "\n\n")
+        
         if self.state.table_schemas:
-            lines.append("## Table Schemas\n")
+            lines.append("## 已记住的表结构\n")
             for table, cols in self.state.table_schemas.items():
-                cols_text = ", ".join(cols)
-                lines.append(f"- `{table}`: {cols_text}\n")
+                lines.append(f"### {table}\n")
+                for col in cols:
+                    lines.append(f"- {col}\n")
+                lines.append("\n")
+        
         if self.state.metric_definitions:
-            lines.append("## Metric Definitions\n")
+            lines.append("## 已记住的指标定义\n")
             for metric, definition in self.state.metric_definitions.items():
-                lines.append(f"- `{metric}`: {definition}\n")
+                lines.append(f"- **{metric}**: {definition}\n")
+            lines.append("\n")
+        
         if self.state.business_background:
-            lines.append("## Business Background\n")
+            lines.append("## 已记住的业务背景\n")
             for item in self.state.business_background:
                 lines.append(f"- {item}\n")
+            lines.append("\n")
+        
+        if self.state.saved_conversations:
+            lines.append("## 已保存的对话要点\n")
+            for conv in self.state.saved_conversations:
+                time_str = conv.get("timestamp", "")[:10]  # 只取日期部分
+                content = conv.get("content", "")
+                lines.append(f"- **{time_str}**: {content}\n")
+            lines.append("\n")
+        
         os.makedirs(os.path.dirname(self.summary_path), exist_ok=True)
         with open(self.summary_path, "w", encoding="utf-8") as f:
             f.writelines(lines)
 
-    def add_step(self, role: str, content: str, visible: bool = True) -> None:
-        self.state.recent_steps.append({"role": role, "content": content, "visible": visible})
-        self.total_steps += 1
-        if len(self.state.recent_steps) > self.max_recent:
-            self.state.recent_steps = self.state.recent_steps[-self.max_recent :]
+    def should_remember(self, message: str) -> bool:
+        """检查用户消息是否包含记住/保存的指令"""
+        for pattern in self.REMEMBER_KEYWORDS:
+            if re.search(pattern, message, re.IGNORECASE):
+                return True
+        return False
+
+    def save_table_schema(self, table_name: str, columns: List[str], source: str = "") -> None:
+        """保存表结构到长期记忆"""
+        if not columns:
+            return
+        self.state.table_schemas[table_name] = columns
+        self._save()
+
+    def save_metric_definition(self, metric_name: str, definition: str) -> None:
+        """保存指标定义到长期记忆"""
+        self.state.metric_definitions[metric_name] = definition
+        self._save()
+
+    def save_business_background(self, item: str) -> None:
+        """保存业务背景到长期记忆"""
+        if item not in self.state.business_background:
+            self.state.business_background.append(item)
+            self._save()
+
+    def save_conversation_point(self, content: str, context: str = "") -> None:
+        """保存对话要点到长期记忆"""
+        self.state.saved_conversations.append({
+            "timestamp": datetime.now().isoformat(),
+            "content": content,
+            "context": context
+        })
+        # 只保留最近 50 条
+        if len(self.state.saved_conversations) > 50:
+            self.state.saved_conversations = self.state.saved_conversations[-50:]
         self._save()
 
     def set_summary(self, summary: str) -> None:
+        """设置整体摘要"""
         self.state.summary = summary
         self._save()
 
-    def update_structured(
-        self,
-        table_schemas: Dict[str, List[str]] | None = None,
-        metric_definitions: Dict[str, str] | None = None,
-        business_background: List[str] | None = None,
-    ) -> None:
-        if table_schemas:
-            for table, cols in table_schemas.items():
-                if not cols:
-                    continue
-                self.state.table_schemas[table] = cols
-        if metric_definitions:
-            self.state.metric_definitions.update(metric_definitions)
-        if business_background:
-            existing = set(self.state.business_background)
-            for item in business_background:
-                if item not in existing:
-                    self.state.business_background.append(item)
-                    existing.add(item)
-        self._save()
-
-    def clear(self) -> None:
-        self.state = MemoryState()
-        self._save()
-
-    def get_context(self) -> Dict[str, List[Dict[str, str]] | str]:
-        need_summary = self.total_steps > self.max_recent and not self.state.summary
-        
-        recent_steps = list(self.state.recent_steps)
-        has_interrupt = False
-        if recent_steps and "[用户插话]" in recent_steps[-1].get("content", ""):
-            has_interrupt = True
-            recent_steps[-1]["content"] = recent_steps[-1]["content"].replace("[用户插话] ", "")
-        
+    def get_context(self) -> Dict:
+        """获取长期记忆内容（用于LLM上下文）"""
         return {
             "summary": self.state.summary,
-            "recent_steps": recent_steps,
             "table_schemas": self.state.table_schemas,
             "metric_definitions": self.state.metric_definitions,
             "business_background": self.state.business_background,
-            "total_steps": self.total_steps,
-            "need_summary": need_summary,
-            "has_interrupt": has_interrupt,
+            "saved_conversations_count": len(self.state.saved_conversations),
         }
+
+    def clear(self) -> None:
+        """清空所有长期记忆（谨慎使用）"""
+        self.state = MemoryState()
+        self._save()
+
+    def remove_table(self, table_name: str) -> bool:
+        """从记忆中删除某个表"""
+        if table_name in self.state.table_schemas:
+            del self.state.table_schemas[table_name]
+            self._save()
+            return True
+        return False
+
+    def remove_metric(self, metric_name: str) -> bool:
+        """从记忆中删除某个指标"""
+        if metric_name in self.state.metric_definitions:
+            del self.state.metric_definitions[metric_name]
+            self._save()
+            return True
+        return False
