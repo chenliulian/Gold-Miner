@@ -7,6 +7,12 @@
   项目: mi_ads_dmp
   列数: 115
   分区数: 1
+使用场景:
+  - 统计模型预估偏差（PCOC分析）
+  - 严格分析曝光→点击→下载→转化的漏斗转化率
+  - CTR/CVR模型校准效果评估
+  - 广告链路漏斗归因分析
+  - 注意: 该表只包含曝光及之后的数据，不包含曝光前的召回/精排/响应数据
 建表语句: "CREATE TABLE IF NOT EXISTS dwd_ew_ads_show_res_clk_dld_conv_hi\n(\n    request_id\
   \                      STRING COMMENT '广告请求ID'\n    ,trigger_id                \
   \     STRING COMMENT '触发ID'\n    ,show_id                        STRING COMMENT\
