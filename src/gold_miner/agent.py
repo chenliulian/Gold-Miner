@@ -406,18 +406,65 @@ class SqlAgent:
     def _finalize(self, report_markdown: str, output_path: Optional[str]) -> str:
         # 构建完整报告（包含执行SQL）
         full_report = report_markdown
-        
-        # 如果有执行的SQL，附加到报告末尾
+
+        # 如果有执行的SQL，附加到报告末尾（紧凑格式）
         if self.state.executed_sqls:
-            full_report += "\n\n---\n\n## 执行SQL详情\n\n"
+            full_report += "\n\n"
             for i, sql_info in enumerate(self.state.executed_sqls, 1):
-                full_report += f"### SQL {i}\n\n"
                 full_report += f"```sql\n{sql_info['sql']}\n```\n\n"
-                full_report += f"- 返回行数: {sql_info['rows']}\n"
-                full_report += f"- Instance ID: {sql_info.get('instance_id', 'N/A')}\n\n"
-        
+
+        # 生成会话标题
+        self._generate_session_title()
+
         # 总是保存报告到文件，如果用户指定了 output_path 则使用指定路径，否则使用默认路径
         return write_report(full_report, self.config.reports_dir, output_path)
+
+    def _generate_session_title(self) -> None:
+        """根据对话内容生成合适的会话标题"""
+        try:
+            context = self.session.get_context()
+            steps = context.get("steps", [])
+
+            if not steps:
+                return
+
+            # 构建对话摘要用于生成标题
+            conversation_summary = []
+            for step in steps[:10]:  # 只取前10步
+                role = step.get("role", "")
+                content = step.get("content", "")[:200]  # 限制长度
+                if role and content:
+                    conversation_summary.append(f"{role}: {content}")
+
+            if not conversation_summary:
+                return
+
+            prompt = f"""根据以下对话内容，生成一个简洁的会话标题（不超过15个字）。
+标题应该准确概括对话的核心主题。
+
+对话内容：
+{' | '.join(conversation_summary)}
+
+请直接返回标题文字，不要加引号或其他格式。"""
+
+            messages = [
+                {"role": "system", "content": "你是一个专业的对话标题生成助手。"},
+                {"role": "user", "content": prompt}
+            ]
+
+            title = self.llm.chat(messages, enforce_json=False).strip()
+
+            # 清理标题
+            title = title.replace('"', '').replace("'", "").replace("「", "").replace("」", "")
+            if len(title) > 20:
+                title = title[:20]
+
+            if title:
+                self.session.update_title(title)
+                print(f"\n[Session] 生成标题: {title}")
+
+        except Exception as e:
+            print(f"\n[Session] 生成标题失败: {e}")
 
     def _run_hooks(self, skill_name: str, result: Any, hooks: List[str]) -> None:
         print(f"\n[Hooks] Running hooks for skill '{skill_name}': {hooks}")

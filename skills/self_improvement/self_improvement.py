@@ -4,7 +4,9 @@ from typing import Any, Dict, List, Optional
 import os
 
 
-LEARNINGS_DIR = Path(__file__).parent / "references"
+# 学习记录保存到项目根目录的 .learnings 目录
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+LEARNINGS_DIR = PROJECT_ROOT / ".learnings"
 LEARNINGS_FILE = LEARNINGS_DIR / "LEARNINGS.md"
 ERRORS_FILE = LEARNINGS_DIR / "ERRORS.md"
 FEATURE_REQUESTS_FILE = LEARNINGS_DIR / "FEATURE_REQUESTS.md"

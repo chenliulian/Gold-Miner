@@ -349,7 +349,7 @@
             flex: 1;
             background: var(--bg-secondary);
             border-radius: var(--radius-md);
-            padding: 16px;
+            padding: 10px 12px;
             box-shadow: var(--shadow-sm);
         }
 
@@ -462,11 +462,9 @@
             line-height: 1.6;
         }
 
-        /* Collapsible SQL Styles - Compact Design */
+        /* Collapsible SQL Styles - Feishu Style (Ultra Compact) */
         .sql-collapsible {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            margin: 8px 0;
+            margin: 0;
             overflow: hidden;
         }
 
@@ -474,15 +472,19 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 12px;
-            background: #f0f4f8;
+            padding: 5px 10px;
+            background: #f5f6f7;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
             cursor: pointer;
             user-select: none;
-            transition: background 0.2s;
+            transition: background 0.15s;
+            height: 28px;
+            box-sizing: border-box;
         }
 
         .sql-toggle:hover {
-            background: #e2e8f0;
+            background: #ebecee;
         }
 
         .sql-toggle-left {
@@ -490,44 +492,55 @@
             align-items: center;
             gap: 6px;
             font-size: 13px;
-            color: var(--text-primary);
-            font-weight: 500;
+            color: #1f2329;
+            font-weight: 400;
         }
 
         .sql-toggle-icon {
-            font-size: 10px;
+            font-size: 8px;
             transition: transform 0.2s;
-            color: var(--text-secondary);
+            color: #8f959e;
+            width: 12px;
+            text-align: center;
         }
 
         .sql-toggle-icon.expanded {
             transform: rotate(90deg);
         }
 
+        /* 展开状态下标题栏底部圆角为0，与内容区域衔接 */
+        .sql-toggle.expanded {
+            border-radius: 6px 6px 0 0;
+        }
+
         .sql-content-wrapper {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
-            background: #f8fafc;
+            transition: max-height 0.25s ease;
+            background: #fff;
         }
 
         .sql-content-wrapper.expanded {
-            max-height: 400px;
+            max-height: 600px;
             overflow-y: auto;
         }
 
         .sql-content-inner {
-            padding: 8px;
+            padding: 0;
+            border: 1px solid #e8e8e8;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            margin: 0;
         }
 
         .sql-block {
-            background: #1e293b;
-            color: #e2e8f0;
-            padding: 10px 12px;
-            border-radius: var(--radius-sm);
-            font-family: 'JetBrains Mono', monospace;
+            background: #f5f6f7;
+            color: #1f2329;
+            padding: 6px 10px;
+            border-radius: 0 0 6px 6px;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.4;
             overflow-x: auto;
             white-space: pre;
             word-wrap: normal;
@@ -541,40 +554,49 @@
             font-family: inherit;
         }
 
-        /* SQL Syntax Highlighting */
+        /* SQL Syntax Highlighting - Light Theme */
         .sql-keyword {
-            color: #c678dd;
+            color: #0066cc;
             font-weight: 600;
         }
 
         .sql-string {
-            color: #98c379;
+            color: #008000;
         }
 
         .sql-number {
-            color: #d19a66;
+            color: #ff6600;
         }
 
         .sql-comment {
-            color: #5c6370;
+            color: #808080;
             font-style: italic;
         }
 
-        /* SQL Copy Button - Compact */
+        /* SQL Copy Button - Feishu Style */
         .sql-copy-btn {
-            background: #3b82f6;
-            color: white;
+            background: transparent;
+            color: #646a73;
             border: none;
-            padding: 4px 10px;
-            border-radius: var(--radius-sm);
-            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-left: 8px;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 20px;
         }
 
         .sql-copy-btn:hover {
-            background: #2563eb;
+            background: #dee0e3;
+            color: #1f2329;
+        }
+
+        .sql-copy-btn svg {
+            width: 14px;
+            height: 14px;
         }
 
         .sql-info {
@@ -591,9 +613,17 @@
 
         .message-text {
             font-size: 15px;
-            line-height: 1.6;
+            line-height: 1.5;
             color: var(--text-primary);
             white-space: pre-wrap;
+        }
+
+        .message-text p {
+            margin: 4px 0;
+        }
+
+        .message-text pre {
+            margin: 4px 0;
         }
 
         .message-time {
@@ -667,6 +697,35 @@
             background: var(--text-muted);
             cursor: not-allowed;
             transform: none;
+        }
+
+        .cancel-btn {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 40px;
+            height: 40px;
+            background: #ef4444;
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            animation: pulse 1.5s infinite;
+        }
+
+        .cancel-btn:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
         }
 
         .input-toolbar {
@@ -815,6 +874,66 @@
             line-height: 1.5;
         }
 
+        /* History Item */
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            margin: 4px 0;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .history-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .history-item.active {
+            background: var(--accent-light);
+            color: var(--accent-primary);
+        }
+
+        .history-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .history-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .history-delete {
+            opacity: 0;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .history-item:hover .history-delete {
+            opacity: 1;
+        }
+
+        .history-delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .history-empty {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
         /* Learnings Page */
         .learnings-page {
             padding: 24px;
@@ -925,13 +1044,13 @@
         pre {
             background: #1f2937;
             color: #e5e7eb;
-            padding: 16px;
+            padding: 12px;
             border-radius: var(--radius-md);
             overflow-x: auto;
             font-family: 'JetBrains Mono', monospace;
             font-size: 13px;
             line-height: 1.5;
-            margin: 12px 0;
+            margin: 4px 0;
         }
 
         code {
@@ -1041,6 +1160,14 @@
                 <span>新对话</span>
             </button>
 
+            <!-- 历史对话列表 -->
+            <div class="nav-section" id="history-section" style="flex: 1; overflow-y: auto; margin: 16px 0;">
+                <div class="nav-section-title">历史对话</div>
+                <div id="history-list">
+                    <!-- 动态加载历史对话 -->
+                </div>
+            </div>
+
             <nav class="nav-section">
                 <div class="nav-section-title">功能</div>
                 <div class="nav-item active" onclick="switchPage('chat', this)">
@@ -1122,6 +1249,9 @@
                             ></textarea>
                             <button class="send-btn" id="send-btn" onclick="sendMessage()">
                                 ➤
+                            </button>
+                            <button class="cancel-btn" id="cancel-btn" onclick="cancelMessage()" style="display: none;">
+                                ✕
                             </button>
                         </div>
                         <div class="input-toolbar">
@@ -1714,10 +1844,13 @@
                 <div class="sql-toggle" onclick="toggleSql(this)">
                     <div class="sql-toggle-left">
                         <span class="sql-toggle-icon">▶</span>
-                        <span>🗄️ SQL ${sqlNumber}（点击查看）</span>
+                        <span>SQL ${sqlNumber}</span>
                     </div>
-                    <button class="sql-copy-btn" onclick="copySql(event, '${sqlId}')" title="复制SQL">
-                        📋 复制
+                    <button class="sql-copy-btn" onclick="copySql(event, '${sqlId}')" title="复制">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
                     </button>
                 </div>
                 <div class="sql-content-wrapper" id="${sqlId}">
@@ -1782,19 +1915,10 @@
         function toggleSql(toggleElement) {
             const icon = toggleElement.querySelector('.sql-toggle-icon');
             const wrapper = toggleElement.nextElementSibling;
-            const leftText = toggleElement.querySelector('.sql-toggle-left span:last-child');
-            
+
             icon.classList.toggle('expanded');
             wrapper.classList.toggle('expanded');
-            
-            // 更新文本
-            if (leftText) {
-                if (wrapper.classList.contains('expanded')) {
-                    leftText.textContent = leftText.textContent.replace('（点击查看）', '（点击折叠）');
-                } else {
-                    leftText.textContent = leftText.textContent.replace('（点击折叠）', '（点击查看）');
-                }
-            }
+            toggleElement.classList.toggle('expanded');
         }
 
         // 键盘事件
@@ -1807,13 +1931,50 @@
 
         // 更新发送按钮状态
         function updateSendButton() {
-            const btn = document.getElementById('send-btn');
-            btn.disabled = isProcessing;
-            btn.innerHTML = isProcessing ? '<div class="loading-spinner"></div>' : '➤';
+            const sendBtn = document.getElementById('send-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+
+            if (isProcessing) {
+                sendBtn.style.display = 'none';
+                cancelBtn.style.display = 'flex';
+            } else {
+                sendBtn.style.display = 'flex';
+                cancelBtn.style.display = 'none';
+            }
         }
 
+        // 取消当前请求
+        async function cancelMessage() {
+            try {
+                await fetch('/interrupt', { method: 'POST' });
+                addMessage('已取消', 'assistant');
+            } catch (error) {
+                console.error('取消失败:', error);
+            }
+            isProcessing = false;
+            updateSendButton();
+        }
+
+        // 当前会话ID
+        let currentSessionId = null;
+
         // 新对话
-        function startNewChat() {
+        async function startNewChat() {
+            try {
+                const response = await fetch('/sessions/new', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({title: '新对话'})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    loadHistoryList(); // 刷新历史列表
+                }
+            } catch (error) {
+                console.error('创建新会话失败:', error);
+            }
+
             document.getElementById('chat-messages').innerHTML = `
                 <div class="welcome-section">
                     <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
@@ -1835,6 +1996,114 @@
                 </div>
             `;
             switchPage('chat', document.querySelector('.nav-item'));
+            updateActiveHistoryItem();
+        }
+
+        // 加载历史对话列表
+        async function loadHistoryList() {
+            const container = document.getElementById('history-list');
+            try {
+                const response = await fetch('/sessions');
+                const data = await response.json();
+
+                if (!data.success || !data.sessions || data.sessions.length === 0) {
+                    container.innerHTML = '<div class="history-empty">暂无历史对话</div>';
+                    return;
+                }
+
+                container.innerHTML = data.sessions.map(session => `
+                    <div class="history-item ${session.session_id === currentSessionId ? 'active' : ''}" data-session-id="${session.session_id}" onclick="loadSession('${session.session_id}')">
+                        <span class="history-icon">💬</span>
+                        <span class="history-title">${escapeHtml(session.title || '未命名对话')}</span>
+                        <span class="history-delete" onclick="event.stopPropagation(); deleteSession('${session.session_id}')">🗑</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="history-empty">加载失败</div>';
+            }
+        }
+
+        // 加载指定会话
+        async function loadSession(sessionId) {
+            try {
+                const response = await fetch(`/sessions/${sessionId}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('加载会话失败');
+                    return;
+                }
+
+                currentSessionId = sessionId;
+                const session = data.session;
+
+                // 清空并重建对话内容
+                const chatContainer = document.getElementById('chat-messages');
+                chatContainer.innerHTML = '';
+
+                // 渲染对话步骤
+                if (session.steps && session.steps.length > 0) {
+                    session.steps.forEach(step => {
+                        if (step.role === 'user') {
+                            addMessage(step.content, 'user');
+                        } else if (step.role === 'assistant') {
+                            addMessage(step.content, 'assistant');
+                        }
+                    });
+                } else {
+                    // 如果没有步骤，显示欢迎界面
+                    startNewChat();
+                    return;
+                }
+
+                switchPage('chat', document.querySelector('.nav-item'));
+                updateActiveHistoryItem();
+            } catch (error) {
+                console.error('加载会话失败:', error);
+                alert('加载会话失败');
+            }
+        }
+
+        // 删除会话
+        async function deleteSession(sessionId) {
+            if (!confirm('确定要删除这个对话吗？')) return;
+
+            try {
+                const response = await fetch(`/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    if (currentSessionId === sessionId) {
+                        currentSessionId = null;
+                        startNewChat();
+                    }
+                    loadHistoryList();
+                } else {
+                    alert('删除失败');
+                }
+            } catch (error) {
+                console.error('删除会话失败:', error);
+                alert('删除失败');
+            }
+        }
+
+        // 更新历史列表中当前激活的项
+        function updateActiveHistoryItem() {
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.sessionId === currentSessionId) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        // HTML转义函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // 清空对话
@@ -1849,7 +2118,7 @@
             const container = document.getElementById('skills-list');
             
             try {
-                const response = await fetch('/api/skills');
+                const response = await fetch('/skills');
                 const data = await response.json();
                 
                 if (!data.success || !data.skills || data.skills.length === 0) {
@@ -1938,7 +2207,7 @@
                 const response = await fetch('/memory');
                 const data = await response.json();
                 
-                if (!data.success || !data.memory || data.memory.length === 0) {
+                if (!data.success) {
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">🧠</div>
@@ -1948,12 +2217,62 @@
                     return;
                 }
                 
-                container.innerHTML = data.memory.map(item => `
-                    <div class="memory-item">
-                        <div class="memory-time">${item.timestamp || '未知时间'}</div>
-                        <div class="memory-content">${item.content || item}</div>
-                    </div>
-                `).join('');
+                // 构建记忆内容展示
+                let memoryHtml = '';
+                const memory = data.memory || {};
+                
+                // 显示摘要
+                if (memory.summary) {
+                    memoryHtml += `
+                        <div class="memory-item">
+                            <div class="memory-time">摘要</div>
+                            <div class="memory-content">${memory.summary}</div>
+                        </div>
+                    `;
+                }
+                
+                // 显示表结构
+                if (memory.table_schemas && Object.keys(memory.table_schemas).length > 0) {
+                    const tables = Object.keys(memory.table_schemas).join(', ');
+                    memoryHtml += `
+                        <div class="memory-item">
+                            <div class="memory-time">已缓存表结构</div>
+                            <div class="memory-content">${tables}</div>
+                        </div>
+                    `;
+                }
+                
+                // 显示指标定义
+                if (memory.metric_definitions && Object.keys(memory.metric_definitions).length > 0) {
+                    const metrics = Object.keys(memory.metric_definitions).join(', ');
+                    memoryHtml += `
+                        <div class="memory-item">
+                            <div class="memory-time">已缓存指标</div>
+                            <div class="memory-content">${metrics}</div>
+                        </div>
+                    `;
+                }
+                
+                // 显示业务背景
+                if (memory.business_background && memory.business_background.length > 0) {
+                    memoryHtml += `
+                        <div class="memory-item">
+                            <div class="memory-time">业务背景</div>
+                            <div class="memory-content">${memory.business_background.join('<br>')}</div>
+                        </div>
+                    `;
+                }
+                
+                if (memoryHtml === '') {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧠</div>
+                            <p class="empty-state-text">暂无记忆记录</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = memoryHtml;
+                }
             } catch (error) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -2043,6 +2362,12 @@
                 this.style.height = 'auto';
                 this.style.height = Math.min(this.scrollHeight, 200) + 'px';
             });
+
+            // 加载历史对话列表
+            loadHistoryList();
+
+            // 定期刷新历史列表（每30秒）
+            setInterval(loadHistoryList, 30000);
         });
     </script>
 </body>

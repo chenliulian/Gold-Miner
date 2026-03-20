@@ -105,7 +105,7 @@ def init_schedulers():
 
     get_session_summarizer(
         sessions_dir=os.path.join(project_root, "sessions"),
-        memory_path=os.path.join(project_root, "memory/memory.json"),
+        memory_path=os.path.join(project_root, "memory/state.json"),
         review_interval_hours=_config.scheduler_session_review_hours,
         auto_start=True,
     )
@@ -315,6 +315,23 @@ def new_session():
         }), 500
 
 
+@app.route("/sessions/<session_id>", methods=["DELETE"])
+def delete_session(session_id):
+    """删除指定会话"""
+    agent = get_agent()
+    
+    try:
+        success = agent.session.delete_session(session_id)
+        return jsonify({
+            "success": success
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @app.route("/memory", methods=["GET"])
 def get_memory():
     """获取长期记忆内容"""
@@ -430,6 +447,53 @@ def call_skill(skill_name):
         return jsonify({
             "success": True,
             "result": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/tables", methods=["GET"])
+@app.route("/api/tables", methods=["GET"])
+def list_tables():
+    """List all available tables from knowledge base."""
+    try:
+        import yaml
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        tables_dir = os.path.join(project_root, "knowledge", "tables")
+        tables = []
+
+        if os.path.isdir(tables_dir):
+            for filename in os.listdir(tables_dir):
+                if filename.endswith('.yaml'):
+                    table_file = os.path.join(tables_dir, filename)
+                    table_name = filename[:-5].replace('_', '.')
+                    description = "暂无描述"
+
+                    # 读取 YAML 文件获取业务名称和使用场景
+                    try:
+                        with open(table_file, 'r', encoding='utf-8') as f:
+                            table_data = yaml.safe_load(f)
+                            if table_data and '基本信息' in table_data:
+                                business_name = table_data['基本信息'].get('业务名称', '')
+                                usage_scenarios = table_data['基本信息'].get('使用场景', [])
+                                if business_name:
+                                    description = business_name
+                                if usage_scenarios:
+                                    description += " | " + "; ".join(usage_scenarios[:2])
+                    except Exception:
+                        pass
+
+                    tables.append({
+                        "name": table_name,
+                        "description": description
+                    })
+
+        return jsonify({
+            "success": True,
+            "tables": tables
         })
     except Exception as e:
         return jsonify({
@@ -715,5 +779,49 @@ def get_learnings_stats():
         }), 500
 
 
+@app.route("/learnings", methods=["GET"])
+def get_learnings():
+    """Get all learnings content."""
+    try:
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        learnings_dir = os.path.join(project_root, ".learnings")
+        
+        learnings = ""
+        errors = ""
+        features = ""
+        
+        # Read LEARNINGS.md
+        learnings_file = os.path.join(learnings_dir, "LEARNINGS.md")
+        if os.path.exists(learnings_file):
+            with open(learnings_file, "r", encoding="utf-8") as f:
+                learnings = f.read()
+        
+        # Read ERRORS.md
+        errors_file = os.path.join(learnings_dir, "ERRORS.md")
+        if os.path.exists(errors_file):
+            with open(errors_file, "r", encoding="utf-8") as f:
+                errors = f.read()
+        
+        # Read FEATURE_REQUESTS.md
+        features_file = os.path.join(learnings_dir, "FEATURE_REQUESTS.md")
+        if os.path.exists(features_file):
+            with open(features_file, "r", encoding="utf-8") as f:
+                features = f.read()
+        
+        return jsonify({
+            "success": True,
+            "learnings": learnings,
+            "errors": errors,
+            "features": features
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

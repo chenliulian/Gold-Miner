@@ -90,6 +90,12 @@ class SessionStore:
         if self.current_session:
             self.current_session.end_time = datetime.now().isoformat()
             self._save()
+
+    def update_title(self, title: str) -> None:
+        """更新当前会话的标题"""
+        if self.current_session:
+            self.current_session.title = title
+            self._save()
     
     def _save(self) -> None:
         """保存当前会话到文件"""
@@ -163,3 +169,20 @@ class SessionStore:
         if self.current_session:
             return self.current_session.session_id
         return None
+
+    def delete_session(self, session_id: str) -> bool:
+        """删除指定会话"""
+        try:
+            # 如果删除的是当前会话，先清空当前会话
+            if self.current_session and self.current_session.session_id == session_id:
+                self.current_session = None
+
+            # 删除会话文件
+            session_file = os.path.join(self.sessions_dir, f"{session_id}.json")
+            if os.path.exists(session_file):
+                os.remove(session_file)
+                return True
+            return False
+        except Exception as e:
+            print(f"[SessionStore] 删除会话失败: {e}")
+            return False

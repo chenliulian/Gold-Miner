@@ -19,7 +19,7 @@ class Config:
     odps_quota: str = ""  # ODPS 计算资源配额，如 "quota_name" 或 "quota_name/nickname"
 
     agent_max_steps: int = 6
-    memory_path: str = "./memory/memory.json"
+    memory_path: str = "./memory/state.json"
     memory_summary_path: str = "./memory/summary.md"
     reports_dir: str = "./reports"
 
@@ -60,7 +60,7 @@ class Config:
             odps_endpoint=os.getenv("ODPS_ENDPOINT", "").strip(),
             odps_quota=os.getenv("ODPS_QUOTA", "").strip(),
             agent_max_steps=int(os.getenv("AGENT_MAX_STEPS", "6")),
-            memory_path=os.getenv("MEMORY_PATH", "./memory/memory.json"),
+            memory_path=os.getenv("MEMORY_PATH", "./memory/state.json"),
             memory_summary_path=os.getenv("MEMORY_SUMMARY_PATH", "./memory/summary.md"),
             reports_dir=os.getenv("REPORTS_DIR", "./reports"),
             session_secret=os.getenv("SESSION_SECRET", "").strip(),

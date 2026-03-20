@@ -1,0 +1,100 @@
+基本信息:
+  表名: com_ads.ads_dsp_req_filter_hi
+  业务名称: DSP广告维度过滤请求量统计小时表
+  数据粒度: 广告维度过滤请求量统计
+  更新频率: 小时
+  保留周期: 90天
+  项目: com_ads
+  列数: 41
+  分区数: 1
+  表注释: 服务端DSP广告维度过滤请求量统计
+使用场景:
+  - 分析DSP请求被过滤的原因分布
+  - 统计各过滤类型的请求量
+  - 分析广告维度（创意/组/计划/广告主）的过滤情况
+  - 评估不同媒体/代码位的过滤率
+  - 监控服务端广告引擎的过滤效果
+  - 分析不同国家/操作系统的过滤差异
+  - 注意: 该表专注于DSP请求过滤环节，包含过滤类型和计量
+核心字段:
+  层级信息:
+    - advertiser_id: 广告主ID
+    - account_name: 广告主名称
+    - ad_plan_id: 广告计划ID
+    - ad_plan_title: 广告计划名称
+    - ad_group_id: 广告组ID
+    - ad_group_title: 广告组名称
+    - creativity_id: 广告创意ID
+    - creativity_title: 广告创意名称
+  媒体信息:
+    - media_id: 媒体主ID
+    - media_company_name: 媒体主公司名称
+    - app_id: 应用ID
+    - app_name: 应用名称
+    - code_seat_id: 代码位ID
+    - code_seat_title: 代码位名称
+    - code_seat_type: 代码位类型(1-native, 2-banner, 3-插屏, 4-开屏)
+    - position_scale: 代码位尺寸比例
+  过滤信息:
+    - filter_type: 过滤类型（具体过滤原因）
+    - cnt: 过滤计量（请求数）
+    - server_version: 广告引擎版本号
+  维度信息:
+    - os_type: 操作系统
+    - os_type_en: 操作系统英文
+    - mcc: 国家MCC码
+    - national_id: 国家ID
+    - country_en: 国家英文名
+    - country_zh: 国家中文名
+    - business_line_nm: 媒体所属业务线
+    - ssp_id: 外部SSP的ID
+    - traffic_type: 流量类型(1-api, 2-sdk, 3-h5, 4-ssp)
+    - ad_count: 单次请求的广告个数
+    - is_offline_ad: 是否离线广告(0-在线, 1-离线)
+    - is_default_ad: 是否打底
+    - bill_type_cn: 出价方式
+    - bill: 出价(千次美元)
+建表语句: |
+  CREATE TABLE IF NOT EXISTS ads_dsp_req_filter_hi (
+    advertiser_id STRING COMMENT '广告主ID',
+    account_name STRING COMMENT '广告主名称',
+    brief_name STRING COMMENT '广告主简称',
+    ad_plan_id STRING COMMENT '广告计划ID',
+    ad_plan_title STRING COMMENT '广告计划名称',
+    ad_group_id STRING COMMENT '广告组ID',
+    ad_group_title STRING COMMENT '广告组名称',
+    creativity_id STRING COMMENT '广告创意ID',
+    creativity_title STRING COMMENT '广告创意名称',
+    style_type STRING COMMENT '样式类型',
+    is_default_ad INT COMMENT '是否打底',
+    bill_type_cn STRING COMMENT '出价方式',
+    bill DOUBLE COMMENT '出价，千次美元',
+    media_id STRING COMMENT '媒体主ID',
+    media_company_name STRING COMMENT '媒体主公司名称',
+    app_id STRING COMMENT '应用ID',
+    app_name STRING COMMENT '应用名称',
+    code_seat_id STRING COMMENT '代码位ID',
+    code_seat_title STRING COMMENT '代码位名称',
+    code_seat_type INT COMMENT '代码位类型，1 native/原生，2 banner/横幅，3插屏，4开屏',
+    code_seat_type_cn STRING COMMENT '代码位类型(中文)',
+    adv_seat_type STRING COMMENT '广告位类型',
+    os_type STRING COMMENT '操作系统',
+    server_version STRING COMMENT '广告引擎版本号',
+    filter_type STRING COMMENT '过滤类型',
+    cnt BIGINT COMMENT '计量',
+    os_type_en STRING COMMENT '操作系统英文',
+    mcc STRING COMMENT '国家mcc码',
+    national_id STRING COMMENT '国家ID(来自dmp国家标签)',
+    country_en STRING COMMENT '国家英文名',
+    country_zh STRING COMMENT '国家中文名',
+    position_scale STRING COMMENT '代码位尺寸比例',
+    is_offline_ad BIGINT COMMENT '0在线广告, 1离线广告',
+    business_line_nm STRING COMMENT '媒体所属业务线',
+    ssp_id STRING COMMENT '外部ssp的id，信息可查媒体账户维表',
+    ad_count INT COMMENT '单次请求的广告个数',
+    traffic_type INT COMMENT '流量类型，1-api, 2-sdk, 3-h5, 4-ssp',
+    agent STRING COMMENT '',
+    agent_id INT COMMENT ''
+  )
+  PARTITIONED BY (dh STRING COMMENT '分区')
+  COMMENT '服务端DSP广告维度过滤请求量统计';

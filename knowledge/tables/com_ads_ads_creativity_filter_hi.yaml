@@ -1,0 +1,134 @@
+基本信息:
+  表名: com_ads.ads_creativity_filter_hi
+  业务名称: B2创意维度流量漏斗统计小时表
+  数据粒度: 创意维度流量漏斗统计
+  更新频率: 小时
+  保留周期: 90天
+  项目: com_ads
+  列数: 73
+  分区数: 1
+  表注释: B2最细粒度流量漏斗统计
+使用场景:
+  - 分析创意维度的流量漏斗（请求→召回→响应→展现→点击）
+  - 统计各过滤环节的过滤原因和数量
+  - 分析创意维度的CTR、CVR表现
+  - 评估创意在不同媒体/代码位的表现
+  - 分析广告主/计划/组/创意的层级漏斗数据
+  - 注意: 该表是B2最细粒度流量漏斗，包含请求到点击的全链路数据
+核心字段:
+  层级信息:
+    - advertiser_id: 广告主ID
+    - account_name: 广告主名称
+    - ad_plan_id: 广告计划ID
+    - ad_plan_title: 广告计划名称
+    - ad_group_id: 广告组ID
+    - ad_group_title: 广告组名称
+    - creativity_id: 广告创意ID
+    - creativity_title: 广告创意名称
+  媒体信息:
+    - media_id: 媒体主ID
+    - media_company_name: 媒体主公司名称
+    - app_id: 应用ID
+    - app_name: 应用名称
+    - code_seat_id: 代码位ID
+    - code_seat_title: 代码位名称
+    - code_seat_type: 代码位类型(1-native, 2-banner, 3-插屏, 4-开屏)
+  流量漏斗:
+    - resp: 响应数
+    - recall: 召回数
+    - req_num: DSP请求数
+    - res_num: DSP有广告返回的请求数
+    - res_cnt: DSP广告返回数
+    - show_num: 有广告展现的请求数
+    - show_cnt: 广告展现数(去重)
+    - click_num: 有广告点击的请求数
+    - click_cnt: 广告点击数(去重)
+  过滤原因:
+    - mem_shield: 内存屏蔽过滤
+    - ctr_filter: 低CTR过滤
+    - budget_filter: 因预算控制过滤
+    - cnt_limit: 因广告个数限制过滤（截断）
+    - adv_limit: 因广告主去重过滤
+    - frequency_control: 频次控制过滤
+    - floor_price_filter: B2底价过滤
+    - cvr_filter: 低CVR过滤
+    - code_seat_filter: 高成本代码位过滤
+    - rta_info_null: RTA拒绝或暂无RTA信息
+  成本收益:
+    - bill: 出价(千次美元)
+    - cpm_cost: 广告主CPM花费(美元)
+    - cpc_cost: 广告主CPC花费(美元)
+    - cpm_income: 媒体主CPM收益(美元)
+    - cpc_income: 媒体主CPC收益(美元)
+建表语句: |
+  CREATE TABLE IF NOT EXISTS ads_creativity_filter_hi (
+    advertiser_id STRING COMMENT '广告主ID',
+    account_name STRING COMMENT '广告主名称',
+    brief_name STRING COMMENT '广告主简称',
+    ad_plan_id STRING COMMENT '广告计划ID',
+    ad_plan_title STRING COMMENT '广告计划名称',
+    ad_group_id STRING COMMENT '广告组ID',
+    ad_group_title STRING COMMENT '广告组名称',
+    creativity_id STRING COMMENT '广告创意ID',
+    creativity_title STRING COMMENT '广告创意名称',
+    style_type STRING COMMENT '样式类型',
+    is_default_ad INT COMMENT '是否打底',
+    bill_type_cn STRING COMMENT '出价方式',
+    bill DOUBLE COMMENT '出价，千次美元',
+    media_id STRING COMMENT '媒体主ID',
+    media_company_name STRING COMMENT '媒体主公司名称',
+    app_id STRING COMMENT '应用ID',
+    app_name STRING COMMENT '应用名称',
+    code_seat_id STRING COMMENT '代码位ID',
+    code_seat_title STRING COMMENT '代码位名称',
+    code_seat_type INT COMMENT '代码位类型，1 native/原生，2 banner/横幅，3插屏，4开屏',
+    code_seat_type_cn STRING COMMENT '代码位类型(中文)',
+    adv_seat_type STRING COMMENT '广告位类型',
+    os_type STRING COMMENT '操作系统',
+    mem_shield BIGINT COMMENT '内存屏蔽过滤',
+    ctr_filter BIGINT COMMENT '低CTR过滤',
+    budget_filter BIGINT COMMENT '因预算控制过滤',
+    budget_consume BIGINT COMMENT '因记录预算消费量',
+    cnt_limit BIGINT COMMENT '因广告个数限制过滤（截断）',
+    adv_limit BIGINT COMMENT '因广告主去重过滤',
+    frequency_control BIGINT COMMENT '频次控制过滤',
+    floor_price_filter BIGINT COMMENT 'B2底价过滤',
+    cpc_splach_brand BIGINT COMMENT '开屏请求过滤推广类型为品牌推广的cpc广告',
+    ussd_shield BIGINT COMMENT '不支持ussd的sdk版本过滤',
+    resp BIGINT COMMENT '响应',
+    recall BIGINT COMMENT '召回',
+    req_num BIGINT COMMENT 'dsp请求数',
+    res_num BIGINT COMMENT 'dsp有广告返回的请求数',
+    res_cnt BIGINT COMMENT 'dsp广告返回数',
+    show_num BIGINT COMMENT '有广告展现的请求数',
+    show_cnt BIGINT COMMENT '广告展现数(去重)',
+    click_num BIGINT COMMENT '有广告点击的请求数',
+    click_cnt BIGINT COMMENT '广告点击数(去重)',
+    cpm_cost DOUBLE COMMENT '广告主CPM花费(单位:美元)',
+    cpc_cost DOUBLE COMMENT '广告主CPC花费(单位:美元)',
+    cpm_income DOUBLE COMMENT '媒体主CPM收益(单位:美元)',
+    cpc_income DOUBLE COMMENT '媒体主CPC收益(单位:美元)',
+    ssp_res_num BIGINT COMMENT '比价adx后胜出的响应数',
+    ssp_res_cnt BIGINT COMMENT '比价adx后胜出的响应数(去重)',
+    os_type_en STRING COMMENT '操作系统英文',
+    cvr_filter BIGINT COMMENT '低cvr过滤',
+    country_en STRING COMMENT '国家英文名',
+    country_zh STRING COMMENT '国家中文名',
+    install_pv BIGINT COMMENT '安装pv',
+    active_pv BIGINT COMMENT '激活后pv',
+    regist_pv BIGINT COMMENT '注册pv',
+    pay_pv BIGINT COMMENT '付费pv',
+    pre_click_cnt_int BIGINT COMMENT '预估点击数',
+    ssp_res_succ_num BIGINT COMMENT '模版过滤后的ssp响应数',
+    ssp_res_succ_cnt BIGINT COMMENT '经各种过滤后ssp响应成功的广告次数',
+    pre_click_cnt DOUBLE COMMENT '预估点击数',
+    code_seat_filter BIGINT COMMENT '高成本代码位的过滤',
+    rta_info_null BIGINT COMMENT 'rta拒绝这个流量或者目前没有rta信息',
+    is_offline_ad BIGINT COMMENT '是否离线广告：0.在线广告1.离线广告',
+    business_line_nm STRING COMMENT '媒体所属业务线',
+    traffic_type INT COMMENT '流量类型，1-api, 2-sdk, 3-h5, 4-ssp',
+    agent STRING COMMENT '',
+    agent_id INT COMMENT ''
+  )
+  PARTITIONED BY (dh STRING COMMENT '分区')
+  COMMENT 'B2最细粒度流量漏斗统计';
