@@ -610,3 +610,198 @@ WITH funnel_data AS (
 - Tags: 
 
 ---
+
+## [LRN-20260319-648] correction
+
+**Logged**: 2026-03-19T19:42:58
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 2026031911425642gbfcchs9aio2
+ODPS-0130252:[48,1] Carte...
+
+### Details
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 2026031911425642gbfcchs9aio2
+ODPS-0130252:[48,1] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-19T19:42:58.678789
+
+相关 SQL:
+```sql
+WITH
+engine AS (
+  SELECT
+    SUM(rank_req_cnt) AS rank_req_cnt,
+    SUM(resp_req_cnt) AS resp_req_cnt
+  FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+  WHERE dh >= '2026031600' AND dh <= '2026031623'
+    AND id_type = 'ad_group_id'
+    AND id_value = '70711'
+),
+serve AS (
+  SELECT
+    SUM(show_label) AS show_cnt,
+    SUM(click_label) AS click_cnt,
+    SUM(dld_label) AS dld_cnt,
+    SUM(conv_label_active) AS conv_active_cnt,
+    SUM(conv_label_register) AS conv_register_cnt,
+    SUM(conv_lab
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260319-553] correction
+
+**Logged**: 2026-03-19T19:48:18
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260319114815631gxaqyti57jh
+ODPS-0130252:[22,1] Carte...
+
+### Details
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260319114815631gxaqyti57jh
+ODPS-0130252:[22,1] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-19T19:48:18.307365
+
+相关 SQL:
+```sql
+-- 广告主 2368 最近30天（含今天往前推30天，不含今天）申贷成本
+-- 口径：申贷数=SUM(conv_label_apply_loan)，消耗=SUM(billing_actual_deduction_price)/1e5(USD)，申贷成本CPA=cost/apply_loan
+WITH r AS (
+  SELECT
+    -- 以当前环境日期 20260319 为基准，最近30天：20260217~20260318
+    '2026021700' AS start_dh,
+    '2026031823' AS end_dh
+)
+SELECT
+  'total' AS granularity,
+  NULL AS dt,
+  advertiser_id,
+  cost_type,
+  SUM(conv_label_apply_loan) AS apply_loan_cnt,
+  SUM(billing_actual_deduction_price)/1e5 AS cost_usd,
+  CASE WHEN SUM(conv_label_apply_loan)=0 
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260319-165] correction
+
+**Logged**: 2026-03-19T19:48:33
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ParseError: RequestId: 69BBE291482BD53F38E95FEC Tag: ODPS Endpoint: http://servi...
+
+### Details
+错误类型: unknown
+错误信息: ParseError: RequestId: 69BBE291482BD53F38E95FEC Tag: ODPS Endpoint: http://service.eu-central-1.maxcompute.aliyun.com/api
+SQL Statement: /* 广告主2368：最近30天（20260217~20260318）申贷成本（CPA=消耗/申贷数）
+   口径：申贷=SUM(conv_label_apply_loan)，消耗=SUM(billing_actual_deduction_price)/1e5 (USD)
+*/
+-- 1) 总览：按 cost_type 拆分
+SELECT
+  advertiser_id,
+  cost_type,
+  SUM(conv_label_apply_loan) AS apply_loan_cnt,
+  SUM(billing_actual_deduction_price)/1e5 AS cost_usd,
+  CASE WHEN SUM(conv_label_apply_loan)=0 THEN NULL
+       E
+上下文: sql_execution
+时间: 2026-03-19T19:48:33.274486
+
+相关 SQL:
+```sql
+/* 广告主2368：最近30天（20260217~20260318）申贷成本（CPA=消耗/申贷数）
+   口径：申贷=SUM(conv_label_apply_loan)，消耗=SUM(billing_actual_deduction_price)/1e5 (USD)
+*/
+-- 1) 总览：按 cost_type 拆分
+SELECT
+  advertiser_id,
+  cost_type,
+  SUM(conv_label_apply_loan) AS apply_loan_cnt,
+  SUM(billing_actual_deduction_price)/1e5 AS cost_usd,
+  CASE WHEN SUM(conv_label_apply_loan)=0 THEN NULL
+       ELSE (SUM(billing_actual_deduction_price)/1e5) / SUM(conv_label_apply_loan) END AS cpa_usd_apply_loan,
+  SUM(show_label) AS show_cnt,
+  SU
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260319-739] knowledge_gap
+
+**Logged**: 2026-03-19T20:24:18
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-19T20:24:18.027737
+
+相关 SQL:
+```sql
+WITH daily AS (
+  SELECT
+    SUBSTR(dh, 1, 8) AS dt,
+    advertiser_id,
+    SUM(CASE WHEN show_label = 1 THEN billing_actual_deduction_price ELSE 0 END) / 1e5 AS cost_usd,
+    SUM(CASE WHEN show_label = 1 THEN click_label ELSE 0 END) AS click_cnt,
+    SUM(CASE WHEN show_label = 1 THEN conv_label_apply_loan ELSE 0 END) AS apply_loan_cnt
+  FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+  WHERE dh >= '2026031000' AND dh <= '2026031523'
+    AND advertiser_id IN ('6009','2368')
+  GROUP BY SUBSTR
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---

@@ -192,3 +192,51 @@ SELECT
 - Related Files: 
 
 ---
+
+## [ERR-20260319-925] skill_or_command
+
+**Logged**: 2026-03-19T20:21:59
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260319122156847gyna0352qen4
+ODPS-0130071:[35,1] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260319122156847gyna0352qen4
+ODPS-0130071:[35,1] Semantic analysis exception - ORDER BY must be used with a LIMIT clause, please set odps.sql.validate.orderby.limit=false to use it.
+
+上下文: sql_execution
+时间: 2026-03-19T20:21:59.543803
+
+相关 SQL:
+```sql
+WITH daily AS (
+  SELECT
+    SUBSTR(dh, 1, 8) AS dt,
+    advertiser_id,
+    SUM(CASE WHEN show_label = 1 THEN billing_actual_deduction_price ELSE 0 END) / 1e5 AS cost_usd,
+    SUM(CASE WHEN show_label = 1 THEN click_label ELSE 0 END) AS click_cnt,
+    SUM(CASE WHEN show_label = 1 THEN conv_label_apply_loan ELSE 0 END) AS apply_loan_cnt
+  FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+  WHERE dh >= '2025031000' AND dh <= '2025031523'
+    AND advertiser_id IN ('6009','2368')
+  GROUP BY SUBSTR
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
