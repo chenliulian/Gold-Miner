@@ -90,18 +90,18 @@ class RetryManager:
         func: Callable,
         *args,
         **kwargs
-    ) -> Any:
+    ) -> tuple[Any, bool, Optional[Exception]]:
         """
         执行函数，支持重试
 
-        返回：(result, success)
+        返回：(result, success, error)
         """
         last_error = None
 
         for attempt in range(1, self.policy.max_attempts + 1):
             try:
                 result = func(*args, **kwargs)
-                return result, True
+                return result, True, None
             except Exception as e:
                 last_error = e
 
@@ -120,7 +120,7 @@ class RetryManager:
 
                 time.sleep(delay)
 
-        return None, False
+        return None, False, last_error
 
     def execute_with_retry_callback(
         self,

@@ -229,15 +229,18 @@ class TestRetryManager:
     def test_successful_execution(self):
         policy = RetryPolicy(max_attempts=3)
         manager = RetryManager(policy)
-        result, success = manager.execute_with_retry(lambda: 42)
+        result, success, error = manager.execute_with_retry(lambda: 42)
         assert success is True
         assert result == 42
+        assert error is None
 
     def test_failed_execution_no_retry(self):
         policy = RetryPolicy(max_attempts=3, retryable_errors=())
         manager = RetryManager(policy)
-        result, success = manager.execute_with_retry(lambda: (_ for _ in ()).throw(Exception("fail")))
+        result, success, error = manager.execute_with_retry(lambda: (_ for _ in ()).throw(Exception("fail")))
         assert success is False
+        assert result is None
+        assert error is not None
 
 
 class TestCircuitBreaker:
@@ -716,7 +719,7 @@ class TestRetryManagerEdgeCases:
                 raise Exception("some unrelated error")
             return "success"
 
-        result, success = manager.execute_with_retry(fail_once)
+        result, success, error = manager.execute_with_retry(fail_once)
         assert success is False
         assert result is None
 
@@ -731,8 +734,12 @@ class TestRetryManagerEdgeCases:
             attempt_count += 1
             raise Exception("timeout error")
 
-        manager.execute_with_retry(fail_with_timeout)
+        result, success, error = manager.execute_with_retry(fail_with_timeout)
 
+        assert success is False
+        assert result is None
+        assert error is not None
+        assert "timeout error" in str(error)
         assert attempt_count == 3
 
     def test_exponential_backoff(self):

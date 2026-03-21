@@ -115,6 +115,7 @@ class SqlAgent:
         status_cb: Optional[Any] = None,
         heartbeat_cb: Optional[Any] = None,
         clear_memory: bool = True,
+        context_messages: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         max_steps = max_steps or self.config.agent_max_steps
         if status_cb:
@@ -142,7 +143,7 @@ class SqlAgent:
                 if status_cb:
                     status_cb("cancelled")
                 return ""
-            action = self._next_action(question, tables)
+            action = self._next_action(question, tables, context_messages)
             note = action.get("notes")
             if note:
                 print(f"\n[Agent] {note}")
@@ -214,7 +215,7 @@ class SqlAgent:
             status_cb("done")
         return report_path
 
-    def _next_action(self, question: str, tables: Optional[str]) -> Dict[str, Any]:
+    def _next_action(self, question: str, tables: Optional[str], context_messages: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         # 获取会话上下文（最近对话历史）
         session_context = self.session.get_context()
         # 获取长期记忆上下文
@@ -236,6 +237,13 @@ class SqlAgent:
         
         messages = [
             {"role": "system", "content": enhanced_system_prompt},
+        ]
+
+        if context_messages:
+            messages.extend(context_messages)
+
+        visible_steps = [s for s in session_context["steps"] if s.get("visible", True)]
+        messages.append(
             {
                 "role": "user",
                 "content": json.dumps(
@@ -254,7 +262,7 @@ class SqlAgent:
                     ensure_ascii=False,
                 ),
             },
-        ]
+        )
         content = self.llm.chat(messages, enforce_json=True)
         action = _parse_json(content)
         
