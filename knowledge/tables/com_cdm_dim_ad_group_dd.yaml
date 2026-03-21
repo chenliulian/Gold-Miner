@@ -1,0 +1,364 @@
+基本信息:
+  表名: com_cdm.dim_ad_group_dd
+  业务名称: 广告组维度表
+  数据粒度: 广告组级别
+  更新频率: 日
+  保留周期: 365天
+  项目: com_cdm
+  列数: 50
+  分区数: 1
+分区信息:
+  dt:
+    字段名: dt
+    分区类型: STRING
+    分区说明: 数据更新日期，格式yyyymmdd
+核心字段详解:
+  id:
+    字段名: id
+    数据类型: STRING
+    业务含义: 广告组ID
+    示例值: '80554'
+    使用注意: 主键，唯一标识一个广告组
+  title:
+    字段名: title
+    数据类型: STRING
+    业务含义: 广告组名称
+    示例值: Brick Master-国家限定-非商店_2
+    使用注意: 广告组名称
+  advertiser_id:
+    字段名: advertiser_id
+    数据类型: STRING
+    业务含义: 广告主ID
+    示例值: '3375'
+    使用注意: 关联广告主
+  account_name:
+    字段名: account_name
+    数据类型: STRING
+    业务含义: 广告主账号名称
+    示例值: 果石-funloop-01
+    使用注意: 广告主账户名
+  ad_plan_id:
+    字段名: ad_plan_id
+    数据类型: STRING
+    业务含义: 广告计划ID
+    示例值: '12153'
+    使用注意: 关联广告计划
+  ad_plan_title:
+    字段名: ad_plan_title
+    数据类型: STRING
+    业务含义: 广告计划名称
+    示例值: brick-master_0203
+    使用注意: 广告计划名称
+  budget_type:
+    字段名: budget_type
+    数据类型: INT
+    业务含义: 预算类型
+    示例值: '1'
+    使用注意: 预算类型编码
+  budget_type_cn:
+    字段名: budget_type_cn
+    数据类型: STRING
+    业务含义: 预算类型(中文)
+    示例值: 日预算
+    使用注意: 预算类型描述
+  budget:
+    字段名: budget
+    数据类型: BIGINT
+    业务含义: 日预算，单位分
+    示例值: '5000000'
+    使用注意: 日预算金额，单位为分
+  start_time:
+    字段名: start_time
+    数据类型: DATETIME
+    业务含义: 开始投放时间
+    示例值: '2024-02-03 00:00:00'
+    使用注意: 广告组开始投放时间
+  end_time:
+    字段名: end_time
+    数据类型: DATETIME
+    业务含义: 结束投放时间
+    示例值: '2025-12-31 23:59:59'
+    使用注意: 广告组结束投放时间
+  bill_type:
+    字段名: bill_type
+    数据类型: INT
+    业务含义: 出价方式
+    示例值: '1'
+    使用注意: 出价方式编码
+  bill_type_cn:
+    字段名: bill_type_cn
+    数据类型: STRING
+    业务含义: 出价方式(中文)
+    示例值: CPC
+    使用注意: 出价方式描述
+  bill:
+    字段名: bill
+    数据类型: BIGINT
+    业务含义: 出价
+    示例值: '100'
+    使用注意: 出价金额
+  media_ids:
+    字段名: media_ids
+    数据类型: STRING
+    业务含义: 推广媒体，json字符串
+    示例值: '["media_1","media_2"]'
+    使用注意: 推广媒体列表，JSON格式
+  directional_type:
+    字段名: directional_type
+    数据类型: INT
+    业务含义: 定向类型
+    示例值: '1'
+    使用注意: 定向类型编码
+  directional_type_cn:
+    字段名: directional_type_cn
+    数据类型: STRING
+    业务含义: 定向类型(中文)
+    示例值: 定向
+    使用注意: 定向类型描述
+  directional:
+    字段名: directional
+    数据类型: STRING
+    业务含义: 定向内容，json字符串
+    示例值: '{"age":"18-30","gender":"male"}'
+    使用注意: 定向条件，JSON格式
+  crowd_pack_ids:
+    字段名: crowd_pack_ids
+    数据类型: STRING
+    业务含义: 人群定向内容，json字符串
+    示例值: '["crowd_1","crowd_2"]'
+    使用注意: 人群包列表，JSON格式
+  status:
+    字段名: status
+    数据类型: INT
+    业务含义: 状态
+    示例值: '0'
+    使用注意: 广告组状态
+  status_cn:
+    字段名: status_cn
+    数据类型: STRING
+    业务含义: 状态(中文)
+    示例值: 投放中
+    使用注意: 状态描述
+  status_remark:
+    字段名: status_remark
+    数据类型: STRING
+    业务含义: 状态变更备注
+    示例值: 因预算不足暂停
+    使用注意: 状态变更原因
+  is_deleted:
+    字段名: is_deleted
+    数据类型: INT
+    业务含义: 是否删除
+    示例值: '0'
+    使用注意: '0-未删除，1-已删除'
+  is_put:
+    字段名: is_put
+    数据类型: INT
+    业务含义: 是否投放
+    示例值: '1'
+    使用注意: '0-未投放，1-投放中'
+  affect_put_status:
+    字段名: affect_put_status
+    数据类型: INT
+    业务含义: 影响投放状态
+    示例值: '0'
+    使用注意: 影响投放状态编码
+  affect_put_status_cn:
+    字段名: affect_put_status_cn
+    数据类型: STRING
+    业务含义: 影响投放状态(中文)
+    示例值: 正常
+    使用注意: 影响投放状态描述
+  gmt_create:
+    字段名: gmt_create
+    数据类型: DATETIME
+    业务含义: 创建时间
+    示例值: '2024-02-03 20:51:45'
+    使用注意: 广告组创建时间
+  gmt_modified:
+    字段名: gmt_modified
+    数据类型: DATETIME
+    业务含义: 最近一次更新时间
+    示例值: '2026-01-15 05:26:27'
+    使用注意: 最后修改时间
+  creator:
+    字段名: creator
+    数据类型: STRING
+    业务含义: 创建者
+    示例值: '3375'
+    使用注意: 创建人ID
+  modifier:
+    字段名: modifier
+    数据类型: STRING
+    业务含义: 最近一次更新者
+    示例值: '3375'
+    使用注意: 修改人ID
+  estimate_no:
+    字段名: estimate_no
+    数据类型: BIGINT
+    业务含义: 预估人数
+    示例值: '1000000'
+    使用注意: 定向预估覆盖人数
+  transform_target:
+    字段名: transform_target
+    数据类型: STRING
+    业务含义: 转化目标
+    示例值: '2'
+    使用注意: '0-无，1-安装，2-激活，3-注册，4-付费'
+  transform_target_bill:
+    字段名: transform_target_bill
+    数据类型: STRING
+    业务含义: 转化目标出价
+    示例值: '5.00'
+    使用注意: 转化目标对应的出价
+  offline_type:
+    字段名: offline_type
+    数据类型: BIGINT
+    业务含义: 投放类型
+    示例值: '1'
+    使用注意: '1-在线，2-离线，3-离线在线都支持'
+  offline_type_cn:
+    字段名: offline_type_cn
+    数据类型: STRING
+    业务含义: 投放类型名称
+    示例值: 在线
+    使用注意: 投放类型描述
+  pacing_type:
+    字段名: pacing_type
+    数据类型: BIGINT
+    业务含义: 预算投放速度
+    示例值: '1'
+    使用注意: '1-匀速，2-加速，3-智能'
+  pacing_type_cn:
+    字段名: pacing_type_cn
+    数据类型: STRING
+    业务含义: 预算投放速度(中文)
+    示例值: 匀速
+    使用注意: 投放速度描述
+  transform_target_cn:
+    字段名: transform_target_cn
+    数据类型: STRING
+    业务含义: 转化目标(中文)
+    示例值: 激活
+    使用注意: '转化目标描述：0-无，1-安装，2-激活，3-注册，4-付费'
+  ascribe_channel:
+    字段名: ascribe_channel
+    数据类型: BIGINT
+    业务含义: 归因渠道
+    示例值: '1'
+    使用注意: 归因渠道编码
+  ascribe_channel_cn:
+    字段名: ascribe_channel_cn
+    数据类型: STRING
+    业务含义: 归因渠道(中文)
+    示例值: 归因
+    使用注意: 归因渠道描述
+  extend_status:
+    字段名: extend_status
+    数据类型: STRING
+    业务含义: 通投状态
+    示例值: '3'
+    使用注意: '0-不派生，1-待派生广告，2-派生中，3-通投中，4-已删除'
+  extend_status_cn:
+    字段名: extend_status_cn
+    数据类型: STRING
+    业务含义: 通投状态(中文)
+    示例值: 通投中
+    使用注意: 通投状态描述
+  country_codes:
+    字段名: country_codes
+    数据类型: STRING
+    业务含义: 国家代码
+    示例值: US,CA,GB
+    使用注意: 投放国家列表，逗号分隔
+  installed_this_pkg_type:
+    字段名: installed_this_pkg_type
+    数据类型: STRING
+    业务含义: 已安装本包定向类型
+    示例值: '0'
+    使用注意: '0-不限，1-定向，2-排除'
+  installed_this_pkg_type_cn:
+    字段名: installed_this_pkg_type_cn
+    数据类型: STRING
+    业务含义: 已安装本包定向类型(中文)
+    示例值: 不限
+    使用注意: 已安装本包定向类型描述
+  ad_attribution_json:
+    字段名: ad_attribution_json
+    数据类型: STRING
+    业务含义: 检测广告归因链接
+    示例值: '{"click_url":"https://..."}'
+    使用注意: 归因链接JSON
+  internal_ad_type:
+    字段名: internal_ad_type
+    数据类型: STRING
+    业务含义: 内部广告类型
+    示例值: '1'
+    使用注意: 内部广告类型编码
+  transform_target_ratio:
+    字段名: transform_target_ratio
+    数据类型: DOUBLE
+    业务含义: 转化目标比例
+    示例值: '0.85'
+    使用注意: 转化目标调整系数
+  package_name:
+    字段名: package_name
+    数据类型: STRING
+    业务含义: 投放包名
+    示例值: com.casualgame.brick.master.free.game
+    使用注意: 应用包名
+  is_preferred:
+    字段名: is_preferred
+    数据类型: INT
+    业务含义: 是否优选广告
+    示例值: '0'
+    使用注意: '0-否，1-是'
+常用查询场景:
+  示例查询:
+    场景名称: 查询广告组基本信息
+    SQL模板: SELECT id, title, advertiser_id, ad_plan_id, transform_target_cn, status_cn FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND id = '{{ad_group_id}}'
+    参数:
+      ad_group_id: 广告组ID
+  示例查询2:
+    场景名称: 批量查询广告组
+    SQL模板: SELECT id, title, ad_plan_id, budget, transform_target_cn FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND advertiser_id = '{{advertiser_id}}'
+    参数:
+      advertiser_id: 广告主ID
+数据质量规则:
+  异常值识别:
+    - 规则: is_deleted = 1 的记录应为已删除广告组
+    - 规则: start_time > end_time 为异常数据
+    - 规则: budget <= 0 且 is_put = 1 为异常
+业务备注:
+  ID字段:
+    - id
+    - advertiser_id
+    - ad_plan_id
+    - creator
+    - modifier
+  标签字段:
+    - transform_target
+    - transform_target_cn
+    - bill_type
+    - bill_type_cn
+    - pacing_type
+    - pacing_type_cn
+    - offline_type
+    - offline_type_cn
+    - extend_status
+    - extend_status_cn
+    - directional_type
+    - directional_type_cn
+    - installed_this_pkg_type
+    - installed_this_pkg_type_cn
+  计费字段:
+    - budget
+    - bill
+    - transform_target_bill
+    - transform_target_ratio
+  时间字段:
+    - start_time
+    - end_time
+    - gmt_create
+    - gmt_modified
+生成时间: '2026-03-21'
