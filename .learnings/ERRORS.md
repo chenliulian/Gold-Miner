@@ -282,3 +282,323 @@ WHERE dh = '2026031810';
 - Related Files: 
 
 ---
+
+## [ERR-20260322-769] skill_or_command
+
+**Logged**: 2026-03-22T21:37:54
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260322133751925g1uo6jqqqy
+ODPS-0130071:[10,13] Seman...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260322133751925g1uo6jqqqy
+ODPS-0130071:[10,13] Semantic analysis exception - function dateadd cannot match any overloaded functions with (STRING, INT, STRING), candidates are DATE DATEADD(DATE arg0, BIGINT arg1, STRING arg2); DATETIME DATEADD(DATETIME arg0, BIGINT arg1, STRING arg2); TIMESTAMP DATEADD(TIMESTAMP arg0, BIGINT arg1, STRING arg2); TIMESTAMP_NTZ DATEADD(TIMESTAMP_NTZ arg0, BIGINT arg1, STRING arg2)
+ODPS-0130071:[13,1] Semantic analysis exception - ORDER BY
+上下文: sql_execution
+时间: 2026-03-22T21:37:54.481708
+
+相关 SQL:
+```sql
+SELECT 
+    SUBSTR(dh, 1, 8) as dt,
+    SUM(billing_actual_deduction_price) / 1e5 as cost_usd,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    ROUND(SUM(click_label) * 100.0 / NULLIF(SUM(show_label), 0), 4) as ctr,
+    ROUND(SUM(billing_actual_deduction_price) / 1e5 / NULLIF(SUM(click_label), 0), 4) as cpc_usd,
+    ROUND(SUM(billing_actual_deduction_price) / 1e5 / NULLIF(SUM(show_label), 0) * 1000, 4) as cpm_usd
+FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+WHERE dh
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260322-469] skill_or_command
+
+**Logged**: 2026-03-22T21:38:08
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260322133805260g4oi1yb2qen4
+ODPS-0130071:[0,0] Seman...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260322133805260g4oi1yb2qen4
+ODPS-0130071:[0,0] Semantic analysis exception - physical plan generation failed: ODPS-0121095:Invalid argument - in function cast, string datetime's format must be yyyy-mm-dd hh:mi:ss,  input string is:2025091600
+
+上下文: sql_execution
+时间: 2026-03-22T21:38:08.557739
+
+相关 SQL:
+```sql
+SELECT 
+    SUBSTR(dh, 1, 8) as dt,
+    SUM(billing_actual_deduction_price) / 1e5 as cost_usd,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    ROUND(SUM(click_label) * 100.0 / NULLIF(SUM(show_label), 0), 4) as ctr,
+    ROUND(SUM(billing_actual_deduction_price) / 1e5 / NULLIF(SUM(click_label), 0), 4) as cpc_usd,
+    ROUND(SUM(billing_actual_deduction_price) / 1e5 / NULLIF(SUM(show_label), 0) * 1000, 4) as cpm_usd
+FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+WHERE dh
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260322-280] skill_or_command
+
+**Logged**: 2026-03-22T21:42:47
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260322134243988g5866ha5aio2
+ODPS-0130071:[4,13] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260322134243988g5866ha5aio2
+ODPS-0130071:[4,13] Semantic analysis exception - function dateadd cannot match any overloaded functions with (STRING, INT, STRING), candidates are DATE DATEADD(DATE arg0, BIGINT arg1, STRING arg2); DATETIME DATEADD(DATETIME arg0, BIGINT arg1, STRING arg2); TIMESTAMP DATEADD(TIMESTAMP arg0, BIGINT arg1, STRING arg2); TIMESTAMP_NTZ DATEADD(TIMESTAMP_NTZ arg0, BIGINT arg1, STRING arg2)
+ODPS-0130071:[5,11] Semantic analysis exception - functio
+上下文: sql_execution
+时间: 2026-03-22T21:42:47.279771
+
+相关 SQL:
+```sql
+SELECT 
+    SUM(billing_actual_deduction_price) / 1e5 as total_cost_usd
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh >= DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), -24, 'hh')
+AND dh <= DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), -1, 'hh')
+AND advertiser_id = '2368'
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260322-687] skill_or_command
+
+**Logged**: 2026-03-22T21:43:28
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260322134325993giwkra7xmv1
+ODPS-0130071:[4,13] Seman...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260322134325993giwkra7xmv1
+ODPS-0130071:[4,13] Semantic analysis exception - function dateadd cannot match any overloaded functions with (STRING, INT, STRING), candidates are DATE DATEADD(DATE arg0, BIGINT arg1, STRING arg2); DATETIME DATEADD(DATETIME arg0, BIGINT arg1, STRING arg2); TIMESTAMP DATEADD(TIMESTAMP arg0, BIGINT arg1, STRING arg2); TIMESTAMP_NTZ DATEADD(TIMESTAMP_NTZ arg0, BIGINT arg1, STRING arg2)
+
+上下文: sql_execution
+时间: 2026-03-22T21:43:28.466024
+
+相关 SQL:
+```sql
+SELECT 
+    SUM(cpm_cost + cpc_cost + cpd_cost + cpi_cost) as total_cost_usd
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh >= DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), -24, 'hh')
+AND dh < MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi')
+AND advertiser_id = '2368'
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260322-602] skill_or_command
+
+**Logged**: 2026-03-22T21:59:31
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 2026032213592955gl476ha5aio2
+ODPS-0130071:[4,13] Seman...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 2026032213592955gl476ha5aio2
+ODPS-0130071:[4,13] Semantic analysis exception - function dateadd cannot match any overloaded functions with (STRING, INT, STRING), candidates are DATE DATEADD(DATE arg0, BIGINT arg1, STRING arg2); DATETIME DATEADD(DATETIME arg0, BIGINT arg1, STRING arg2); TIMESTAMP DATEADD(TIMESTAMP arg0, BIGINT arg1, STRING arg2); TIMESTAMP_NTZ DATEADD(TIMESTAMP_NTZ arg0, BIGINT arg1, STRING arg2)
+ODPS-0130071:[5,10] Semantic analysis exception - function
+上下文: sql_execution
+时间: 2026-03-22T21:59:31.755551
+
+相关 SQL:
+```sql
+SELECT 
+    SUM(billing_actual_deduction_price) / 1e5 as total_cost_usd
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh >= DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), -24, 'hour')
+AND dh < DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), 0, 'hour')
+AND advertiser_id = '2368'
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260322-903] skill_or_command
+
+**Logged**: 2026-03-22T22:04:38
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260322140434810gs91no55aio2
+ODPS-0130071:[17,13] Sem...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260322140434810gs91no55aio2
+ODPS-0130071:[17,13] Semantic analysis exception - function dateadd cannot match any overloaded functions with (STRING, INT, STRING), candidates are DATE DATEADD(DATE arg0, BIGINT arg1, STRING arg2); DATETIME DATEADD(DATETIME arg0, BIGINT arg1, STRING arg2); TIMESTAMP DATEADD(TIMESTAMP arg0, BIGINT arg1, STRING arg2); TIMESTAMP_NTZ DATEADD(TIMESTAMP_NTZ arg0, BIGINT arg1, STRING arg2)
+ODPS-0130071:[15,15] Semantic analysis exception - colum
+上下文: sql_execution
+时间: 2026-03-22T22:04:38.860210
+
+相关 SQL:
+```sql
+SELECT 
+    SUBSTR(dh, 1, 8) as dt,
+    ad_group_id,
+    -- 曝光数
+    SUM(show_cnt) as show_cnt,
+    -- 点击数
+    SUM(click_cnt) as click_cnt,
+    -- 转化数
+    SUM(pv) as conv_cnt,
+    -- CTR = 点击数/曝光数
+    ROUND(SUM(click_cnt) * 100.0 / NULLIF(SUM(show_cnt), 0), 4) as ctr_pct,
+    -- CVR = 转化数/点击数
+    ROUND(SUM(pv) * 100.0 / NULLIF(SUM(click_cnt), 0), 4) as cvr_pct,
+    -- 消耗 (美元)
+    ROUND(SUM(billing_actual_deduction_price) / 1e5, 2) as cost_usd
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh >= DA
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260322-508] skill_or_command
+
+**Logged**: 2026-03-22T22:19:46
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260322141943985g85w3h12qen4
+ODPS-0130071:[4,13] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260322141943985g85w3h12qen4
+ODPS-0130071:[4,13] Semantic analysis exception - function dateadd cannot match any overloaded functions with (STRING, INT, STRING), candidates are DATE DATEADD(DATE arg0, BIGINT arg1, STRING arg2); DATETIME DATEADD(DATETIME arg0, BIGINT arg1, STRING arg2); TIMESTAMP DATEADD(TIMESTAMP arg0, BIGINT arg1, STRING arg2); TIMESTAMP_NTZ DATEADD(TIMESTAMP_NTZ arg0, BIGINT arg1, STRING arg2)
+ODPS-0130071:[5,11] Semantic analysis exception - functio
+上下文: sql_execution
+时间: 2026-03-22T22:19:46.893341
+
+相关 SQL:
+```sql
+SELECT 
+    SUM(billing_actual_deduction_price) / 1e5 as total_cost_usd
+FROM com_cdm.dws_tracker_ad_cpc_cost_hi
+WHERE dh >= DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), -24, 'hh')
+AND dh <= DATEADD(MAX_PT('com_cdm.dws_tracker_ad_cpc_cost_hi'), -1, 'hh')
+AND advertiser_id = '2368'
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
