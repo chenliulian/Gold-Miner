@@ -140,7 +140,8 @@ python -m gold_miner.cli
 
 **Web 模式：**
 ```bash
-python -m gold_miner.web_server
+cd ui
+python app.py
 # 访问 http://localhost:5000
 ```
 

@@ -8,3 +8,9 @@ plans/
 __pycache__/
 *.pyc
 *.csv
+tests/
+test_results/
+ui/sessions/
+ui/checkpoints/
+sessions/
+

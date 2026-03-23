@@ -1,0 +1,301 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1200" style="background-color: #fafafa;">
+  <defs>
+    <linearGradient id="userGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64b5f6"/>
+      <stop offset="100%" style="stop-color:#1976d2"/>
+    </linearGradient>
+    <linearGradient id="uiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#90caf9"/>
+      <stop offset="100%" style="stop-color:#42a5f5"/>
+    </linearGradient>
+    <linearGradient id="coreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffb74d"/>
+      <stop offset="100%" style="stop-color:#ff9800"/>
+    </linearGradient>
+    <linearGradient id="actionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#81c784"/>
+      <stop offset="100%" style="stop-color:#4caf50"/>
+    </linearGradient>
+    <linearGradient id="dataGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f48fb1"/>
+      <stop offset="100%" style="stop-color:#e91e63"/>
+    </linearGradient>
+    <linearGradient id="externalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ce93d8"/>
+      <stop offset="100%" style="stop-color:#9c27b0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#333">
+    GoldMiner 代码运行流程图
+  </text>
+
+  <!-- Swimlane Headers -->
+  <rect x="20" y="50" width="200" height="40" rx="5" fill="url(#userGradient)" filter="url(#shadow)"/>
+  <text x="120" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">👤 用户层</text>
+
+  <rect x="230" y="50" width="200" height="40" rx="5" fill="url(#uiGradient)" filter="url(#shadow)"/>
+  <text x="330" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">💻 UI 层</text>
+
+  <rect x="440" y="50" width="280" height="40" rx="5" fill="url(#coreGradient)" filter="url(#shadow)"/>
+  <text x="580" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">🤖 Agent 核心层</text>
+
+  <rect x="730" y="50" width="200" height="40" rx="5" fill="url(#actionGradient)" filter="url(#shadow)"/>
+  <text x="830" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">⚡ 执行动作</text>
+
+  <rect x="940" y="50" width="200" height="40" rx="5" fill="url(#dataGradient)" filter="url(#shadow)"/>
+  <text x="1040" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">💾 数据层</text>
+
+  <rect x="1150" y="50" width="200" height="40" rx="5" fill="url(#externalGradient)" filter="url(#shadow)"/>
+  <text x="1250" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">🌐 外部服务</text>
+
+  <!-- Swimlane Dividers -->
+  <line x1="225" y1="100" x2="225" y2="1150" stroke="#ddd" stroke-width="2"/>
+  <line x1="435" y1="100" x2="435" y2="1150" stroke="#ddd" stroke-width="2"/>
+  <line x1="725" y1="100" x2="725" y2="1150" stroke="#ddd" stroke-width="2"/>
+  <line x1="935" y1="100" x2="935" y2="1150" stroke="#ddd" stroke-width="2"/>
+  <line x1="1145" y1="100" x2="1145" y2="1150" stroke="#ddd" stroke-width="2"/>
+
+  <!-- === Phase 1: Initialization === -->
+  <text x="700" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">━━━ 初始化阶段 ━━━</text>
+
+  <!-- Start -->
+  <ellipse cx="120" cy="150" rx="50" ry="25" fill="#4caf50" filter="url(#shadow)"/>
+  <text x="120" y="155" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">开始</text>
+
+  <!-- User Input -->
+  <rect x="70" y="190" width="100" height="40" rx="5" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" filter="url(#shadow)"/>
+  <text x="120" y="215" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">用户输入问题</text>
+
+  <!-- Mode Selection -->
+  <polygon points="120,250 170,280 120,310 70,280" fill="#fff9c4" stroke="#f57f17" stroke-width="2" filter="url(#shadow)"/>
+  <text x="120" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">选择</text>
+  <text x="120" y="292" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">运行模式</text>
+
+  <!-- CLI Mode -->
+  <rect x="280" y="240" width="130" height="50" rx="5" fill="#bbdefb" stroke="#1976d2" stroke-width="2" filter="url(#shadow)"/>
+  <text x="345" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">CLI 模式</text>
+  <text x="345" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">python -m gold_miner.cli</text>
+
+  <!-- Web Mode -->
+  <rect x="280" y="320" width="130" height="50" rx="5" fill="#bbdefb" stroke="#1976d2" stroke-width="2" filter="url(#shadow)"/>
+  <text x="345" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Web 模式</text>
+  <text x="345" y="358" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">cd ui &amp;&amp; python app.py</text>
+
+  <!-- Load Config -->
+  <rect x="515" y="240" width="130" height="50" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">加载配置</text>
+  <text x="580" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">Config.from_env()</text>
+
+  <!-- Init Agent -->
+  <rect x="515" y="320" width="130" height="50" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">初始化 Agent</text>
+  <text x="580" y="358" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">SqlAgent()</text>
+
+  <!-- Init Components -->
+  <rect x="515" y="400" width="130" height="70" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">初始化组件</text>
+  <text x="525" y="438" font-family="Arial, sans-serif" font-size="8" fill="#555">• MemoryStore</text>
+  <text x="525" y="452" font-family="Arial, sans-serif" font-size="8" fill="#555">• SessionStore</text>
+  <text x="525" y="466" font-family="Arial, sans-serif" font-size="8" fill="#555">• SkillRegistry</text>
+
+  <!-- === Phase 2: ReAct Loop === -->
+  <text x="700" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">━━━ ReAct 循环 ━━━</text>
+
+  <!-- Loop Start -->
+  <rect x="515" y="520" width="130" height="50" rx="25" fill="#fff3e0" stroke="#ff6f00" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">循环开始</text>
+  <text x="580" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">step &lt; max_steps</text>
+
+  <!-- Next Action -->
+  <rect x="515" y="600" width="130" height="50" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">_next_action()</text>
+  <text x="580" y="638" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">决策下一步</text>
+
+  <!-- Build Context -->
+  <rect x="515" y="680" width="130" height="70" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="700" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">构建上下文</text>
+  <text x="525" y="718" font-family="Arial, sans-serif" font-size="8" fill="#555">• 业务知识</text>
+  <text x="525" y="732" font-family="Arial, sans-serif" font-size="8" fill="#555">• 会话历史</text>
+  <text x="525" y="746" font-family="Arial, sans-serif" font-size="8" fill="#555">• 长期记忆</text>
+
+  <!-- LLM Call -->
+  <rect x="1180" y="680" width="130" height="50" rx="5" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="700" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">LLM.chat()</text>
+  <text x="1245" y="718" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#555">生成 Action</text>
+
+  <!-- Parse Action -->
+  <rect x="515" y="780" width="130" height="40" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="805" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#333">解析 Action</text>
+
+  <!-- Action Type Decision -->
+  <polygon points="580,850 640,880 580,910 520,880" fill="#fff9c4" stroke="#f57f17" stroke-width="2" filter="url(#shadow)"/>
+  <text x="580" y="878" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">Action</text>
+  <text x="580" y="892" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">类型?</text>
+
+  <!-- === Action Branches === -->
+  
+  <!-- run_sql -->
+  <rect x="770" y="820" width="120" height="40" rx="5" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="830" y="845" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">run_sql</text>
+
+  <rect x="770" y="880" width="120" height="40" rx="5" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="830" y="900" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">SQL 安全验证</text>
+  <text x="830" y="914" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">sql_validator</text>
+
+  <rect x="1180" y="880" width="130" height="40" rx="5" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="900" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">ODPS.execute_sql()</text>
+  <text x="1245" y="914" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">返回 DataFrame</text>
+
+  <!-- use_skill -->
+  <rect x="770" y="960" width="120" height="40" rx="5" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="830" y="985" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">use_skill</text>
+
+  <rect x="770" y="1020" width="120" height="50" rx="5" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="830" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">SkillRegistry.call()</text>
+  <text x="830" y="1058" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">执行 skill 代码</text>
+
+  <!-- search_skills -->
+  <rect x="980" y="960" width="120" height="40" rx="5" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1040" y="985" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">search_skills</text>
+
+  <!-- final -->
+  <rect x="280" y="960" width="120" height="40" rx="5" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2" filter="url(#shadow)"/>
+  <text x="340" y="985" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">final</text>
+
+  <!-- Finalize -->
+  <rect x="280" y="1020" width="120" height="50" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="340" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">_finalize()</text>
+  <text x="340" y="1058" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">生成报告</text>
+
+  <!-- Save Report -->
+  <rect x="980" y="1020" width="120" height="40" rx="5" fill="#f8bbd9" stroke="#c2185b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1040" y="1045" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">保存报告到 reports/</text>
+
+  <!-- Update Memory -->
+  <rect x="1180" y="1020" width="130" height="40" rx="5" fill="#f8bbd9" stroke="#c2185b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">更新记忆</text>
+  <text x="1245" y="1054" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">memory.json</text>
+
+  <!-- === End === -->
+  <rect x="70" y="1020" width="120" height="50" rx="5" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" filter="url(#shadow)"/>
+  <text x="130" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">返回结果</text>
+  <text x="130" y="1058" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">CLI打印/Web SSE</text>
+
+  <ellipse cx="130" cy="1110" rx="50" ry="25" fill="#f44336" filter="url(#shadow)"/>
+  <text x="130" y="1115" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">结束</text>
+
+  <!-- === Arrows === -->
+  <!-- Init phase -->
+  <line x1="120" y1="175" x2="120" y2="190" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="120" y1="230" x2="120" y2="250" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Mode branches -->
+  <line x1="170" y1="280" x2="280" y2="265" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="215" y="260" font-family="Arial, sans-serif" font-size="9" fill="#666">CLI</text>
+  
+  <line x1="120" y1="310" x2="120" y2="345" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="170" y1="280" x2="280" y2="345" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="215" y="325" font-family="Arial, sans-serif" font-size="9" fill="#666">Web</text>
+
+  <!-- Config to Agent -->
+  <line x1="580" y1="290" x2="580" y2="320" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="410" y1="345" x2="515" y2="345" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Agent to Components -->
+  <line x1="580" y1="370" x2="580" y2="400" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Components to Loop -->
+  <line x1="580" y1="470" x2="580" y2="520" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Loop flow -->
+  <line x1="580" y1="570" x2="580" y2="600" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="580" y1="650" x2="580" y2="680" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Context to LLM -->
+  <line x1="645" y1="715" x2="1180" y2="705" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- LLM back to Parse -->
+  <line x1="1180" y1="705" x2="645" y2="800" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- Parse to Decision -->
+  <line x1="580" y1="820" x2="580" y2="850" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Decision branches -->
+  <line x1="640" y1="880" x2="770" y2="840" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="700" y="835" font-family="Arial, sans-serif" font-size="9" fill="#666">run_sql</text>
+  
+  <line x1="640" y1="880" x2="770" y2="980" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="690" y="950" font-family="Arial, sans-serif" font-size="9" fill="#666">use_skill</text>
+  
+  <line x1="640" y1="880" x2="980" y2="980" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="800" y="920" font-family="Arial, sans-serif" font-size="9" fill="#666">search_skills</text>
+  
+  <line x1="520" y1="880" x2="400" y2="980" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="440" y="920" font-family="Arial, sans-serif" font-size="9" fill="#666">final</text>
+
+  <!-- run_sql flow -->
+  <line x1="830" y1="860" x2="830" y2="880" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="890" y1="900" x2="1180" y2="900" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="1180" y1="900" x2="645" y2="570" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- use_skill flow -->
+  <line x1="830" y1="1000" x2="830" y2="1020" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="830" y1="1020" x2="645" y2="570" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- search_skills flow -->
+  <line x1="1040" y1="960" x2="645" y2="570" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- final flow -->
+  <line x1="340" y1="1000" x2="340" y2="1020" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <!-- Curved path from _finalize to Save Report, going below SkillRegistry.call() -->
+  <path d="M 400 1045 Q 600 1200 980 1040" stroke="#555" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <line x1="1100" y1="1040" x2="1180" y2="1040" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Optional memory update -->
+  <line x1="1245" y1="1060" x2="1245" y2="1080" stroke="#888" stroke-width="1.5" marker-end="url(#arrowhead-dashed)" stroke-dasharray="3,3"/>
+  <text x="1260" y="1075" font-family="Arial, sans-serif" font-size="8" fill="#888">可选</text>
+
+  <!-- To User -->
+  <line x1="280" y1="1045" x2="190" y2="1045" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="130" y1="1070" x2="130" y2="1085" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Legend -->
+  <rect x="1050" y="1090" width="300" height="100" rx="5" fill="#fff" stroke="#ddd" stroke-width="1" filter="url(#shadow)"/>
+  <text x="1200" y="1110" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">图例说明</text>
+  
+  <rect x="1060" y="1120" width="15" height="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="1"/>
+  <text x="1080" y="1129" font-family="Arial, sans-serif" font-size="9" fill="#555">用户层</text>
+  
+  <rect x="1140" y="1120" width="15" height="10" fill="#bbdefb" stroke="#1976d2" stroke-width="1"/>
+  <text x="1160" y="1129" font-family="Arial, sans-serif" font-size="9" fill="#555">UI 层</text>
+  
+  <rect x="1220" y="1120" width="15" height="10" fill="#ffe0b2" stroke="#e65100" stroke-width="1"/>
+  <text x="1240" y="1129" font-family="Arial, sans-serif" font-size="9" fill="#555">Agent 核心</text>
+  
+  <rect x="1060" y="1140" width="15" height="10" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1"/>
+  <text x="1080" y="1149" font-family="Arial, sans-serif" font-size="9" fill="#555">执行动作</text>
+  
+  <rect x="1140" y="1140" width="15" height="10" fill="#f8bbd9" stroke="#c2185b" stroke-width="1"/>
+  <text x="1160" y="1149" font-family="Arial, sans-serif" font-size="9" fill="#555">数据层</text>
+  
+  <rect x="1220" y="1140" width="15" height="10" fill="#e1bee7" stroke="#6a1b9a" stroke-width="1"/>
+  <text x="1240" y="1149" font-family="Arial, sans-serif" font-size="9" fill="#555">外部服务</text>
+  
+  <line x1="1060" y1="1165" x2="1090" y2="1165" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="1095" y="1169" font-family="Arial, sans-serif" font-size="9" fill="#555">执行流程</text>
+  
+  <line x1="1160" y1="1165" x2="1190" y2="1165" stroke="#888" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-dashed)"/>
+  <text x="1195" y="1169" font-family="Arial, sans-serif" font-size="9" fill="#555">返回/可选</text>
+
+</svg>
