@@ -34,7 +34,15 @@ Or directly with Python:
 python -m gold_miner.cli
 ```
 
-4. Example chat session:
+4. Run Web UI mode:
+
+```bash
+cd ui && python app.py
+```
+
+Then open your browser and navigate to `http://localhost:5000` for an interactive web interface.
+
+5. Example chat session:
 
 ```
 🤖 GoldMiner Chat Mode
@@ -46,11 +54,17 @@ Type your question or use commands:
 > 查询昨天广告投放的消耗数据
 [Agent will auto-match tables and generate SQL]
 
-> 分析贷款CVR模型的特征分布
+> 分析广告组 70711 的投放漏斗
 [Agent will analyze and generate report]
+
+> 计算贷款CVR模型的PCOC偏差
+[Agent will compute and provide insights]
 
 > /cancel
 Task cancelled.
+
+> /reset
+Conversation history cleared.
 
 > quit
 Goodbye!
