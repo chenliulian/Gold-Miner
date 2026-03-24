@@ -148,6 +148,8 @@ class SqlAgent:
                 print(f"\n[Agent] {note}")
                 if status_cb:
                     status_cb({"type": "note", "content": note})
+            # 打印QL分析中间结果（完整action内容）
+            print(f"[Agent] Action: {json.dumps(action, ensure_ascii=False, indent=2)}")
             if action["action"] == "run_sql":
                 if status_cb:
                     status_cb({"type": "action", "content": f"执行 SQL: {action.get('sql', '')[:200]}..."})
@@ -188,7 +190,7 @@ class SqlAgent:
             elif action["action"] == "final":
                 if status_cb:
                     status_cb("finalizing")
-                report_path = self._finalize(action["report_markdown"], output_path)
+                report_path = self._finalize(action["report_markdown"], output_path, question)
                 # 只在用户要求时才更新长期记忆
                 if should_remember:
                     self._update_structured_memory(question, tables)
@@ -206,7 +208,7 @@ class SqlAgent:
                 continue
 
         report = self._final_report_via_llm(question)
-        report_path = self._finalize(report, output_path)
+        report_path = self._finalize(report, output_path, question)
         # 只在用户要求时才更新长期记忆
         if should_remember:
             self._update_structured_memory(question, tables)
@@ -403,7 +405,7 @@ class SqlAgent:
         ]
         return self.llm.chat(messages, temperature=0.3)
 
-    def _finalize(self, report_markdown: str, output_path: Optional[str]) -> str:
+    def _finalize(self, report_markdown: str, output_path: Optional[str], question: str = "") -> str:
         # 构建完整报告（包含执行SQL）
         full_report = report_markdown
 
@@ -413,33 +415,83 @@ class SqlAgent:
             for i, sql_info in enumerate(self.state.executed_sqls, 1):
                 full_report += f"```sql\n{sql_info['sql']}\n```\n\n"
 
-        # 生成会话标题
-        self._generate_session_title()
+        # 生成会话标题（使用简化逻辑，优先使用用户问题作为标题）
+        self._generate_session_title_simple(question)
 
         # 总是保存报告到文件，如果用户指定了 output_path 则使用指定路径，否则使用默认路径
         return write_report(full_report, self.config.reports_dir, output_path)
 
-    def _generate_session_title(self) -> None:
-        """根据对话内容生成合适的会话标题"""
+    def _generate_session_title_simple(self, question: str = "") -> None:
+        """使用简化逻辑生成会话标题，避免调用LLM导致延迟"""
         try:
+            # 优先使用用户的问题作为标题
+            if question:
+                # 清理并截断问题作为标题
+                title = question.strip()
+                # 移除常见的前缀词
+                prefixes = ["请", "帮我", "我想", "需要", "查询", "分析", "统计"]
+                for prefix in prefixes:
+                    if title.startswith(prefix):
+                        title = title[len(prefix):].strip()
+                # 限制长度
+                if len(title) > 20:
+                    title = title[:20] + "..."
+                if title:
+                    self.session.update_title(title)
+                    print(f"\n[Session] 生成标题: {title}")
+                    return
+
+            # 如果没有问题，尝试从会话历史中提取
             context = self.session.get_context()
             steps = context.get("steps", [])
+            for step in steps:
+                if step.get("role") == "user":
+                    content = step.get("content", "").strip()
+                    if content:
+                        # 尝试解析JSON获取问题
+                        try:
+                            data = json.loads(content)
+                            if "question" in data:
+                                title = data["question"][:20]
+                                if title:
+                                    self.session.update_title(title)
+                                    print(f"\n[Session] 生成标题: {title}")
+                                    return
+                        except json.JSONDecodeError:
+                            # 直接使用内容作为标题
+                            title = content[:20]
+                            if title:
+                                self.session.update_title(title)
+                                print(f"\n[Session] 生成标题: {title}")
+                                return
 
-            if not steps:
-                return
+        except Exception as e:
+            print(f"\n[Session] 生成标题失败: {e}")
 
-            # 构建对话摘要用于生成标题
-            conversation_summary = []
-            for step in steps[:10]:  # 只取前10步
-                role = step.get("role", "")
-                content = step.get("content", "")[:200]  # 限制长度
-                if role and content:
-                    conversation_summary.append(f"{role}: {content}")
+    def _generate_session_title(self) -> None:
+        """根据对话内容生成合适的会话标题（异步调用LLM版本，用于后续优化）"""
+        import threading
 
-            if not conversation_summary:
-                return
+        def _generate_title_async():
+            try:
+                context = self.session.get_context()
+                steps = context.get("steps", [])
 
-            prompt = f"""根据以下对话内容，生成一个简洁的会话标题（不超过15个字）。
+                if not steps:
+                    return
+
+                # 构建对话摘要用于生成标题
+                conversation_summary = []
+                for step in steps[:10]:  # 只取前10步
+                    role = step.get("role", "")
+                    content = step.get("content", "")[:200]  # 限制长度
+                    if role and content:
+                        conversation_summary.append(f"{role}: {content}")
+
+                if not conversation_summary:
+                    return
+
+                prompt = f"""根据以下对话内容，生成一个简洁的会话标题（不超过15个字）。
 标题应该准确概括对话的核心主题。
 
 对话内容：
@@ -447,24 +499,27 @@ class SqlAgent:
 
 请直接返回标题文字，不要加引号或其他格式。"""
 
-            messages = [
-                {"role": "system", "content": "你是一个专业的对话标题生成助手。"},
-                {"role": "user", "content": prompt}
-            ]
+                messages = [
+                    {"role": "system", "content": "你是一个专业的对话标题生成助手。"},
+                    {"role": "user", "content": prompt}
+                ]
 
-            title = self.llm.chat(messages, enforce_json=False).strip()
+                title = self.llm.chat(messages, enforce_json=False).strip()
 
-            # 清理标题
-            title = title.replace('"', '').replace("'", "").replace("「", "").replace("」", "")
-            if len(title) > 20:
-                title = title[:20]
+                # 清理标题
+                title = title.replace('"', '').replace("'", "").replace("「", "").replace("」", "")
+                if len(title) > 20:
+                    title = title[:20]
 
-            if title:
-                self.session.update_title(title)
-                print(f"\n[Session] 生成标题: {title}")
+                if title:
+                    self.session.update_title(title)
+                    print(f"\n[Session] 生成标题: {title}")
 
-        except Exception as e:
-            print(f"\n[Session] 生成标题失败: {e}")
+            except Exception as e:
+                print(f"\n[Session] 生成标题失败: {e}")
+
+        # 异步执行标题生成，不阻塞主流程
+        threading.Thread(target=_generate_title_async, daemon=True).start()
 
     def _run_hooks(self, skill_name: str, result: Any, hooks: List[str]) -> None:
         print(f"\n[Hooks] Running hooks for skill '{skill_name}': {hooks}")
