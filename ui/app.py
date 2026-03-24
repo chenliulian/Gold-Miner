@@ -3,6 +3,7 @@ import os
 import time
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, session, Response
+from flask_cors import CORS
 from dotenv import load_dotenv
 import json
 
@@ -13,6 +14,9 @@ app = Flask(
     template_folder="templates",
     static_folder="static"
 )
+
+# 启用 CORS，允许所有来源访问
+CORS(app, supports_credentials=True)
 
 from gold_miner.config import Config
 
