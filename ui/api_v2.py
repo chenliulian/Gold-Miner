@@ -340,7 +340,7 @@ def get_session(session_id: str):
                 "message": f"Session {session_id} not found",
             }), 404
         
-        context = agent_wrapper.agent.session.get_context()
+        context = agent_wrapper.agent.session.get_context(max_steps=10000)
         return jsonify({
             "success": True,
             "data": {"session": context},

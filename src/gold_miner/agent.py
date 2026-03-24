@@ -42,11 +42,13 @@ class AgentState:
     last_sql: Optional[str] = None
     last_error: Optional[str] = None
     executed_sqls: List[Dict[str, Any]] = field(default_factory=list)  # 记录所有执行的SQL
+    recent_skills: List[Dict[str, Any]] = field(default_factory=list)  # 记录最近调用的skills，防止重复
 
     # Memory limits
     MAX_RESULTS: int = field(default=100, repr=False)
     MAX_NOTES: int = field(default=500, repr=False)
     MAX_EXECUTED_SQLS: int = field(default=50, repr=False)
+    MAX_RECENT_SKILLS: int = field(default=10, repr=False)
 
     def add_result(self, result: QueryResult) -> None:
         """Add a result with size limit."""
@@ -66,6 +68,45 @@ class AgentState:
         self.executed_sqls.append(sql_info)
         if len(self.executed_sqls) > self.MAX_EXECUTED_SQLS:
             self.executed_sqls = self.executed_sqls[-self.MAX_EXECUTED_SQLS:]
+
+    def is_skill_recently_called(self, skill_name: str, skill_args: Dict[str, Any], window: int = 3) -> bool:
+        """检查skill是否在最近window次调用中已经调用过（基于内容相似度）"""
+        if not self.recent_skills:
+            return False
+
+        # 获取最近window次调用
+        recent = self.recent_skills[-window:]
+
+        for call in recent:
+            if call.get("skill") == skill_name:
+                # 对于self_improvement，比较summary或content
+                if skill_name == "self_improvement":
+                    existing_summary = call.get("args", {}).get("summary", "")
+                    new_summary = skill_args.get("summary", "")
+                    existing_content = call.get("args", {}).get("content", "")
+                    new_content = skill_args.get("content", "")
+
+                    # 如果summary或content相似，认为是重复调用
+                    if existing_summary and new_summary and existing_summary == new_summary:
+                        return True
+                    if existing_content and new_content and existing_content == new_content:
+                        return True
+                else:
+                    # 其他skill直接比较args
+                    if call.get("args") == skill_args:
+                        return True
+
+        return False
+
+    def record_skill_call(self, skill_name: str, skill_args: Dict[str, Any]) -> None:
+        """记录skill调用"""
+        self.recent_skills.append({
+            "skill": skill_name,
+            "args": skill_args,
+            "timestamp": time.time()
+        })
+        if len(self.recent_skills) > self.MAX_RECENT_SKILLS:
+            self.recent_skills = self.recent_skills[-self.MAX_RECENT_SKILLS:]
 
 
 class SqlAgent:
@@ -130,19 +171,41 @@ class SqlAgent:
         step_count = 0
         for step in range(max_steps):
             step_count += 1
-            
+
             if heartbeat_cb and step_count % 3 == 0:
                 heartbeat_cb({
                     "step": step_count,
                     "max_steps": max_steps,
                     "progress": f"{step_count}/{max_steps}",
                 })
-            
+
             if cancel_event is not None and cancel_event.is_set():
                 if status_cb:
                     status_cb("cancelled")
                 return ""
-            action = self._next_action(question, tables)
+
+            try:
+                action = self._next_action(question, tables)
+            except Exception as e:
+                # LLM调用失败（如超时），如果有已执行的结果，则返回已有结果
+                error_msg = str(e)
+                print(f"\n[Agent] LLM调用失败: {error_msg}")
+                if status_cb:
+                    status_cb({"type": "error", "content": f"LLM调用失败: {error_msg}"})
+
+                # 如果有已执行的结果，基于已有结果生成报告
+                if self.state.results:
+                    print("[Agent] 基于已获取的结果生成报告...")
+                    if status_cb:
+                        status_cb("finalizing")
+                    report = self._generate_report_from_results(question)
+                    report_path = self._finalize(report, output_path, question)
+                    if status_cb:
+                        status_cb("done")
+                    return report_path
+                else:
+                    # 没有结果，返回错误
+                    raise
             note = action.get("notes")
             if note:
                 print(f"\n[Agent] {note}")
@@ -230,6 +293,9 @@ class SqlAgent:
         business_knowledge_str = self.knowledge.format_context_for_prompt(business_context)
         
         visible_steps = [s for s in session_context["steps"] if s.get("visible", True)]
+        # 限制可见步骤数量，避免上下文过大导致LLM超时
+        if len(visible_steps) > 20:
+            visible_steps = visible_steps[-20:]
         
         # 构建增强的 system prompt
         enhanced_system_prompt = SYSTEM_PROMPT
@@ -330,6 +396,15 @@ class SqlAgent:
         self.session.add_step("tool", f"SQL executed. Rows={len(df)}\n{preview}")
 
     def _handle_skill(self, skill: str, skill_args: Dict[str, Any]) -> None:
+        # 检查是否最近已经调用过相同的skill（防止重复调用）
+        if self.state.is_skill_recently_called(skill, skill_args):
+            print(f"\n[Agent] Skipping duplicate skill call: {skill}")
+            self.session.add_step("tool", f"Skipped duplicate skill call: {skill}", visible=False)
+            return
+
+        # 记录本次skill调用
+        self.state.record_skill_call(skill, skill_args)
+
         try:
             skill_def = self.skills.get(skill)
         except KeyError:
@@ -337,9 +412,9 @@ class SqlAgent:
             self.state.notes.append(self.state.last_error)
             self.session.add_step("tool", f"Skill error: {self.state.last_error}", visible=True)
             return
-        
+
         is_invisible = skill_def.invisible_context if skill_def else True
-        
+
         if self.state.last_df is not None and "dataframe" not in skill_args:
             skill_args = dict(skill_args)
             skill_args["dataframe"] = self.state.last_df
@@ -404,6 +479,27 @@ class SqlAgent:
             },
         ]
         return self.llm.chat(messages, temperature=0.3)
+
+    def _generate_report_from_results(self, question: str) -> str:
+        """基于已获取的结果生成报告（当LLM不可用时使用）"""
+        if not self.state.results:
+            return f"## 查询结果\n\n未能获取到结果。\n\n**问题**: {question}"
+
+        report_lines = [f"## 查询结果\n", f"**问题**: {question}\n"]
+
+        for i, result in enumerate(self.state.results, 1):
+            report_lines.append(f"\n### 查询 {i}")
+            report_lines.append(f"```sql\n{result.sql}\n```")
+            report_lines.append(f"\n**返回行数**: {result.rows}")
+            report_lines.append(f"\n**预览**:\n{result.preview}")
+
+        # 添加说明
+        report_lines.append("\n---\n")
+        report_lines.append(
+            "> **注意**: 由于LLM服务暂时不可用，此报告仅基于已执行的SQL查询结果生成。"
+        )
+
+        return "\n".join(report_lines)
 
     def _finalize(self, report_markdown: str, output_path: Optional[str], question: str = "") -> str:
         # 构建完整报告（包含执行SQL）
