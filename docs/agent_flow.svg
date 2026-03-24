@@ -1,0 +1,290 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1400" style="background-color: #fafafa;">
+  <defs>
+    <linearGradient id="startGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4caf50"/>
+      <stop offset="100%" style="stop-color:#2e7d32"/>
+    </linearGradient>
+    <linearGradient id="initGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64b5f6"/>
+      <stop offset="100%" style="stop-color:#1976d2"/>
+    </linearGradient>
+    <linearGradient id="loopGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffb74d"/>
+      <stop offset="100%" style="stop-color:#ff9800"/>
+    </linearGradient>
+    <linearGradient id="actionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#81c784"/>
+      <stop offset="100%" style="stop-color:#4caf50"/>
+    </linearGradient>
+    <linearGradient id="sqlGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f48fb1"/>
+      <stop offset="100%" style="stop-color:#e91e63"/>
+    </linearGradient>
+    <linearGradient id="skillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ce93d8"/>
+      <stop offset="100%" style="stop-color:#9c27b0"/>
+    </linearGradient>
+    <linearGradient id="endGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef5350"/>
+      <stop offset="100%" style="stop-color:#c62828"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="800" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#333">
+    SqlAgent 代码执行流程图
+  </text>
+
+  <!-- Swimlane Headers -->
+  <rect x="20" y="50" width="180" height="40" rx="5" fill="url(#startGradient)" filter="url(#shadow)"/>
+  <text x="110" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">🚀 入口/初始化</text>
+
+  <rect x="210" y="50" width="180" height="40" rx="5" fill="url(#loopGradient)" filter="url(#shadow)"/>
+  <text x="300" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">🔄 主循环</text>
+
+  <rect x="400" y="50" width="180" height="40" rx="5" fill="url(#actionGradient)" filter="url(#shadow)"/>
+  <text x="490" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">🎯 Action决策</text>
+
+  <rect x="590" y="50" width="180" height="40" rx="5" fill="url(#sqlGradient)" filter="url(#shadow)"/>
+  <text x="680" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">🗄️ SQL执行</text>
+
+  <rect x="780" y="50" width="180" height="40" rx="5" fill="url(#skillGradient)" filter="url(#shadow)"/>
+  <text x="870" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">🧩 Skill调用</text>
+
+  <rect x="970" y="50" width="180" height="40" rx="5" fill="#fff9c4" stroke="#f57f17" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1060" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#333">🔍 搜索/其他</text>
+
+  <rect x="1160" y="50" width="180" height="40" rx="5" fill="url(#endGradient)" filter="url(#shadow)"/>
+  <text x="1250" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="white">✅ 结束/报告</text>
+
+  <!-- Swimlane Dividers -->
+  <line x1="205" y1="100" x2="205" y2="1350" stroke="#ddd" stroke-width="2"/>
+  <line x1="395" y1="100" x2="395" y2="1350" stroke="#ddd" stroke-width="2"/>
+  <line x1="585" y1="100" x2="585" y2="1350" stroke="#ddd" stroke-width="2"/>
+  <line x1="775" y1="100" x2="775" y2="1350" stroke="#ddd" stroke-width="2"/>
+  <line x1="965" y1="100" x2="965" y2="1350" stroke="#ddd" stroke-width="2"/>
+  <line x1="1155" y1="100" x2="1155" y2="1350" stroke="#ddd" stroke-width="2"/>
+
+  <!-- === Phase 1: Initialization === -->
+  <text x="800" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">━━━ 初始化阶段 ━━━</text>
+
+  <!-- Start -->
+  <ellipse cx="110" cy="150" rx="60" ry="30" fill="url(#startGradient)" filter="url(#shadow)"/>
+  <text x="110" y="155" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">run(question)</text>
+
+  <!-- Init State -->
+  <rect x="40" y="200" width="140" height="50" rx="5" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" filter="url(#shadow)"/>
+  <text x="110" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">初始化 AgentState</text>
+  <text x="110" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">self.state = AgentState()</text>
+
+  <!-- Check Cancel -->
+  <rect x="40" y="280" width="140" height="50" rx="5" fill="#fff3e0" stroke="#ff6f00" stroke-width="2" filter="url(#shadow)"/>
+  <text x="110" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">检查取消状态</text>
+  <text x="110" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">cancel_event.is_set()</text>
+
+  <!-- === Phase 2: Main Loop === -->
+  <text x="800" y="355" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#666">━━━ 主循环 (max_steps) ━━━</text>
+
+  <!-- Loop Start -->
+  <rect x="210" y="370" width="170" height="50" rx="25" fill="#fff3e0" stroke="#ff6f00" stroke-width="2" filter="url(#shadow)"/>
+  <text x="295" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">循环开始</text>
+  <text x="295" y="408" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">for step in range(max_steps)</text>
+
+  <!-- Heartbeat -->
+  <rect x="210" y="450" width="170" height="50" rx="5" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" filter="url(#shadow)"/>
+  <text x="295" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">发送心跳</text>
+  <text x="295" y="488" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">heartbeat_cb()</text>
+
+  <!-- Next Action -->
+  <rect x="400" y="450" width="170" height="50" rx="5" fill="#ffe0b2" stroke="#e65100" stroke-width="2" filter="url(#shadow)"/>
+  <text x="485" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">_next_action()</text>
+  <text x="485" y="488" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">决策下一步操作</text>
+
+  <!-- Action Type Decision -->
+  <polygon points="485,520 545,550 485,580 425,550" fill="#fff9c4" stroke="#f57f17" stroke-width="2" filter="url(#shadow)"/>
+  <text x="485" y="548" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">Action</text>
+  <text x="485" y="562" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#333">类型?</text>
+
+  <!-- === Action Branches === -->
+
+  <!-- run_sql Branch -->
+  <rect x="590" y="520" width="170" height="50" rx="5" fill="#f8bbd9" stroke="#c2185b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="675" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">_handle_sql()</text>
+  <text x="675" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">执行 SQL 查询</text>
+
+  <!-- SQL Validation -->
+  <rect x="590" y="600" width="170" height="50" rx="5" fill="#fce4ec" stroke="#e91e63" stroke-width="2" filter="url(#shadow)"/>
+  <text x="675" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">SQL 安全验证</text>
+  <text x="675" y="638" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">sql_validator.validate()</text>
+
+  <!-- Execute SQL -->
+  <rect x="590" y="680" width="170" height="50" rx="5" fill="#f48fb1" stroke="#ad1457" stroke-width="2" filter="url(#shadow)"/>
+  <text x="675" y="700" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white">执行 SQL</text>
+  <text x="675" y="718" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">odps.execute_sql()</text>
+
+  <!-- Store Result -->
+  <rect x="590" y="760" width="170" height="50" rx="5" fill="#fce4ec" stroke="#c2185b" stroke-width="2" filter="url(#shadow)"/>
+  <text x="675" y="780" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">存储结果</text>
+  <text x="675" y="798" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">state.add_result()</text>
+
+  <!-- use_skill Branch -->
+  <rect x="780" y="520" width="170" height="50" rx="5" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2" filter="url(#shadow)"/>
+  <text x="865" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">_handle_skill()</text>
+  <text x="865" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">调用 Skill</text>
+
+  <!-- Get Skill -->
+  <rect x="780" y="600" width="170" height="50" rx="5" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="865" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">获取 Skill</text>
+  <text x="865" y="638" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">skills.get(skill)</text>
+
+  <!-- Execute Skill -->
+  <rect x="780" y="680" width="170" height="50" rx="5" fill="#ce93d8" stroke="#7b1fa2" stroke-width="2" filter="url(#shadow)"/>
+  <text x="865" y="700" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white">执行 Skill</text>
+  <text x="865" y="718" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">skills.call()</text>
+
+  <!-- Run Hooks -->
+  <rect x="780" y="760" width="170" height="50" rx="5" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" filter="url(#shadow)"/>
+  <text x="865" y="780" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">运行 Hooks</text>
+  <text x="865" y="798" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">_run_hooks()</text>
+
+  <!-- search_skills Branch -->
+  <rect x="970" y="520" width="170" height="50" rx="5" fill="#fff9c4" stroke="#f57f17" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1055" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">_handle_search_skills()</text>
+  <text x="1055" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">搜索 Skills</text>
+
+  <!-- Search -->
+  <rect x="970" y="600" width="170" height="50" rx="5" fill="#fffde7" stroke="#fbc02d" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1055" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">遍历搜索</text>
+  <text x="1055" y="638" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">os.walk(skills_dir)</text>
+
+  <!-- final Branch -->
+  <rect x="1160" y="520" width="170" height="50" rx="5" fill="#ffcdd2" stroke="#c62828" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">_finalize()</text>
+  <text x="1245" y="558" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">生成最终报告</text>
+
+  <!-- Generate Title -->
+  <rect x="1160" y="600" width="170" height="50" rx="5" fill="#ffebee" stroke="#d32f2f" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">生成会话标题</text>
+  <text x="1245" y="638" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">_generate_session_title()</text>
+
+  <!-- Write Report -->
+  <rect x="1160" y="680" width="170" height="50" rx="5" fill="#ef5350" stroke="#b71c1c" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="700" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white">写入报告</text>
+  <text x="1245" y="718" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="white">write_report()</text>
+
+  <!-- Update Memory -->
+  <rect x="1160" y="760" width="170" height="50" rx="5" fill="#ffebee" stroke="#d32f2f" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1245" y="780" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">更新记忆</text>
+  <text x="1245" y="798" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">_update_structured_memory()</text>
+
+  <!-- End -->
+  <ellipse cx="1245" cy="900" rx="60" ry="30" fill="url(#endGradient)" filter="url(#shadow)"/>
+  <text x="1245" y="905" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">返回报告路径</text>
+
+  <!-- Error Handling -->
+  <rect x="40" y="600" width="140" height="50" rx="5" fill="#ffebee" stroke="#c62828" stroke-width="2" filter="url(#shadow)"/>
+  <text x="110" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">错误处理</text>
+  <text x="110" y="638" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">_auto_log_error()</text>
+
+  <!-- Continue Loop -->
+  <rect x="210" y="850" width="170" height="50" rx="25" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" filter="url(#shadow)"/>
+  <text x="295" y="870" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">继续循环</text>
+  <text x="295" y="888" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#555">step++</text>
+
+  <!-- === Arrows === -->
+  <!-- Init phase -->
+  <line x1="110" y1="180" x2="110" y2="200" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="110" y1="250" x2="110" y2="280" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="110" y1="330" x2="110" y2="370" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- To Loop -->
+  <line x1="180" y1="395" x2="210" y2="395" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Loop flow -->
+  <line x1="295" y1="420" x2="295" y2="450" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="380" y1="475" x2="400" y2="475" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="570" y1="475" x2="590" y2="475" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Decision to branches -->
+  <line x1="545" y1="550" x2="590" y2="545" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="565" y="540" font-family="Arial, sans-serif" font-size="8" fill="#666">run_sql</text>
+
+  <line x1="485" y1="580" x2="485" y2="600" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="490" y="595" font-family="Arial, sans-serif" font-size="8" fill="#666">use_skill</text>
+
+  <!-- Curved path to search_skills, going above other nodes -->
+  <path d="M 545 550 Q 700 430 970 545" stroke="#555" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="750" y="450" font-family="Arial, sans-serif" font-size="8" fill="#666">search_skills</text>
+
+  <line x1="425" y1="550" x2="295" y2="850" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="350" y="700" font-family="Arial, sans-serif" font-size="8" fill="#666">final</text>
+
+  <!-- SQL flow -->
+  <line x1="675" y1="570" x2="675" y2="600" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="675" y1="650" x2="675" y2="680" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="675" y1="730" x2="675" y2="760" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="590" y1="785" x2="380" y2="875" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- Skill flow -->
+  <line x1="865" y1="570" x2="865" y2="600" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="865" y1="650" x2="865" y2="680" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="865" y1="730" x2="865" y2="760" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="780" y1="785" x2="380" y2="875" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- Search flow -->
+  <line x1="1055" y1="570" x2="1055" y2="600" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="970" y1="625" x2="380" y2="875" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,5"/>
+
+  <!-- Final flow -->
+  <line x1="1245" y1="570" x2="1245" y2="600" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="1245" y1="650" x2="1245" y2="680" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="1245" y1="730" x2="1245" y2="760" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="1245" y1="810" x2="1245" y2="870" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+  <!-- Error to handler -->
+  <line x1="590" y1="705" x2="180" y2="625" stroke="#c62828" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="3,3"/>
+  <line x1="780" y1="705" x2="180" y2="625" stroke="#c62828" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="3,3"/>
+
+  <!-- Loop back -->
+  <line x1="295" y1="900" x2="295" y2="920" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 295 920 Q 150 920 150 395 Q 150 250 210 395" stroke="#555" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="120" y="650" font-family="Arial, sans-serif" font-size="9" fill="#666">循环</text>
+
+  <!-- Legend -->
+  <rect x="1200" y="1000" width="350" height="120" rx="5" fill="#fff" stroke="#ddd" stroke-width="1" filter="url(#shadow)"/>
+  <text x="1375" y="1025" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">图例说明</text>
+
+  <rect x="1210" y="1040" width="15" height="10" fill="#4caf50" stroke="#2e7d32" stroke-width="1"/>
+  <text x="1230" y="1049" font-family="Arial, sans-serif" font-size="9" fill="#555">入口/开始</text>
+
+  <rect x="1310" y="1040" width="15" height="10" fill="#ff9800" stroke="#e65100" stroke-width="1"/>
+  <text x="1330" y="1049" font-family="Arial, sans-serif" font-size="9" fill="#555">主循环</text>
+
+  <rect x="1410" y="1040" width="15" height="10" fill="#e91e63" stroke="#c2185b" stroke-width="1"/>
+  <text x="1430" y="1049" font-family="Arial, sans-serif" font-size="9" fill="#555">SQL执行</text>
+
+  <rect x="1210" y="1060" width="15" height="10" fill="#9c27b0" stroke="#6a1b9a" stroke-width="1"/>
+  <text x="1230" y="1069" font-family="Arial, sans-serif" font-size="9" fill="#555">Skill调用</text>
+
+  <rect x="1310" y="1060" width="15" height="10" fill="#f44336" stroke="#c62828" stroke-width="1"/>
+  <text x="1330" y="1069" font-family="Arial, sans-serif" font-size="9" fill="#555">结束/报告</text>
+
+  <line x1="1210" y1="1090" x2="1240" y2="1090" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="1245" y="1094" font-family="Arial, sans-serif" font-size="9" fill="#555">执行流程</text>
+
+  <line x1="1310" y1="1090" x2="1340" y2="1090" stroke="#555" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+  <text x="1345" y="1094" font-family="Arial, sans-serif" font-size="9" fill="#555">返回循环</text>
+
+  <line x1="1410" y1="1090" x2="1440" y2="1090" stroke="#c62828" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowhead)"/>
+  <text x="1445" y="1094" font-family="Arial, sans-serif" font-size="9" fill="#555">错误处理</text>
+
+</svg>
