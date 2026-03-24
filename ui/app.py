@@ -224,7 +224,10 @@ def chat():
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
     if stream:
-        return Response(generate(), mimetype='text/event-stream')
+        response = Response(generate(), mimetype='text/event-stream')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        return response
     
     # Non-streaming mode
     try:
