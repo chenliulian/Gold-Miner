@@ -298,6 +298,101 @@
       - 如果维度表无数据，使用 COALESCE 设置默认值
       - 分析结论需要结合计费类型和转化目标解读效果
 
+  广告漏斗分析必须包含完整链路:
+    规则ID: R019
+    名称: 广告投放漏斗数据分析必须包含完整节点
+    描述: 进行广告投放漏斗数据分析时，需要包含从召回到转化的完整链路节点数据，以便全面评估各环节转化效率和瓶颈
+    严重级别: 建议
+    适用场景: 所有涉及广告投放漏斗分析、转化链路分析的查询
+    完整漏斗节点:
+      1. 召回 (Recall):
+        字段: recall_cnt / recall_nums
+        说明: 广告被召回参与竞价的次数
+        数据来源: ads_strategy.dwd_ads_competition_rank_simple_hi
+      2. 进入精排队列 (Rank):
+        字段: rank_cnt / rank_nums
+        说明: 广告进入精排阶段的次数
+        数据来源: ads_strategy.dwd_ads_competition_rank_simple_hi
+      3. 响应 (Response):
+        字段: resp_cnt / resp_nums
+        说明: 广告在竞价中胜出的次数
+        数据来源: ads_strategy.dwd_ads_competition_rank_simple_hi
+      4. 曝光 (Show):
+        字段: show_cnt / show_pv / imp_cnt
+        说明: 广告被展示的次数
+        数据来源: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+      5. 点击 (Click):
+        字段: click_cnt / click_pv / clk_cnt
+        说明: 广告被点击的次数
+        数据来源: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+      6. 下载 (Download):
+        字段: dld_cnt / download_cnt
+        说明: 应用被下载的次数
+        数据来源: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+      7. 转化 (Conversion):
+        字段: conv_cnt / conversion_cnt / click_conv_pv
+        说明: 根据转化目标统计的转化次数
+        数据来源: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    关键指标计算:
+      召回进精排率: rank_cnt / recall_cnt
+      精排响应率: resp_cnt / rank_cnt
+      响应曝光率: show_cnt / resp_cnt
+      曝光点击率: click_cnt / show_cnt
+      点击下载率: dld_cnt / click_cnt
+      下载转化率: conv_cnt / dld_cnt
+      整体转化率: conv_cnt / recall_cnt
+    示例查询: >
+      WITH funnel_data AS (
+        -- 召回、精排、响应数据
+        SELECT 
+          ad_group_id,
+          SUM(CAST(recall_nums AS BIGINT)) AS recall_cnt,
+          SUM(CAST(rank_nums AS BIGINT)) AS rank_cnt,
+          SUM(CAST(resp_nums AS BIGINT)) AS resp_cnt
+        FROM ads_strategy.dwd_ads_competition_rank_simple_hi
+        WHERE dh >= '2026032000' AND dh <= '2026032023'
+          AND ad_group_id = '80554'
+        GROUP BY ad_group_id
+      ),
+      conv_data AS (
+        -- 曝光、点击、下载、转化数据
+        SELECT 
+          CAST(ad_group_id AS STRING) AS ad_group_id,
+          SUM(show_pv) AS show_cnt,
+          SUM(clk_pv) AS click_cnt,
+          SUM(dld_pv) AS dld_cnt,
+          SUM(CASE WHEN event_type LIKE '%申贷%' THEN click_conv_pv ELSE 0 END) AS conv_cnt
+        FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+        WHERE dh >= '2026032000' AND dh <= '2026032023'
+          AND ad_group_id = 80554
+        GROUP BY CAST(ad_group_id AS STRING)
+      )
+      SELECT 
+        f.ad_group_id,
+        f.recall_cnt,
+        f.rank_cnt,
+        f.resp_cnt,
+        c.show_cnt,
+        c.click_cnt,
+        c.dld_cnt,
+        c.conv_cnt,
+        ROUND(f.rank_cnt * 100.0 / NULLIF(f.recall_cnt, 0), 2) AS recall_to_rank_rate,
+        ROUND(f.resp_cnt * 100.0 / NULLIF(f.rank_cnt, 0), 2) AS rank_to_resp_rate,
+        ROUND(c.show_cnt * 100.0 / NULLIF(f.resp_cnt, 0), 2) AS resp_to_show_rate,
+        ROUND(c.click_cnt * 100.0 / NULLIF(c.show_cnt, 0), 2) AS ctr,
+        ROUND(c.dld_cnt * 100.0 / NULLIF(c.click_cnt, 0), 2) AS click_to_dld_rate,
+        ROUND(c.conv_cnt * 100.0 / NULLIF(c.dld_cnt, 0), 2) AS dld_to_conv_rate,
+        ROUND(c.conv_cnt * 100.0 / NULLIF(f.recall_cnt, 0), 2) AS overall_conv_rate
+      FROM funnel_data f
+      LEFT JOIN conv_data c ON f.ad_group_id = c.ad_group_id
+    注意事项:
+      - 不同表的时间粒度可能不同（小时/天），注意对齐
+      - 注意字段类型转换（STRING vs BIGINT）
+      - 转化字段需要根据具体转化目标选择（event_type过滤）
+      - 使用 NULLIF 避免除零错误
+      - 漏斗各环节数据可能来自不同表，需要JOIN关联
+      - 分析时需要识别漏斗瓶颈环节（转化率最低的环节）
+
   # ========== ODPS SQL 语法规则 ==========
   ORDER_BY必须带LIMIT:
     规则ID: R017
