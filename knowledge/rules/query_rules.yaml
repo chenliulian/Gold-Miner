@@ -247,6 +247,57 @@
       最大: LIMIT 10000
     说明: 如需更多数据，使用分页或导出功能
 
+  # ========== 广告组分析规则 ==========
+  广告组分析必须包含关键维度:
+    规则ID: R018
+    名称: 广告组数据分析必须包含计费类型和转化目标
+    描述: 涉及广告组数据分析时，分析结果需要带上cost_type（计费类型）和转化目标字段，以便理解投放策略和效果评估
+    严重级别: 建议
+    适用场景: 所有涉及广告组（ad_group_id）的数据分析查询
+    关键字段:
+      cost_type:
+        字段名: cost_type / billing_type / price_type
+        说明: 计费类型
+        可选值:
+          - cpm: 千次展示计费
+          - cpc: 点击计费
+          - ocpc: 优化点击计费
+          - cpd: 下载计费
+          - ocpd: 优化下载计费
+          - cpi: 激活计费
+          - ocpi: 优化激活计费
+        获取方式: 关联 com_cdm.dim_adgroup_dd 表的 cost_type 字段
+      转化目标:
+        字段名: convert_goal / conversion_target / optimize_goal
+        说明: 广告投放的优化目标
+        可选值:
+          - 激活: 优化应用激活
+          - 注册: 优化用户注册
+          - 付费: 优化用户付费
+          - 首次付费: 优化首次付费行为
+          - 金融申贷: 优化贷款申请
+        获取方式: 关联 com_cdm.dim_adgroup_dd 表的 convert_goal 字段
+    示例查询: >
+      SELECT 
+        t1.ad_group_id,
+        t2.cost_type,
+        t2.convert_goal,
+        SUM(t1.show_cnt) AS show_cnt,
+        SUM(t1.click_cnt) AS click_cnt,
+        SUM(t1.cost) AS cost,
+        SUM(t1.conv_cnt) AS conv_cnt
+      FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi t1
+      LEFT JOIN com_cdm.dim_adgroup_dd t2 
+        ON CAST(t1.ad_group_id AS BIGINT) = t2.id
+      WHERE t1.dh >= '2026031500' AND t1.dh <= '2026031523'
+        AND t1.ad_group_id = '80554'
+      GROUP BY t1.ad_group_id, t2.cost_type, t2.convert_goal
+    注意事项:
+      - cost_type 和 convert_goal 需要从维度表获取
+      - 关联条件注意类型转换（STRING vs BIGINT）
+      - 如果维度表无数据，使用 COALESCE 设置默认值
+      - 分析结论需要结合计费类型和转化目标解读效果
+
   # ========== ODPS SQL 语法规则 ==========
   ORDER_BY必须带LIMIT:
     规则ID: R017
