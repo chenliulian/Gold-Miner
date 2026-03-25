@@ -2060,14 +2060,43 @@
         // 新对话
         async function startNewChat() {
             try {
-                const response = await fetch('/sessions/new', {
+                // 先检查是否已经有空的对话（标题为"新对话"且没有消息）
+                const response = await fetch('/sessions');
+                const data = await response.json();
+                
+                if (data.success && data.sessions) {
+                    // 查找标题为"新对话"且没有步骤的空对话
+                    const emptySession = data.sessions.find(s => 
+                        s.title === '新对话' && 
+                        (!s.step_count || s.step_count === 0)
+                    );
+                    
+                    if (emptySession) {
+                        // 如果已经有空的对话，直接切换到它
+                        currentSessionId = emptySession.session_id;
+                        loadHistoryList(); // 刷新历史列表
+                        
+                        document.getElementById('chat-messages').innerHTML = `
+                            <div class="welcome-section">
+                                <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
+                                <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                            </div>
+                        `;
+                        switchPage('chat', document.querySelector('.nav-item'));
+                        updateActiveHistoryItem();
+                        return;
+                    }
+                }
+                
+                // 如果没有空的对话，创建新的
+                const newResponse = await fetch('/sessions/new', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({title: '新对话'})
                 });
-                const data = await response.json();
-                if (data.success) {
-                    currentSessionId = data.session_id;
+                const newData = await newResponse.json();
+                if (newData.success) {
+                    currentSessionId = newData.session_id;
                     loadHistoryList(); // 刷新历史列表
                 }
             } catch (error) {
