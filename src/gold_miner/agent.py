@@ -519,51 +519,63 @@ class SqlAgent:
         return write_report(full_report, self.config.reports_dir, output_path)
 
     def _generate_session_title_simple(self, question: str = "") -> None:
-        """使用简化逻辑生成会话标题，避免调用LLM导致延迟"""
-        try:
-            # 优先使用用户的问题作为标题
-            if question:
-                # 清理并截断问题作为标题
-                title = question.strip()
-                # 移除常见的前缀词
-                prefixes = ["请", "帮我", "我想", "需要", "查询", "分析", "统计"]
-                for prefix in prefixes:
-                    if title.startswith(prefix):
-                        title = title[len(prefix):].strip()
-                # 限制长度
+        """使用LLM生成会话标题，基于用户问题和对话历史"""
+        import threading
+        
+        def _generate_title_async():
+            try:
+                # 获取对话历史
+                context = self.session.get_context()
+                steps = context.get("steps", [])
+                
+                # 构建对话文本
+                conversation_text = []
+                
+                # 添加历史对话（最多3轮）
+                user_messages = [s for s in steps if s.get("role") == "user"]
+                for msg in user_messages[-3:]:  # 最近3条用户消息
+                    content = msg.get("content", "").strip()
+                    if content:
+                        conversation_text.append(content)
+                
+                # 添加当前问题
+                if question and question.strip():
+                    conversation_text.append(question.strip())
+                
+                if not conversation_text:
+                    return
+                
+                # 构建prompt
+                prompt = f"""根据以下用户问题和对话历史，生成一个简洁的会话标题（不超过15个字）。
+标题应该准确概括对话的核心主题，使用中文。
+
+用户问题：
+{' | '.join(conversation_text)}
+
+请直接返回标题文字，不要加引号或其他格式。"""
+
+                messages = [
+                    {"role": "system", "content": "你是一个专业的对话标题生成助手。"},
+                    {"role": "user", "content": prompt}
+                ]
+                
+                # 调用LLM生成标题
+                title = self.llm.chat(messages, enforce_json=False).strip()
+                
+                # 清理标题
+                title = title.replace('"', '').replace("'", "").replace("「", "").replace("」", "").replace("标题：", "").replace("标题:", "").strip()
                 if len(title) > 20:
-                    title = title[:20] + "..."
+                    title = title[:20]
+                
                 if title:
                     self.session.update_title(title)
                     print(f"\n[Session] 生成标题: {title}")
-                    return
-
-            # 如果没有问题，尝试从会话历史中提取
-            context = self.session.get_context()
-            steps = context.get("steps", [])
-            for step in steps:
-                if step.get("role") == "user":
-                    content = step.get("content", "").strip()
-                    if content:
-                        # 尝试解析JSON获取问题
-                        try:
-                            data = json.loads(content)
-                            if "question" in data:
-                                title = data["question"][:20]
-                                if title:
-                                    self.session.update_title(title)
-                                    print(f"\n[Session] 生成标题: {title}")
-                                    return
-                        except json.JSONDecodeError:
-                            # 直接使用内容作为标题
-                            title = content[:20]
-                            if title:
-                                self.session.update_title(title)
-                                print(f"\n[Session] 生成标题: {title}")
-                                return
-
-        except Exception as e:
-            print(f"\n[Session] 生成标题失败: {e}")
+                    
+            except Exception as e:
+                print(f"\n[Session] 生成标题失败: {e}")
+        
+        # 异步执行标题生成，不阻塞主流程
+        threading.Thread(target=_generate_title_async, daemon=True).start()
 
     def _generate_session_title(self) -> None:
         """根据对话内容生成合适的会话标题（异步调用LLM版本，用于后续优化）"""
