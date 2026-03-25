@@ -138,11 +138,16 @@ def chat():
     user_message = data.get("message", "")
     stream = data.get("stream", False)
     new_session = data.get("new_session", False)  # 是否开启新会话
+    session_id = data.get("session_id")  # 前端传递的会话ID
     
     if not user_message:
         return jsonify({"error": "Empty message"}), 400
     
     agent = get_agent()
+    
+    # 如果前端传递了session_id，加载该会话
+    if session_id:
+        agent.session.load_session(session_id)
     
     # 如果需要开启新会话
     if new_session or agent.session.get_current_session_id() is None:
