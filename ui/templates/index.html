@@ -668,40 +668,6 @@
             position: relative;
         }
 
-        /* Input Examples */
-        .input-examples {
-            max-width: 800px;
-            margin: 0 auto 12px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-        }
-
-        .example-tag {
-            padding: 6px 12px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            font-size: 13px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .example-tag:hover {
-            background: var(--accent-light);
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
-        }
-
-        .example-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-right: 4px;
-        }
-
         .input-box {
             width: 100%;
             min-height: 56px;
@@ -1282,17 +1248,6 @@
                     </div>
 
                     <div class="input-area">
-                        <div class="input-examples">
-                            <span class="example-tag" onclick="setInputValue('分析广告组80554最近7天的消耗、曝光、点击和转化数据')">
-                                <span class="example-label">📊</span>分析广告组数据
-                            </span>
-                            <span class="example-tag" onclick="setInputValue('增加一条查询规则：统计转化数时必须结合广告组的投放目标来匹配对应的event_type')">
-                                <span class="example-label">📋</span>增加统计规则
-                            </span>
-                            <span class="example-tag" onclick="setInputValue('记录一条经验教训：查询黄金眼底表时，转化数必须通过event_type和click_conv_pv两个字段联合统计')">
-                                <span class="example-label">💡</span>记录经验教训
-                            </span>
-                        </div>
                         <div class="input-container">
                             <textarea 
                                 class="input-box" 
@@ -1443,7 +1398,7 @@
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message, stream: true, session_id: currentSessionId })
+                    body: JSON.stringify({ message, stream: true })
                 });
                 
                 const reader = response.body.getReader();
@@ -1645,15 +1600,6 @@
         function sendQuickMessage(message) {
             document.getElementById('user-input').value = message;
             sendMessage();
-        }
-
-        // 设置输入框值（用于示例标签）
-        function setInputValue(value) {
-            const input = document.getElementById('user-input');
-            input.value = value;
-            input.focus();
-            // 触发input事件以调整高度
-            input.dispatchEvent(new Event('input'));
         }
 
         // 添加消息到聊天区
