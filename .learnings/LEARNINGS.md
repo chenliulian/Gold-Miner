@@ -601,3 +601,45 @@ post_day AS (
 - Tags: 
 
 ---
+
+## [LRN-20260325-635] knowledge_gap
+
+**Logged**: 2026-03-25T23:50:42
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-25T23:50:42.160864
+
+相关 SQL:
+```sql
+SELECT
+  SUBSTR(dh, 1, 8) AS dt,
+  ROUND(SUM(bill_should_cost), 4) AS cost_usd,
+  SUM(start_dld_cnt) AS download_cnt,
+  SUM(CASE WHEN transform_target_cn = '申贷' THEN click_conv_pv ELSE 0 END) AS apply_loan_conv_cnt,
+  ROUND(
+    SUM(CASE WHEN transform_target_cn = '申贷' THEN click_conv_pv ELSE 0 END) * 1.0 / NULLIF(SUM(start_dld_cnt), 0),
+    6
+  ) AS download_to_apply_rate,
+  ROUND(
+    SUM(bill_should_cost) / NULLIF(SUM(CASE WHEN transform_target_cn = '申贷' THEN click_conv_pv ELSE 0 END), 0),
+  
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---

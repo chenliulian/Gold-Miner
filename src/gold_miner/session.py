@@ -18,13 +18,15 @@ class SessionState:
     title: str = ""  # 对话标题（可选，可由用户第一句话生成）
     steps: List[Dict[str, str]] = field(default_factory=list)
     metadata: Dict[str, any] = field(default_factory=dict)
+    user_id: str = ""  # 所属用户ID，用于数据隔离
 
 
 class SessionStore:
     """管理单次对话的历史记录"""
     
-    def __init__(self, sessions_dir: str = "./sessions"):
+    def __init__(self, sessions_dir: str = "./sessions", user_id: str = ""):
         self.sessions_dir = sessions_dir
+        self.user_id = user_id  # 当前用户ID，用于数据隔离
         self.current_session: Optional[SessionState] = None
         self._ensure_dir()
     
@@ -48,7 +50,8 @@ class SessionStore:
             start_time=datetime.now().isoformat(),
             title=title or "未命名对话",
             steps=[],
-            metadata={}
+            metadata={},
+            user_id=self.user_id  # 记录用户ID
         )
         self._save()
         return session_id
@@ -62,13 +65,19 @@ class SessionStore:
         with open(path, "r", encoding="utf-8") as f:
             raw = json.load(f)
         
+        # 验证用户权限：只能加载自己的会话
+        session_user_id = raw.get("user_id", "")
+        if session_user_id and session_user_id != self.user_id:
+            return False  # 无权访问其他用户的会话
+        
         self.current_session = SessionState(
             session_id=raw.get("session_id", session_id),
             start_time=raw.get("start_time", ""),
             end_time=raw.get("end_time"),
             title=raw.get("title", "未命名对话"),
             steps=raw.get("steps", []),
-            metadata=raw.get("metadata", {})
+            metadata=raw.get("metadata", {}),
+            user_id=session_user_id
         )
         return True
     
@@ -101,7 +110,7 @@ class SessionStore:
         """保存当前会话到文件"""
         if self.current_session is None:
             return
-        
+
         path = self._get_session_path(self.current_session.session_id)
         with open(path, "w", encoding="utf-8") as f:
             json.dump({
@@ -111,6 +120,7 @@ class SessionStore:
                 "title": self.current_session.title,
                 "steps": self.current_session.steps,
                 "metadata": self.current_session.metadata,
+                "user_id": self.current_session.user_id,  # 保存用户ID
             }, f, ensure_ascii=False, indent=2)
     
     def get_context(self, max_steps: int = 50) -> Dict:
@@ -134,9 +144,20 @@ class SessionStore:
         self.end_session()
         self.current_session = None
     
-    def list_sessions(self, limit: int = 20) -> List[Dict]:
-        """列出所有历史会话"""
+    def list_sessions(self, limit: int = 20, user_id: str = None) -> List[Dict]:
+        """列出历史会话
+        
+        Args:
+            limit: 最多返回的会话数量
+            user_id: 可选，指定用户ID。如果不提供，使用当前实例的user_id
+        
+        Returns:
+            会话列表，只返回指定用户的会话
+        """
         sessions = []
+        
+        # 使用提供的user_id或实例的user_id
+        target_user_id = user_id if user_id is not None else self.user_id
         
         if not os.path.exists(self.sessions_dir):
             return sessions
@@ -149,6 +170,11 @@ class SessionStore:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     raw = json.load(f)
+                
+                # 只返回当前用户的会话
+                session_user_id = raw.get("user_id", "")
+                if target_user_id and session_user_id != target_user_id:
+                    continue  # 跳过其他用户的会话
                 
                 sessions.append({
                     "session_id": raw.get("session_id", filename[:-5]),
@@ -173,16 +199,25 @@ class SessionStore:
     def delete_session(self, session_id: str) -> bool:
         """删除指定会话"""
         try:
+            # 先检查会话文件是否存在
+            session_file = os.path.join(self.sessions_dir, f"{session_id}.json")
+            if not os.path.exists(session_file):
+                return False
+            
+            # 验证用户权限：只能删除自己的会话
+            with open(session_file, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            session_user_id = raw.get("user_id", "")
+            if session_user_id and session_user_id != self.user_id:
+                return False  # 无权删除其他用户的会话
+
             # 如果删除的是当前会话，先清空当前会话
             if self.current_session and self.current_session.session_id == session_id:
                 self.current_session = None
 
             # 删除会话文件
-            session_file = os.path.join(self.sessions_dir, f"{session_id}.json")
-            if os.path.exists(session_file):
-                os.remove(session_file)
-                return True
-            return False
+            os.remove(session_file)
+            return True
         except Exception as e:
             print(f"[SessionStore] 删除会话失败: {e}")
             return False

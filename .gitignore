@@ -13,4 +13,18 @@ test_results/
 ui/sessions/
 ui/checkpoints/
 sessions/
+data/
+
+# User authentication data
+users/
+logs/
+users_index.json
+
+# User-specific data directories
+user_*/
+
+# Temporary files
+*.tmp
+*.lock
+*.pid
 

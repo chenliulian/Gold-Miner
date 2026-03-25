@@ -11,6 +11,8 @@ Requires-Dist: pyodps>=0.12.0
 Requires-Dist: tabulate>=0.9.0
 Requires-Dist: tavily-python>=0.5.0
 Requires-Dist: flask>=3.0.0
+Requires-Dist: flask-cors>=4.0.0
+Requires-Dist: PyJWT>=2.8.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 
@@ -38,12 +40,52 @@ pip install -e .
 cp .env.example .env
 ```
 
-3. Run:
+3. Run CLI chat mode:
 
 ```bash
-gold-miner analyze --question "分析过去30天的日活趋势，并给出异常峰值日期" \
-  --tables user_activity \
-  --output reports/dau-report.md
+gold-miner chat
+```
+
+Or directly with Python:
+
+```bash
+python -m gold_miner.cli
+```
+
+4. Run Web UI mode:
+
+```bash
+cd ui && python app.py
+```
+
+Then open your browser and navigate to `http://localhost:5000` for an interactive web interface.
+
+5. Example chat session:
+
+```
+🤖 GoldMiner Chat Mode
+Type your question or use commands:
+  /cancel - Cancel current task
+  /reset  - Clear conversation history
+  quit    - Exit
+
+> 查询昨天广告投放的消耗数据
+[Agent will auto-match tables and generate SQL]
+
+> 分析广告组 70711 的投放漏斗
+[Agent will analyze and generate report]
+
+> 计算贷款CVR模型的PCOC偏差
+[Agent will compute and provide insights]
+
+> /cancel
+Task cancelled.
+
+> /reset
+Conversation history cleared.
+
+> quit
+Goodbye!
 ```
 
 ## How the agent works (high level)

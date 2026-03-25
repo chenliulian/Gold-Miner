@@ -2,7 +2,7 @@ import json
 import os
 import time
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, session, Response
+from flask import Flask, render_template, request, jsonify, session, Response, redirect, g
 from flask_cors import CORS
 from dotenv import load_dotenv
 import json
@@ -27,11 +27,19 @@ app.secret_key = _config.session_secret
 
 from gold_miner.agent import SqlAgent
 from gold_miner.rate_limiter import RateLimitExceeded, get_chat_limiter, get_default_limiter
+from gold_miner.user_data import init_user_data_manager
 
 # Import and register API v2
 from api_v2 import api_v2, init_config
 init_config(_config)
 app.register_blueprint(api_v2)
+
+# Import and initialize authentication
+from auth_routes import init_auth
+auth_service = init_auth(app, _config)
+
+# Initialize user data manager
+user_data_manager = init_user_data_manager(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
 
 CONFIG = None
 AGENT = None
@@ -66,17 +74,36 @@ def check_rate_limit(limiter_type="default"):
     return info
 
 
-def get_agent():
+def get_agent(user_id: str = None):
+    """Get agent instance for current user.
+    
+    Args:
+        user_id: Optional user ID. If not provided, will try to get from current request.
+    
+    Returns:
+        SqlAgent instance with user-specific session directory.
+    """
     global AGENT, CONFIG
-    if AGENT is None:
+    
+    # Get current user if not provided
+    if user_id is None:
+        user = get_current_user_or_redirect()
+        if user:
+            user_id = user.id
+        else:
+            user_id = "anonymous"
+    
+    # Create user-specific agent if needed
+    if AGENT is None or CONFIG is None or getattr(AGENT, 'user_id', None) != user_id:
         CONFIG = _config
         CONFIG.validate()
         
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         skills_dir = os.path.join(project_root, "skills")
-        # 会话文件保存到 ui/sessions 目录
         sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
-        AGENT = SqlAgent(CONFIG, skills_dir, sessions_dir=sessions_dir)
+        
+        # 创建新的 Agent 实例，传入用户ID
+        AGENT = SqlAgent(CONFIG, skills_dir, sessions_dir=sessions_dir, user_id=user_id)
         
         # Initialize agent pool for API v2
         from gold_miner.services import get_agent_pool
@@ -121,9 +148,26 @@ def init_schedulers():
 init_schedulers()
 
 
+def get_current_user_or_redirect():
+    """Get current user from token or redirect to login."""
+    from gold_miner.auth.decorators import get_token_from_request
+    
+    token = get_token_from_request()
+    if not token or not auth_service:
+        return None
+    
+    user, error = auth_service.verify_token(token)
+    return user
+
+
 @app.route("/")
 def index():
-    return render_template("index.html")
+    """Main page - requires authentication."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return redirect('/auth/login')
+    
+    return render_template("index.html", user=user.to_dict())
 
 
 @app.route("/chat", methods=["POST"])

@@ -47,6 +47,10 @@ class Config:
     scheduler_review_interval_hours: int = 24
     scheduler_session_review_hours: int = 1
 
+    # Authentication settings
+    jwt_secret: str = ""
+    token_expires_hours: int = 8
+
     @classmethod
     def from_env(cls) -> "Config":
         load_dotenv()
@@ -81,6 +85,9 @@ class Config:
             scheduler_auto_start=os.getenv("SCHEDULER_AUTO_START", "false").lower() == "true",
             scheduler_review_interval_hours=int(os.getenv("SCHEDULER_REVIEW_INTERVAL_HOURS", "24")),
             scheduler_session_review_hours=int(os.getenv("SCHEDULER_SESSION_REVIEW_HOURS", "1")),
+            # Authentication settings
+            jwt_secret=os.getenv("JWT_SECRET", "").strip(),
+            token_expires_hours=int(os.getenv("TOKEN_EXPIRES_HOURS", "8")),
         )
 
     def validate(self) -> None:

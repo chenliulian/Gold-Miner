@@ -1,3 +1,2 @@
 gold_miner
-memory
 reports

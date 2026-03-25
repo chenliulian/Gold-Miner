@@ -158,12 +158,32 @@
         .sidebar-footer {
             padding: 16px 20px;
             border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .user-info {
             display: flex;
             align-items: center;
             gap: 12px;
+            flex: 1;
+        }
+
+        .logout-btn {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
         }
 
         .user-avatar {
@@ -1213,12 +1233,19 @@
 
             <div class="sidebar-footer">
                 <div class="user-info">
-                    <div class="user-avatar">U</div>
+                    <div class="user-avatar" id="user-avatar">{{ user.name[0] if user else 'U' }}</div>
                     <div>
-                        <div class="user-name">用户</div>
-                        <div class="user-status">在线</div>
+                        <div class="user-name" id="user-name">{{ user.name if user else '用户' }}</div>
+                        <div class="user-status">{{ user.department_name if user and user.department_name else '在线' }}</div>
                     </div>
                 </div>
+                <a href="/auth/logout" class="logout-btn" title="退出登录">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </a>
             </div>
         </aside>
 

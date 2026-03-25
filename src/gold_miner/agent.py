@@ -117,8 +117,10 @@ class SqlAgent:
         skills_dir: str,
         sessions_dir: Optional[str] = None,
         sql_validator: Optional[SQLValidator] = None,
+        user_id: str = "",
     ):
         self.config = config
+        self.user_id = user_id  # 当前用户ID
         self.llm = OpenAICompatibleClient(
             config.llm_base_url, config.llm_api_key, config.llm_model
         )
@@ -134,7 +136,7 @@ class SqlAgent:
         self.memory = MemoryStore(config.memory_path)
         # 会话历史 - 保存每次对话的完整记录
         sessions_dir = sessions_dir or os.path.join(os.path.dirname(config.memory_path), "../sessions")
-        self.session = SessionStore(sessions_dir)
+        self.session = SessionStore(sessions_dir, user_id=user_id)  # 传递用户ID
         self.skills = SkillRegistry(skills_dir)
         self.skills.load()
         self.knowledge = get_knowledge_manager()  # 业务知识管理器
