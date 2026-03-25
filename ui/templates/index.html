@@ -1244,6 +1244,20 @@
                         <div class="welcome-section">
                             <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
                             <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
+                                    📊 分析广告组漏斗
+                                </button>
+                                <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
+                                    📋 查看数据表
+                                </button>
+                                <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
+                                    🔍 执行 SQL
+                                </button>
+                                <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
+                                    🔗 探索表血缘
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -1600,6 +1614,16 @@
         function sendQuickMessage(message) {
             document.getElementById('user-input').value = message;
             sendMessage();
+        }
+
+        // 填充输入框但不发送
+        function fillInputBox(message) {
+            const input = document.getElementById('user-input');
+            input.value = message;
+            input.focus();
+            // 自动调整输入框高度
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
         }
 
         // 添加消息到聊天区
@@ -2080,6 +2104,20 @@
                             <div class="welcome-section">
                                 <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
                                 <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                                <div class="quick-actions">
+                                    <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
+                                        📊 分析广告组漏斗
+                                    </button>
+                                    <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
+                                        📋 查看数据表
+                                    </button>
+                                    <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
+                                        🔍 执行 SQL
+                                    </button>
+                                    <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
+                                        🔗 探索表血缘
+                                    </button>
+                                </div>
                             </div>
                         `;
                         switchPage('chat', document.querySelector('.nav-item'));
@@ -2107,6 +2145,20 @@
                 <div class="welcome-section">
                     <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
                     <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
+                            📊 分析广告组漏斗
+                        </button>
+                        <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
+                            📋 查看数据表
+                        </button>
+                        <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
+                            🔍 执行 SQL
+                        </button>
+                        <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
+                            🔗 探索表血缘
+                        </button>
+                    </div>
                 </div>
             `;
             switchPage('chat', document.querySelector('.nav-item'));
