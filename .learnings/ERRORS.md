@@ -987,3 +987,217 @@ LIMIT 5;
 - Related Files: 
 
 ---
+
+## [ERR-20260325-844] skill_or_command
+
+**Logged**: 2026-03-25T18:56:11
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260325105608675gle8nkbb4r1
+ODPS-0130071:[14,14] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260325105608675gle8nkbb4r1
+ODPS-0130071:[14,14] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[7,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[7,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[8,9] Semantic analysis exception - column recall_cnt cannot be resolved
+ODPS-0130071:[9,9] Semantic analysis exception - column filter_cnt cannot be resolved
+ODPS-013
+上下文: sql_execution
+时间: 2026-03-25T18:56:11.345759
+
+相关 SQL:
+```sql
+WITH params AS (
+  SELECT '2026031900' AS start_dh, '2026032523' AS end_dh, '67832' AS ad_group_id
+),
+req_sample AS (
+  SELECT
+    SUBSTR(dh,1,8) AS dt,
+    CAST(ad_group_id AS BIGINT) AS ad_group_id,
+    SUM(recall_cnt) AS recall_cnt,
+    SUM(filter_cnt) AS filter_cnt,
+    SUM(rank_cnt) AS rank_cnt,
+    SUM(resp_cnt) AS resp_cnt
+  FROM ads_strategy.dwd_ew_request_sample_hi
+  WHERE dh BETWEEN (SELECT start_dh FROM params) AND (SELECT end_dh FROM params)
+    AND CAST(ad_group_id AS STRING) = (SEL
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260325-385] skill_or_command
+
+**Logged**: 2026-03-25T18:56:41
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: SQL validation failed: Potential SQL injection patterns detected: ['Multiple sta...
+
+### Error
+```
+错误类型: unknown
+错误信息: SQL validation failed: Potential SQL injection patterns detected: ['Multiple statements']
+上下文: sql_validation
+时间: 2026-03-25T18:56:41.826322
+
+相关 SQL:
+```sql
+SELECT 'request_sample' AS src,
+       *
+FROM ads_strategy.dwd_ew_request_sample_hi
+WHERE dh = '2026032500'
+  AND CAST(ad_group_id AS STRING) = '67832'
+LIMIT 5;
+
+SELECT 'engine_compete' AS src,
+       *
+FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+WHERE dh = '2026032500'
+  AND CAST(ad_group_id AS STRING) = '67832'
+LIMIT 5;
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260325-766] skill_or_command
+
+**Logged**: 2026-03-25T20:34:07
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260325123404302gx2fhkkco
+ODPS-0130071:[8,9] Semantic...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260325123404302gx2fhkkco
+ODPS-0130071:[8,9] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[4,18] Semantic analysis exception - column resp_cnt cannot be resolved
+ODPS-0130071:[5,18] Semantic analysis exception - column win_cnt cannot be resolved
+
+上下文: sql_execution
+时间: 2026-03-25T20:34:07.111037
+
+相关 SQL:
+```sql
+WITH engine_h AS (
+  SELECT
+    dh,
+    SUM(COALESCE(resp_cnt, 0)) AS resp_cnt,
+    SUM(COALESCE(win_cnt, 0))  AS win_cnt
+  FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+  WHERE dh BETWEEN '2026032200' AND '2026032223'
+    AND ad_group_id = 30573
+  GROUP BY dh
+),
+post_h AS (
+  SELECT
+    dh,
+    SUM(COALESCE(show_label, 0)) AS show_cnt,
+    SUM(COALESCE(click_label, 0)) AS click_cnt,
+    SUM(COALESCE(dld_label, 0)) AS dld_cnt,
+    SUM(COALESCE(conv_label_active, 0)) AS conv_active_cnt,
+    S
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260325-138] skill_or_command
+
+**Logged**: 2026-03-25T20:35:42
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 2026032512354093gv2gyks9aio2
+ODPS-0130071:[28,14] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 2026032512354093gv2gyks9aio2
+ODPS-0130071:[28,14] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[21,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[21,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[22,9] Semantic analysis exception - column recall_cnt cannot be resolved
+ODPS-0130071:[23,9] Semantic analysis exception - column filter_cnt cannot be resolved
+ODPS
+上下文: sql_execution
+时间: 2026-03-25T20:35:42.893306
+
+相关 SQL:
+```sql
+WITH
+post_hour AS (
+  SELECT
+    SUBSTR(dh,1,10) AS hh,
+    CAST(ad_group_id AS BIGINT) AS ad_group_id,
+    SUM(show_label) AS show_cnt,
+    SUM(click_label) AS click_cnt,
+    SUM(dld_label) AS dld_cnt,
+    SUM(conv_label_active) AS conv_active_cnt,
+    SUM(conv_label_register) AS conv_register_cnt,
+    SUM(conv_label_pay) AS conv_pay_cnt,
+    SUM(billing_actual_deduction_price)/1e5 AS cost_usd
+  FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+  WHERE dh BETWEEN '2026032200' AND '2026032223'
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---

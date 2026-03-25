@@ -549,3 +549,55 @@ show_agg AS (
 - Tags: 
 
 ---
+
+## [LRN-20260325-191] correction
+
+**Logged**: 2026-03-25T20:36:32
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260325123630135ga4gyks9aio2
+ODPS-0130071:[26,14] Sem...
+
+### Details
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260325123630135ga4gyks9aio2
+ODPS-0130071:[26,14] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[21,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[21,10] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[22,30] Semantic analysis exception - column resp_cnt cannot be resolved
+ODPS-0130071:[22,48] Semantic analysis exception - column request_id cannot be resolved
+ODP
+上下文: sql_execution
+时间: 2026-03-25T20:36:32.915896
+
+相关 SQL:
+```sql
+WITH
+post_day AS (
+  SELECT
+    SUBSTR(dh,1,8) AS dt,
+    CAST(ad_group_id AS BIGINT) AS ad_group_id,
+    SUM(show_label) AS show_cnt,
+    SUM(click_label) AS click_cnt,
+    SUM(dld_label) AS dld_cnt,
+    SUM(conv_label_active) AS conv_active_cnt,
+    SUM(conv_label_register) AS conv_register_cnt,
+    SUM(conv_label_pay) AS conv_pay_cnt,
+    SUM(billing_actual_deduction_price)/1e5 AS cost_usd
+  FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+  WHERE dh BETWEEN '2026032200' AND '2026032223'
+ 
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---

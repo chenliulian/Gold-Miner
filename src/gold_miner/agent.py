@@ -147,6 +147,15 @@ class SqlAgent:
         """开始一个新的对话会话"""
         return self.session.start_session(title)
 
+    def interrupt(self) -> None:
+        """中断当前 Agent 的执行"""
+        if self._cancel_event is not None:
+            self._cancel_event.set()
+
+    def cancel(self) -> None:
+        """取消当前 Agent 的执行（interrupt 的别名）"""
+        self.interrupt()
+
     def run(
         self,
         question: str,
@@ -416,7 +425,11 @@ class SqlAgent:
 
         is_invisible = skill_def.invisible_context if skill_def else True
 
-        if self.state.last_df is not None and "dataframe" not in skill_args:
+        # 只有需要 dataframe 的 skill 才添加 dataframe 参数
+        skills_needing_dataframe = {"chart", "export", "analyze", "transform"}  # 明确需要 dataframe 的 skills
+        if (self.state.last_df is not None and 
+            "dataframe" not in skill_args and 
+            skill in skills_needing_dataframe):
             skill_args = dict(skill_args)
             skill_args["dataframe"] = self.state.last_df
         try:

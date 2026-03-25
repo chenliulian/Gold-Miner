@@ -107,6 +107,26 @@ class AgentPool:
                 pooled_agent.session_id = None
                 pooled_agent.last_used = datetime.now()
 
+    def get_agent_by_session(self, session_id: str) -> Optional[PooledAgent]:
+        """获取正在处理指定会话的 Agent"""
+        with self._lock:
+            for pooled_agent in self._pool:
+                if pooled_agent.session_id == session_id and pooled_agent.in_use:
+                    return pooled_agent
+        return None
+
+    def is_session_processing(self, session_id: str) -> bool:
+        """检查指定会话是否正在处理中"""
+        return self.get_agent_by_session(session_id) is not None
+
+    def cancel_session(self, session_id: str) -> bool:
+        """取消指定会话的处理"""
+        pooled_agent = self.get_agent_by_session(session_id)
+        if pooled_agent and pooled_agent.in_use:
+            pooled_agent.agent.interrupt()
+            return True
+        return False
+
     def get_stats(self) -> Dict[str, Any]:
         """Get pool statistics."""
         with self._lock:

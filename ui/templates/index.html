@@ -1356,8 +1356,42 @@
 
     <script>
         let currentPage = 'chat';
-        let isProcessing = false;
         let currentLearningTab = 'learnings';
+
+        // ========== 会话状态管理（支持多会话并行） ==========
+        const sessionStates = new Map();
+
+        // 获取会话状态（如果不存在则初始化）
+        function getSessionState(sessionId) {
+            if (!sessionId) return { isProcessing: false, abortController: null };
+            if (!sessionStates.has(sessionId)) {
+                sessionStates.set(sessionId, {
+                    isProcessing: false,
+                    startTime: null,
+                    abortController: null
+                });
+            }
+            return sessionStates.get(sessionId);
+        }
+
+        // 检查当前会话是否正在处理中
+        function isCurrentSessionProcessing() {
+            return currentSessionId ? getSessionState(currentSessionId).isProcessing : false;
+        }
+
+        // 设置会话处理状态
+        function setSessionProcessing(sessionId, processing) {
+            if (!sessionId) return;
+            const state = getSessionState(sessionId);
+            state.isProcessing = processing;
+            state.startTime = processing ? Date.now() : null;
+            state.abortController = processing ? new AbortController() : null;
+
+            // 如果当前正在查看该会话，更新UI
+            if (sessionId === currentSessionId) {
+                updateSendButton();
+            }
+        }
 
         // 页面切换
         function switchPage(page, element) {
@@ -1391,28 +1425,65 @@
             if (page === 'learnings') loadLearnings();
         }
 
-        // 发送消息 - 使用流式输出
+        // 发送消息 - 使用流式输出（支持多会话并行）
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const message = input.value.trim();
-            
-            if (!message || isProcessing) return;
-            
+
+            // 如果没有消息，直接返回
+            if (!message) return;
+
+            // 如果没有当前会话，先创建一个新会话
+            if (!currentSessionId) {
+                try {
+                    const response = await fetch('/sessions/new', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({title: message.slice(0, 30)})
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        currentSessionId = data.session_id;
+                        loadHistoryList(); // 刷新历史列表
+                    } else {
+                        console.error('创建会话失败:', data.error);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('创建会话失败:', error);
+                    return;
+                }
+            }
+
+            const activeSessionId = currentSessionId;
+
+            // 检查当前会话是否正在处理中
+            if (isCurrentSessionProcessing()) {
+                console.log('当前会话正在处理中，请等待');
+                return;
+            }
+
             addMessage(message, 'user');
             input.value = '';
             input.style.height = 'auto';
-            
-            isProcessing = true;
-            updateSendButton();
-            
+
+            // 设置当前会话为处理中状态
+            setSessionProcessing(activeSessionId, true);
+
             // 创建日志消息容器
             const logContainer = addLogMessage();
-            
+
             try {
+                const state = getSessionState(activeSessionId);
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message, stream: true })
+                    body: JSON.stringify({
+                        message,
+                        stream: true,
+                        session_id: activeSessionId
+                    }),
+                    signal: state.abortController.signal
                 });
                 
                 const reader = response.body.getReader();
@@ -1465,10 +1536,14 @@
             } catch (error) {
                 // 完成日志记录（标记为失败）
                 finalizeLog(logContainer, false);
-                addMessage('网络错误，请稍后重试: ' + error.message, 'assistant');
+                if (error.name === 'AbortError') {
+                    addMessage('已取消', 'assistant');
+                } else {
+                    addMessage('网络错误，请稍后重试: ' + error.message, 'assistant');
+                }
             } finally {
-                isProcessing = false;
-                updateSendButton();
+                // 重置当前会话的处理状态
+                setSessionProcessing(activeSessionId, false);
             }
         }
         
@@ -1660,13 +1735,6 @@
             
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight;
-        }
-
-        // HTML 转义
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
         }
 
         // 解析 Markdown 表格
@@ -2052,12 +2120,15 @@
             }
         }
 
-        // 更新发送按钮状态
+        // 更新发送按钮状态（按当前会话判断）
         function updateSendButton() {
             const sendBtn = document.getElementById('send-btn');
             const cancelBtn = document.getElementById('cancel-btn');
 
-            if (isProcessing) {
+            // 按当前会话判断处理状态
+            const processing = isCurrentSessionProcessing();
+
+            if (processing) {
                 sendBtn.style.display = 'none';
                 cancelBtn.style.display = 'flex';
             } else {
@@ -2066,16 +2137,34 @@
             }
         }
 
-        // 取消当前请求
+        // 取消当前会话的请求
         async function cancelMessage() {
+            const activeSessionId = currentSessionId;
+            if (!activeSessionId) return;
+
+            const state = getSessionState(activeSessionId);
+
+            // 1. 先通过 AbortController 取消前端请求
+            if (state.abortController) {
+                state.abortController.abort();
+            }
+
+            // 2. 通知后端取消对应会话的处理
             try {
-                await fetch('/interrupt', { method: 'POST' });
-                addMessage('已取消', 'assistant');
+                await fetch('/interrupt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: activeSessionId })
+                });
             } catch (error) {
                 console.error('取消失败:', error);
             }
-            isProcessing = false;
-            updateSendButton();
+
+            // 3. 重置状态（AbortError 会在 sendMessage 的 catch 中处理）
+            // 但如果请求已经完成，需要手动重置
+            if (state.isProcessing) {
+                setSessionProcessing(activeSessionId, false);
+            }
         }
 
         // 当前会话ID
@@ -2083,10 +2172,12 @@
 
         // 新对话
         async function startNewChat() {
+            console.log('startNewChat called');
             try {
                 // 先检查是否已经有空的对话（标题为"新对话"且没有消息）
                 const response = await fetch('/sessions');
                 const data = await response.json();
+                console.log('Fetched sessions:', data);
                 
                 if (data.success && data.sessions) {
                     // 查找标题为"新对话"且没有步骤的空对话
@@ -2096,6 +2187,7 @@
                     );
                     
                     if (emptySession) {
+                        console.log('Found empty session:', emptySession.session_id);
                         // 如果已经有空的对话，直接切换到它
                         currentSessionId = emptySession.session_id;
                         loadHistoryList(); // 刷新历史列表
@@ -2120,25 +2212,35 @@
                                 </div>
                             </div>
                         `;
-                        switchPage('chat', document.querySelector('.nav-item'));
+                        // 切换到对话页面
+                        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                        document.getElementById('page-chat').classList.add('active');
+                        document.getElementById('page-title').textContent = '对话';
                         updateActiveHistoryItem();
                         return;
                     }
                 }
                 
                 // 如果没有空的对话，创建新的
+                console.log('Creating new session...');
                 const newResponse = await fetch('/sessions/new', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({title: '新对话'})
                 });
                 const newData = await newResponse.json();
-                if (newData.success) {
-                    currentSessionId = newData.session_id;
-                    loadHistoryList(); // 刷新历史列表
+                console.log('New session response:', newData);
+                if (!newData.success) {
+                    console.error('创建会话失败:', newData.error || '未知错误');
+                    alert('创建会话失败: ' + (newData.error || '未知错误'));
+                    return;
                 }
+                currentSessionId = newData.session_id;
+                loadHistoryList(); // 刷新历史列表
             } catch (error) {
                 console.error('创建新会话失败:', error);
+                alert('创建新会话失败: ' + error.message);
+                return;
             }
 
             document.getElementById('chat-messages').innerHTML = `
@@ -2161,8 +2263,12 @@
                     </div>
                 </div>
             `;
-            switchPage('chat', document.querySelector('.nav-item'));
+            // 切换到对话页面
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-chat').classList.add('active');
+            document.getElementById('page-title').textContent = '对话';
             updateActiveHistoryItem();
+            console.log('New chat created, sessionId:', currentSessionId);
         }
 
         // 加载历史对话列表
@@ -2218,8 +2324,26 @@
                     });
                 } else {
                     // 如果没有步骤，显示欢迎界面
-                    startNewChat();
-                    return;
+                    document.getElementById('chat-messages').innerHTML = `
+                        <div class="welcome-section">
+                            <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
+                            <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
+                            <div class="quick-actions">
+                                <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
+                                    📊 分析广告组漏斗
+                                </button>
+                                <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
+                                    📋 查看数据表
+                                </button>
+                                <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
+                                    🔍 执行 SQL
+                                </button>
+                                <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
+                                    🔗 探索表血缘
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 }
 
                 switchPage('chat', document.querySelector('.nav-item'));

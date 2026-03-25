@@ -133,134 +133,165 @@ def chat():
         rate_info = check_rate_limit("chat")
     except RateLimitExceeded as e:
         return jsonify({"error": str(e)}), 429
-    
+
     data = request.json
     user_message = data.get("message", "")
     stream = data.get("stream", False)
-    new_session = data.get("new_session", False)  # 是否开启新会话
     session_id = data.get("session_id")  # 前端传递的会话ID
-    
+
     if not user_message:
         return jsonify({"error": "Empty message"}), 400
-    
-    agent = get_agent()
-    
-    # 如果前端传递了session_id，加载该会话
-    if session_id:
-        agent.session.load_session(session_id)
-    
-    # 如果需要开启新会话
-    if new_session or agent.session.get_current_session_id() is None:
-        session_title = user_message[:30] + "..." if len(user_message) > 30 else user_message
-        agent.start_new_session(title=session_title)
-    
-    def generate():
-        import queue
-        import threading
-        
-        log_queue = queue.Queue()
-        result_holder = {"report_path": None, "error": None, "done": False}
-        
-        def status_callback(status):
-            """状态回调函数，将日志放入队列"""
-            if isinstance(status, dict):
-                log_queue.put({"type": "log", "content": status.get("content", str(status))})
-            elif status == "starting":
-                log_queue.put({"type": "log", "content": "🚀 开始处理任务..."})
-            elif status == "finalizing":
-                log_queue.put({"type": "log", "content": "📝 生成报告..."})
-            elif status == "done":
-                log_queue.put({"type": "log", "content": "✅ 任务完成"})
-            elif status == "cancelled":
-                log_queue.put({"type": "log", "content": "🛑 任务已取消"})
-        
-        def run_agent():
-            """在后台线程中运行 agent"""
-            try:
-                agent.session.add_step("user", user_message)
-                report_path = agent.run(user_message, status_cb=status_callback, clear_memory=False)
-                result_holder["report_path"] = report_path
-                result_holder["done"] = True
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                result_holder["error"] = str(e)
-                result_holder["done"] = True
-        
-        # 启动 agent 线程
-        agent_thread = threading.Thread(target=run_agent)
-        agent_thread.start()
-        
-        # 发送用户消息确认
-        yield f"data: {json.dumps({'type': 'message', 'role': 'user', 'content': user_message})}\n\n"
-        
-        # 循环读取日志队列
-        while not result_holder["done"] or not log_queue.empty():
-            try:
-                # 等待日志消息，最多等待 0.1 秒
-                log_data = log_queue.get(timeout=0.1)
-                yield f"data: {json.dumps(log_data)}\n\n"
-            except queue.Empty:
-                # 检查 agent 是否完成
-                if result_holder["done"] and log_queue.empty():
-                    break
-                continue
-        
-        # 等待 agent 线程完成
-        agent_thread.join()
-        
-        # 处理结果
-        if result_holder["error"]:
-            yield f"data: {json.dumps({'type': 'error', 'content': result_holder['error']})}\n\n"
+
+    # 从 Agent Pool 获取 Agent 实例
+    from gold_miner.services import get_agent_pool
+    agent_pool = get_agent_pool()
+
+    try:
+        pooled_agent = agent_pool.acquire(session_id=session_id)
+        agent = pooled_agent.agent
+
+        # 加载指定会话或创建新会话
+        if session_id:
+            agent.session.load_session(session_id)
+            # 如果会话标题是默认的"新对话"或"未命名对话"，且这是第一条用户消息，则更新标题
+            if agent.session.current_session:
+                current_title = agent.session.current_session.title
+                if current_title in ("新对话", "未命名对话"):
+                    steps = agent.session.current_session.steps
+                    # 检查是否还没有用户消息（这是第一条消息）
+                    user_steps = [s for s in steps if s.get("role") == "user"]
+                    if len(user_steps) == 0:
+                        new_title = user_message[:30] + "..." if len(user_message) > 30 else user_message
+                        agent.session.update_title(new_title)
         else:
-            report_path = result_holder["report_path"]
+            session_title = user_message[:30] + "..." if len(user_message) > 30 else user_message
+            session_id = agent.start_new_session(title=session_title)
+
+        def generate():
+            import queue
+            import threading
+
+            log_queue = queue.Queue()
+            result_holder = {"report_path": None, "error": None, "done": False}
+
+            def status_callback(status):
+                """状态回调函数，将日志放入队列"""
+                if isinstance(status, dict):
+                    log_queue.put({"type": "log", "content": status.get("content", str(status))})
+                elif status == "starting":
+                    log_queue.put({"type": "log", "content": "🚀 开始处理任务..."})
+                elif status == "finalizing":
+                    log_queue.put({"type": "log", "content": "📝 生成报告..."})
+                elif status == "done":
+                    log_queue.put({"type": "log", "content": "✅ 任务完成"})
+                elif status == "cancelled":
+                    log_queue.put({"type": "log", "content": "🛑 任务已取消"})
+
+            def run_agent():
+                """在后台线程中运行 agent"""
+                try:
+                    agent.session.add_step("user", user_message)
+                    report_path = agent.run(user_message, status_cb=status_callback, clear_memory=False)
+                    result_holder["report_path"] = report_path
+                    result_holder["done"] = True
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    result_holder["error"] = str(e)
+                    result_holder["done"] = True
+
+            # 启动 agent 线程
+            agent_thread = threading.Thread(target=run_agent)
+            agent_thread.start()
+
+            # 发送会话ID
+            yield f"data: {json.dumps({'type': 'session_id', 'session_id': session_id})}\n\n"
+
+            # 发送用户消息确认
+            yield f"data: {json.dumps({'type': 'message', 'role': 'user', 'content': user_message})}\n\n"
+
+            # 循环读取日志队列
+            while not result_holder["done"] or not log_queue.empty():
+                try:
+                    # 等待日志消息，最多等待 0.1 秒
+                    log_data = log_queue.get(timeout=0.1)
+                    yield f"data: {json.dumps(log_data)}\n\n"
+                except queue.Empty:
+                    # 检查 agent 是否完成
+                    if result_holder["done"] and log_queue.empty():
+                        break
+                    continue
+
+            # 等待 agent 线程完成
+            agent_thread.join()
+
+            # 处理结果
+            if result_holder["error"]:
+                yield f"data: {json.dumps({'type': 'error', 'content': result_holder['error']})}\n\n"
+            else:
+                report_path = result_holder["report_path"]
+                response_text = ""
+
+                if report_path and os.path.exists(report_path):
+                    with open(report_path, "r", encoding="utf-8") as f:
+                        response_text = f.read()
+                else:
+                    response_text = str(report_path) if report_path else "任务完成"
+
+                agent.session.add_step("assistant", response_text)
+
+                yield f"data: {json.dumps({'type': 'message', 'role': 'assistant', 'content': response_text})}\n\n"
+
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+            # 释放 Agent 回连接池
+            agent_pool.release(pooled_agent)
+
+        if stream:
+            response = Response(generate(), mimetype='text/event-stream')
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            return response
+
+        # Non-streaming mode
+        try:
+            agent.session.add_step("user", user_message)
+
+            report_path = agent.run(user_message)
+
             response_text = ""
-            
             if report_path and os.path.exists(report_path):
                 with open(report_path, "r", encoding="utf-8") as f:
                     response_text = f.read()
             else:
                 response_text = str(report_path) if report_path else "任务完成"
-            
+
             agent.session.add_step("assistant", response_text)
-            
-            yield f"data: {json.dumps({'type': 'message', 'role': 'assistant', 'content': response_text})}\n\n"
-        
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
-    
-    if stream:
-        response = Response(generate(), mimetype='text/event-stream')
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
-    
-    # Non-streaming mode
-    try:
-        agent.session.add_step("user", user_message)
-        
-        report_path = agent.run(user_message)
-        
-        response_text = ""
-        if report_path and os.path.exists(report_path):
-            with open(report_path, "r", encoding="utf-8") as f:
-                response_text = f.read()
-        else:
-            response_text = str(report_path) if report_path else "任务完成"
-        
-        agent.session.add_step("assistant", response_text)
-        
-        return jsonify({
-            "success": True,
-            "response": response_text,
-            "report_path": report_path,
-        })
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+
+            return jsonify({
+                "success": True,
+                "response": response_text,
+                "report_path": report_path,
+                "session_id": session_id,
+            })
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            }), 500
+        finally:
+            # 释放 Agent 回连接池
+            agent_pool.release(pooled_agent)
+
+    except RuntimeError as e:
+        if "Agent pool exhausted" in str(e):
+            return jsonify({
+                "error": "系统繁忙，请稍后再试",
+                "retry_after": 5
+            }), 503
+        raise
 
 
 @app.route("/sessions", methods=["GET"])
@@ -407,24 +438,41 @@ def save_to_memory():
 
 @app.route("/interrupt", methods=["POST"])
 def interrupt_agent():
-    data = request.json
-    message = data.get("message", "")
-    
-    if not message:
-        return jsonify({"error": "Empty message"}), 400
-    
-    agent = get_agent()
-    
+    """中断指定会话的 Agent 执行"""
+    data = request.json or {}
+    session_id = data.get("session_id")
+
+    from gold_miner.services import get_agent_pool
+    agent_pool = get_agent_pool()
+
     try:
-        if hasattr(agent, 'cancel_event') and agent.cancel_event:
-            agent.cancel_event.set()
-        
-        agent.session.add_step("user", f"[用户插话] {message}")
-        
-        return jsonify({
-            "success": True,
-            "message": "已收到您的反馈"
-        })
+        if session_id:
+            # 按会话ID取消特定会话
+            success = agent_pool.cancel_session(session_id)
+            if success:
+                return jsonify({
+                    "success": True,
+                    "message": f"已取消会话 {session_id} 的处理"
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "error": "会话未找到或不在处理中"
+                }), 404
+        else:
+            # 兼容旧版本：取消任意一个正在运行的会话
+            cancelled = False
+            with agent_pool._lock:
+                for pooled_agent in agent_pool._pool:
+                    if pooled_agent.in_use and hasattr(pooled_agent.agent, 'cancel_event'):
+                        pooled_agent.agent.cancel_event.set()
+                        cancelled = True
+                        break
+
+            return jsonify({
+                "success": cancelled,
+                "message": "已取消" if cancelled else "没有正在运行的任务"
+            })
     except Exception as e:
         return jsonify({
             "success": False,
