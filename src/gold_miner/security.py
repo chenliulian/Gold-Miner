@@ -237,7 +237,9 @@ class SQLValidator:
             (r';\s*\w+', 'Multiple statements'),
             (r'--\s*$', 'Comment injection'),
             (r'/\*.*?\*/', 'Block comment injection'),
-            (r'union\s+select', 'UNION injection'),
+            # UNION injection detection - only flag suspicious patterns like 'union select' without proper context
+            # Normal UNION ALL / UNION between CTEs or subqueries is allowed
+            (r'union\s+select\s+\d+', 'UNION injection'),
             (r'\bor\s+\d+=\d+', 'OR-based injection'),
             (r'\band\s+\d+=\d+', 'AND-based injection'),
             (r'\bexec\s*\(', 'EXEC injection'),

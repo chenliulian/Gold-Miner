@@ -259,10 +259,10 @@
         .chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: 24px;
+            padding: 12px 16px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 8px;
         }
 
         .welcome-section {
@@ -317,7 +317,7 @@
             margin: 0 auto;
             width: 100%;
             display: flex;
-            gap: 12px;
+            gap: 8px;
             animation: fadeIn 0.3s ease;
         }
 
@@ -349,7 +349,7 @@
             flex: 1;
             background: var(--bg-secondary);
             border-radius: var(--radius-md);
-            padding: 10px 12px;
+            padding: 8px 12px;
             box-shadow: var(--shadow-sm);
         }
 
@@ -357,114 +357,115 @@
             background: var(--accent-light);
         }
 
-        /* Log Message Styles */
-        .log-message .message-content {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-
-        .log-header {
-            font-weight: 600;
-            color: var(--accent-primary);
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .log-content {
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .log-line {
-            padding: 4px 0;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .log-line:last-child {
-            border-bottom: none;
-        }
-
-        .log-line:hover {
-            background: var(--bg-hover);
-        }
-
-        /* Collapsible Log Styles */
-        .log-collapsible {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            margin: 8px 0;
+        /* Unified Thinking Process Box - Doubao Style */
+        .thinking-box {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            margin: 4px 0;
             overflow: hidden;
+            background: #fff;
         }
 
-        .log-toggle {
+        .thinking-toggle {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 16px;
-            background: #f8f9fa;
+            padding: 10px 14px;
+            background: #f5f6f7;
             cursor: pointer;
             user-select: none;
-            transition: background 0.2s;
+            transition: background 0.15s;
         }
 
-        .log-toggle:hover {
-            background: #e9ecef;
+        .thinking-toggle:hover {
+            background: #ebecee;
         }
 
-        .log-toggle-left {
+        .thinking-toggle-left {
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 14px;
-            color: var(--text-primary);
-            font-weight: 500;
+            color: #1f2329;
+            font-weight: 400;
         }
 
-        .log-toggle-icon {
-            font-size: 12px;
+        .thinking-toggle-icon {
+            font-size: 10px;
             transition: transform 0.2s;
-            color: var(--text-secondary);
+            color: #8f959e;
         }
 
-        .log-toggle-icon.expanded {
+        .thinking-toggle-icon.expanded {
             transform: rotate(90deg);
         }
 
-        .log-count {
-            font-size: 12px;
-            color: var(--text-muted);
-            background: var(--bg-secondary);
-            padding: 2px 8px;
-            border-radius: 12px;
+        .thinking-status {
+            font-size: 13px;
+            color: #8f959e;
         }
 
-        .log-content-wrapper {
+        .thinking-content-wrapper {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
-            background: var(--bg-secondary);
+            transition: max-height 0.25s ease;
+            background: #fff;
         }
 
-        .log-content-wrapper.expanded {
-            max-height: 400px;
+        .thinking-content-wrapper.expanded {
+            max-height: 500px;
             overflow-y: auto;
         }
 
-        .log-content-inner {
-            padding: 12px 16px;
-            font-family: 'JetBrains Mono', monospace;
+        .thinking-content-inner {
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
             font-size: 13px;
-            line-height: 1.6;
+            line-height: 1.5;
+        }
+
+        .thinking-step {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .thinking-step:last-child {
+            border-bottom: none;
+        }
+
+        .thinking-step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+            font-size: 12px;
+            color: #8f959e;
+        }
+
+        .thinking-step-time {
+            font-size: 11px;
+            color: #bbb;
+        }
+
+        .thinking-step-content {
+            color: #1f2329;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 13px;
+        }
+
+        .thinking-step-sql {
+            background: #f5f6f7;
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            font-size: 12px;
+            overflow-x: auto;
         }
 
         /* Collapsible SQL Styles - Feishu Style (Ultra Compact) */
         .sql-collapsible {
-            margin: 0;
+            margin: 4px 0;
             overflow: hidden;
         }
 
@@ -472,14 +473,14 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 5px 10px;
+            padding: 6px 12px;
             background: #f5f6f7;
             border: 1px solid #e8e8e8;
             border-radius: 6px;
             cursor: pointer;
             user-select: none;
             transition: background 0.15s;
-            height: 28px;
+            height: 32px;
             box-sizing: border-box;
         }
 
@@ -497,7 +498,7 @@
         }
 
         .sql-toggle-icon {
-            font-size: 8px;
+            font-size: 10px;
             transition: transform 0.2s;
             color: #8f959e;
             width: 12px;
@@ -533,14 +534,30 @@
             margin: 0;
         }
 
+        /* SQL Item Styles */
+        .sql-item {
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .sql-item:last-child {
+            border-bottom: none;
+        }
+
+        .sql-item-header {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #646a73;
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
         .sql-block {
             background: #f5f6f7;
             color: #1f2329;
-            padding: 6px 10px;
-            border-radius: 0 0 6px 6px;
+            padding: 8px 12px;
             font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
             font-size: 12px;
-            line-height: 1.4;
+            line-height: 1.5;
             overflow-x: auto;
             white-space: pre;
             word-wrap: normal;
@@ -619,17 +636,23 @@
         }
 
         .message-text p {
-            margin: 4px 0;
+            margin: 2px 0;
         }
 
         .message-text pre {
-            margin: 4px 0;
+            margin: 2px 0;
+        }
+
+        .message-text br {
+            display: block;
+            content: "";
+            margin: 2px 0;
         }
 
         .message-time {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         /* Input Area */
@@ -1449,74 +1472,102 @@
             }
         }
         
-        // 添加日志消息容器（可折叠）
-        function addLogMessage() {
+        // 当前思考框容器（用于统一收集所有步骤日志）
+        let currentThinkingBox = null;
+        let thinkingStepCount = 0;
+        
+        // 创建统一的思考过程框
+        function createThinkingBox() {
             const container = document.getElementById('chat-messages');
             
             const messageDiv = document.createElement('div');
-            messageDiv.className = 'message log-message';
-            messageDiv.id = 'log-' + Date.now();
-            
-            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            messageDiv.className = 'message';
+            messageDiv.id = 'thinking-box-' + Date.now();
             
             messageDiv.innerHTML = `
                 <div class="message-avatar assistant">◈</div>
                 <div class="message-content assistant">
-                    <div class="log-collapsible">
-                        <div class="log-toggle" onclick="toggleLog(this)">
-                            <div class="log-toggle-left">
-                                <span class="log-toggle-icon">▶</span>
-                                <span>🔄 执行日志</span>
+                    <div class="thinking-box">
+                        <div class="thinking-toggle" onclick="toggleThinking(this)">
+                            <div class="thinking-toggle-left">
+                                <span class="thinking-toggle-icon">▶</span>
+                                <span>💭 思考过程</span>
                             </div>
-                            <span class="log-count">0 条</span>
+                            <span class="thinking-status">进行中...</span>
                         </div>
-                        <div class="log-content-wrapper">
-                            <div class="log-content-inner"></div>
+                        <div class="thinking-content-wrapper">
+                            <div class="thinking-content-inner"></div>
                         </div>
                     </div>
-                    <div class="message-time">${time}</div>
                 </div>
             `;
             
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight;
             
+            thinkingStepCount = 0;
             return messageDiv;
         }
         
-        // 切换日志展开/折叠
-        function toggleLog(toggleElement) {
-            const icon = toggleElement.querySelector('.log-toggle-icon');
+        // 切换思考框展开/折叠
+        function toggleThinking(toggleElement) {
+            const icon = toggleElement.querySelector('.thinking-toggle-icon');
             const wrapper = toggleElement.nextElementSibling;
             
             icon.classList.toggle('expanded');
             wrapper.classList.toggle('expanded');
         }
         
-        // 追加日志内容
-        function appendLog(logContainer, text) {
-            const logInner = logContainer.querySelector('.log-content-inner');
-            const logCount = logContainer.querySelector('.log-count');
+        // 添加思考步骤
+        function addThinkingStep(logContainer, text) {
+            const contentInner = logContainer.querySelector('.thinking-content-inner');
+            const statusLabel = logContainer.querySelector('.thinking-status');
             
-            if (logInner) {
-                const line = document.createElement('div');
-                line.className = 'log-line';
-                line.textContent = text;
-                logInner.appendChild(line);
+            if (contentInner) {
+                thinkingStepCount++;
+                const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 
-                // 更新日志计数
-                const lines = logInner.querySelectorAll('.log-line');
-                if (logCount) {
-                    logCount.textContent = lines.length + ' 条';
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'thinking-step';
+                
+                // 解析日志内容，如果是JSON格式则美化显示
+                let displayContent = text;
+                let sqlContent = '';
+                
+                try {
+                    if (text.includes('"action":"run_sql"') || text.includes("'action': 'run_sql'")) {
+                        const jsonMatch = text.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            const jsonData = JSON.parse(jsonMatch[0]);
+                            if (jsonData.sql) {
+                                displayContent = jsonData.notes || '执行 SQL 查询';
+                                sqlContent = jsonData.sql;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // 不是JSON格式，保持原样
                 }
                 
-                // 限制日志行数（保留最新的100条）
-                if (lines.length > 100) {
-                    lines[0].remove();
+                stepDiv.innerHTML = `
+                    <div class="thinking-step-header">
+                        <span>步骤 ${thinkingStepCount}</span>
+                        <span class="thinking-step-time">${time}</span>
+                    </div>
+                    <div class="thinking-step-content">${escapeHtml(displayContent)}</div>
+                    ${sqlContent ? `<div class="thinking-step-sql"><code>${escapeHtml(sqlContent)}</code></div>` : ''}
+                `;
+                
+                contentInner.appendChild(stepDiv);
+                
+                // 限制步骤数量（保留最新的50个步骤）
+                const steps = contentInner.querySelectorAll('.thinking-step');
+                if (steps.length > 50) {
+                    steps[0].remove();
                 }
                 
-                // 如果日志已展开，滚动到底部
-                const wrapper = logContainer.querySelector('.log-content-wrapper');
+                // 如果已展开，滚动到底部
+                const wrapper = logContainer.querySelector('.thinking-content-wrapper');
                 if (wrapper && wrapper.classList.contains('expanded')) {
                     wrapper.scrollTop = wrapper.scrollHeight;
                 }
@@ -1524,24 +1575,39 @@
                 // 滚动消息容器到底部
                 const container = document.getElementById('chat-messages');
                 container.scrollTop = container.scrollHeight;
+                
+                // 更新状态
+                if (statusLabel) {
+                    statusLabel.textContent = `${thinkingStepCount} 个步骤`;
+                }
             }
         }
         
-        // 完成日志记录（将日志折叠起来）
-        function finalizeLog(logContainer, success = true) {
-            const toggle = logContainer.querySelector('.log-toggle');
-            const icon = toggle.querySelector('.log-toggle-icon');
-            const wrapper = logContainer.querySelector('.log-content-wrapper');
-            const leftText = toggle.querySelector('.log-toggle-left span:last-child');
-            
-            // 更新标题
-            if (leftText) {
-                leftText.textContent = success ? '✅ 执行完成（点击展开查看日志）' : '❌ 执行失败（点击展开查看日志）';
+        // 完成思考框
+        function finalizeThinkingBox(logContainer, success) {
+            const statusLabel = logContainer.querySelector('.thinking-status');
+            if (statusLabel) {
+                statusLabel.textContent = success ? `✓ 已完成 (${thinkingStepCount} 步)` : '✗ 执行失败';
+                statusLabel.style.color = success ? '#52c41a' : '#ff4d4f';
             }
-            
-            // 确保日志是折叠状态
-            icon.classList.remove('expanded');
-            wrapper.classList.remove('expanded');
+        }
+        
+        // 兼容旧函数名
+        function addLogMessage() {
+            if (!currentThinkingBox) {
+                currentThinkingBox = createThinkingBox();
+            }
+            return currentThinkingBox;
+        }
+        
+        function appendLog(logContainer, text) {
+            addThinkingStep(logContainer, text);
+        }
+        
+        function finalizeLog(logContainer, success) {
+            finalizeThinkingBox(logContainer, success);
+            currentThinkingBox = null;
+            thinkingStepCount = 0;
         }
 
         // 添加快捷消息
@@ -1563,8 +1629,16 @@
             
             const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
             
-            // 处理文本中的表格
-            const processedText = sender === 'assistant' ? processMessageText(text) : escapeHtml(text).replace(/\n/g, '<br>');
+            // 处理文本中的表格和SQL
+            let processedText;
+            if (sender === 'assistant') {
+                processedText = processMessageText(text);
+                // 清理多余的空行和空白
+                processedText = processedText.replace(/(<br>\s*){3,}/g, '<br><br>');
+                processedText = processedText.replace(/\n\s*\n\s*\n/g, '\n\n');
+            } else {
+                processedText = escapeHtml(text).replace(/\n/g, '<br>');
+            }
             
             messageDiv.innerHTML = `
                 <div class="message-avatar ${sender}">${sender === 'user' ? '👤' : '◈'}</div>
@@ -1699,7 +1773,8 @@
             // 如果包含SQL折叠组件，使用基于HTML标签的分割方式
             if (hasSqlCollapsible) {
                 // 分割文本：保留SQL组件HTML，转义其他文本
-                const parts = text.split(/(<div class="sql-collapsible">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>)/);
+                // 注意：sql-collapsible 有4层嵌套div，需要匹配4个</div>
+                const parts = text.split(/(<div class="sql-collapsible">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>\s*<\/div>)/);
                 
                 parts.forEach(part => {
                     if (part.startsWith('<div class="sql-collapsible">')) {
@@ -1774,26 +1849,22 @@
             return result;
         }
 
-        // 处理SQL代码块，转换为可折叠组件
+        // 处理SQL代码块，将所有SQL合并到一个折叠框中
         function processSqlBlocks(text) {
-            let result = text;
-            let sqlIndex = 0;
             const sqlBlocks = [];
             
-            // 1. 匹配 ```sql ... ``` 代码块（支持换行或不换行）
+            // 1. 匹配 ```sql ... ``` 代码块
             const sqlBlockRegex = /```sql\s*\n?([\s\S]*?)```/g;
             let match;
             while ((match = sqlBlockRegex.exec(text)) !== null) {
                 sqlBlocks.push({
                     fullMatch: match[0],
                     sql: match[1].trim(),
-                    index: match.index,
-                    type: 'codeblock'
+                    index: match.index
                 });
             }
             
-            // 2. 匹配以 "本次跑数 SQL" 或类似标题开头的 SQL 代码块（不带 ```sql 标记）
-            // 匹配模式：标题行 + 换行 + SQL语句（以 WITH/SELECT/INSERT/UPDATE/DELETE 开头，以分号或空行结束）
+            // 2. 匹配以 "本次跑数 SQL" 或类似标题开头的 SQL 代码块
             const sqlHeaderPatterns = [
                 /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(WITH\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi,
                 /(?:##?\s*)?(?:本次跑数 SQL|执行 SQL|SQL 代码|SQL 查询|可复用 SQL)[\s\S]*?\n(SELECT\s+[\s\S]*?)(?:\n\n|\n##|\n[A-Z]|$)/gi,
@@ -1804,49 +1875,68 @@
             
             sqlHeaderPatterns.forEach(pattern => {
                 while ((match = pattern.exec(text)) !== null) {
-                    // 检查这个位置是否已经被之前的匹配占用
                     const isOverlapping = sqlBlocks.some(block => 
-                        (match.index >= block.index && match.index < block.index + block.fullMatch.length) ||
-                        (block.index >= match.index && block.index < match.index + match[0].length)
+                        (match.index >= block.index && match.index < block.index + block.fullMatch.length)
                     );
-                    
                     if (!isOverlapping) {
                         sqlBlocks.push({
                             fullMatch: match[0],
                             sql: match[1].trim(),
-                            index: match.index,
-                            type: 'plaintext'
+                            index: match.index
                         });
                     }
                 }
             });
             
-            // 按索引排序，从后向前替换
-            sqlBlocks.sort((a, b) => b.index - a.index);
+            if (sqlBlocks.length === 0) return text;
             
-            for (let i = 0; i < sqlBlocks.length; i++) {
-                const block = sqlBlocks[i];
-                const sqlId = 'sql-' + Date.now() + '-' + i;
-                const sqlNumber = sqlBlocks.length - i;
-                const sqlHtml = createSqlCollapsible(block.sql, sqlId, sqlNumber);
-                
-                result = result.substring(0, block.index) + sqlHtml + result.substring(block.index + block.fullMatch.length);
-            }
+            // 按索引排序
+            sqlBlocks.sort((a, b) => a.index - b.index);
             
-            return result;
+            // 构建合并的SQL折叠框
+            const sqlId = 'sql-' + Date.now();
+            let result = '';
+            let lastIndex = 0;
+            
+            sqlBlocks.forEach((block, i) => {
+                // 添加SQL前的文本（清理HTML标签）
+                const beforeSql = text.substring(lastIndex, block.index);
+                if (beforeSql.trim()) {
+                    // 移除残留的HTML标签
+                    result += beforeSql.replace(/<\/?[^>]+(>|$)/g, '');
+                }
+                lastIndex = block.index + block.fullMatch.length;
+            });
+            
+            // 添加最后一个SQL后的文本（清理HTML标签）
+            const afterSql = text.substring(lastIndex);
+            const cleanedAfterSql = afterSql.replace(/<\/?[^>]+(>|$)/g, '').trim();
+            
+            // 创建合并的SQL折叠框
+            const combinedSqlHtml = createCombinedSqlCollapsible(sqlBlocks, sqlId);
+            
+            return result + combinedSqlHtml + (cleanedAfterSql ? '\n' + cleanedAfterSql : '');
         }
 
-        // 创建可折叠的SQL组件
-        function createSqlCollapsible(sql, sqlId, sqlNumber) {
-            // 格式化SQL代码，添加语法高亮
-            const formattedSql = formatSqlCode(sql);
+        // 创建合并的SQL折叠框
+        function createCombinedSqlCollapsible(sqlBlocks, sqlId) {
+            let sqlContent = '';
+            sqlBlocks.forEach((block, i) => {
+                const formattedSql = formatSqlCode(block.sql);
+                sqlContent += `
+                    <div class="sql-item">
+                        <div class="sql-item-header">SQL ${i + 1}</div>
+                        <pre class="sql-block"><code>${formattedSql}</code></pre>
+                    </div>`;
+            });
+            
             return `<div class="sql-collapsible">
                 <div class="sql-toggle" onclick="toggleSql(this)">
                     <div class="sql-toggle-left">
                         <span class="sql-toggle-icon">▶</span>
-                        <span>SQL ${sqlNumber}</span>
+                        <span>SQL 代码 (${sqlBlocks.length} 个)</span>
                     </div>
-                    <button class="sql-copy-btn" onclick="copySql(event, '${sqlId}')" title="复制">
+                    <button class="sql-copy-btn" onclick="copyAllSql(event, '${sqlId}')" title="复制全部">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -1855,10 +1945,33 @@
                 </div>
                 <div class="sql-content-wrapper" id="${sqlId}">
                     <div class="sql-content-inner">
-                        <pre class="sql-block"><code>${formattedSql}</code></pre>
+                        ${sqlContent}
                     </div>
                 </div>
             </div>`;
+        }
+
+        // 复制所有SQL代码
+        function copyAllSql(event, sqlId) {
+            event.stopPropagation();
+            const wrapper = document.getElementById(sqlId);
+            const codeBlocks = wrapper.querySelectorAll('code');
+            let allSql = '';
+            codeBlocks.forEach((code, i) => {
+                if (i > 0) allSql += '\n\n';
+                allSql += `-- SQL ${i + 1}\n${code.textContent}`;
+            });
+            
+            navigator.clipboard.writeText(allSql).then(() => {
+                const btn = event.currentTarget;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span style="font-size:12px">已复制</span>';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
         }
 
         // 格式化SQL代码，添加简单语法高亮

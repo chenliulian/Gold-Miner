@@ -19,17 +19,20 @@ def _load_system_prompts() -> str:
 SYSTEM_PROMPT_PREFIX = _load_system_prompts()
 
 JSON_SCHEMA = '''
-Your available actions:
+Your available actions (MUST be one of these exact values):
 - run_sql: propose SQL to execute
-- use_skill: call a named skill with arguments
+- use_skill: call a named skill with arguments (skill name goes in "skill" field, NOT as action value)
 - search_skills: search skills directory for relevant skills based on keywords
 - final: provide the final report
+
+IMPORTANT: The "action" field MUST be exactly one of: "run_sql", "use_skill", "search_skills", or "final".
+To use a skill like "explore_table", set action="use_skill" and skill="explore_table".
 
 JSON schema:
 {
   "action": "run_sql" | "use_skill" | "search_skills" | "final",
   "sql": "...",                # required when action=run_sql
-  "skill": "skill_name",       # required when action=use_skill
+  "skill": "skill_name",       # required when action=use_skill (e.g., "explore_table", "build_adgroup_data")
   "skill_args": { ... },       # required when action=use_skill
   "search_keywords": "...",    # required when action=search_skills
   "report_markdown": "...",    # required when action=final
@@ -53,7 +56,7 @@ Available skills:
 - build_adgroup_data: Build intermediate aggregation table with show/click/download/conversion data for a date range
   Partition field: dh (format: 'YYYYMMDDHH', e.g., '2026030100')
   Key fields: ad_group_id, cost_type, ad_package_name, app_id, national_id, show_label, click_label, download_label, convert_label, ctr, cost
-  Note: Use explore_table skill first to identify the appropriate source table for your analysis
+  Note: If table structure is not provided in context, use explore_table skill first to identify the appropriate source table
 - calc_summary_stats: Calculate summary metrics like cost/CTR/CVR/eCPM (input: intermediate table, output: summary table)
 - analyze_ctr_pcoc: Analyze CTR model prediction bias (PCOC) at adgroup or pkg_buz level
 - analyze_cvr_pcoc: Analyze CVR model prediction bias (PCOC), supports cpi/ocpc/ocpi conv types
@@ -80,12 +83,12 @@ Rules:
 - If last_error is present, fix the SQL based on the error and try again.
 - If tables already include a full table name, do NOT add an extra "from".
 - MaxCompute DATEADD requires 3 params: date, number, unit.
-- 当用户提及“黄金眼表”或“业务口径”时，请使用com_cdm.dws_tracker_ad_cpc_cost_hi，具体字段使用规则参考知识库
-- 当用户提及“大一统样本表”或“策略口径”或“算法口径”或“统计模型预估偏差”时，请使用mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi，具体字段使用规则参考知识库
+- 当用户提及"黄金眼表"或"业务口径"时，请使用com_cdm.dws_tracker_ad_cpc_cost_hi，具体字段使用规则参考知识库
+- 当用户提及"大一统样本表"或"策略口径"或"算法口径"或"统计模型预估偏差"时，请使用mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi，具体字段使用规则参考知识库
 - Avoid cartesian joins; use explicit join keys.
 - Do NOT claim tool/reader failures unless last_error explicitly indicates one.
-- When user asks about a new table (not previously analyzed), ALWAYS use explore_table skill to understand its structure first
-- IMPORTANT: If table structure information is already provided in the context (under "## 表结构信息"), do NOT run `DESC` or `SHOW CREATE TABLE` queries. Use the provided schema information directly.
+- When user asks about a new table (not previously analyzed) AND table structure information is NOT provided in the context, use use_skill action with skill="explore_table" to understand its structure first. DO NOT set action="explore_table" - that is INVALID.
+- IMPORTANT: If table structure information is already provided in the context (under "## 表结构信息"), do NOT call explore_table skill and do NOT run `DESC` or `SHOW CREATE TABLE` queries. Use the provided schema information directly.
 - When encountering SQL errors or uncertain about SQL syntax, use the tavily_search skill to search for relevant documentation.
 - If you encounter errors you cannot resolve after 2 attempts, search for solutions using tavily_search skill.
 - If recent_steps contains user feedback (marked with 💡 or user suggestions), immediately adjust your approach based on that feedback.

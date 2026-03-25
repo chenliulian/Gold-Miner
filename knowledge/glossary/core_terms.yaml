@@ -5,21 +5,28 @@
   # ========== 基础指标 ==========
   消耗:
     英文: spend / cost
-    定义: 广告投放实际扣费金额
-    单位: 微美元 (micro USD)
-    计算公式: billing_actual_deduction_price / 1e5 (转为美元)
+    定义: 广告投放实际扣费金额，根据广告结算方式不同，计费事件不同
+    计费方式说明:
+      - CPI/OCPI: 按激活计费，用户安装应用并打开后计费
+      - CPC/OCPC: 按点击计费，用户点击广告后计费
+      - CPD/OCPD: 按下载计费，用户下载应用后计费
+      - CPM: 按曝光计费，广告展示给用户后计费
     相关字段: 
       - billing_actual_deduction_price (微美元)
       - cost_micro_usd (微美元)
       - spend_usd (美元，计算后)
+      - pool_should_cost (资金池实扣)
+      - bill_should_cost (计费系统应扣)
     常用口径:
-      总消耗: SUM(billing_actual_deduction_price) / 1e5
-      日均消耗: AVG(daily_spend)
-      小时消耗: SUM(CASE WHEN dh = '{hour}' THEN billing_actual_deduction_price ELSE 0 END) / 1e5
+      总消耗: SUM(消耗字段) / 1e5
+      日均消耗: AVG(日消耗)
+      小时消耗: SUM(CASE WHEN dh = '{hour}' THEN 消耗字段 ELSE 0 END) / 1e5
+      注意: 消耗字段需根据表结构选择，如 bill_should_cost、pool_should_cost、cpm_cost 等
     业务场景:
       - 财务结算
       - 预算控制
       - ROI 计算
+    注意: 不同数据表的消耗字段可能不同，需根据表结构选择正确的字段
     
   展示:
     英文: impression / show
@@ -66,10 +73,11 @@
     英文: Click Through Rate
     定义: 点击率，衡量广告吸引力
     计算公式: SUM(click_count) / SUM(show_count)
-    常见阈值:
-      优秀: "> 2%"
-      一般: "1% - 2%"
-      较差: "< 1%"
+    评估方式: 参考同行业同渠道的广告CTR进行对比分析，而非固定阈值
+    对比维度:
+      - 同行业对比: 与相同行业其他广告主的CTR对比
+      - 同渠道对比: 与相同投放渠道的CTR对比
+      - 历史趋势: 与自身历史同期CTR对比
     优化建议:
       - CTR 低: 优化创意、调整定向
       - CTR 高但转化低: 检查落地页质量
@@ -78,10 +86,11 @@
     英文: Conversion Rate
     定义: 转化率，衡量转化效果
     计算公式: SUM(conversion_count) / SUM(click_count)
-    常见阈值:
-      优秀: "> 10%"
-      一般: "3% - 10%"
-      较差: "< 3%"
+    评估方式: 参考同行业同渠道的广告CVR进行对比分析，而非固定阈值
+    对比维度:
+      - 同行业对比: 与相同行业其他广告主的CVR对比
+      - 同渠道对比: 与相同投放渠道的CVR对比
+      - 历史趋势: 与自身历史同期CVR对比
     影响因素:
       - 落地页质量
       - 产品吸引力
@@ -90,16 +99,18 @@
   CPM:
     英文: Cost Per Mille
     定义: 千次展示成本
-    计算公式: SUM(billing_actual_deduction_price) / SUM(show_count) * 1000 / 1e5
+    计算公式: SUM(消耗字段) / SUM(show_count) * 1000 / 1e5
     单位: 美元/千次展示
     业务意义: 衡量流量成本
+    注意: 消耗字段需根据表结构选择，如 cpm_cost、bill_should_cost 等
     
   CPC:
     英文: Cost Per Click
     定义: 单次点击成本
-    计算公式: SUM(billing_actual_deduction_price) / SUM(click_count) / 1e5
+    计算公式: SUM(消耗字段) / SUM(click_count) / 1e5
     单位: 美元/点击
     业务意义: 衡量点击成本
+    注意: 消耗字段需根据表结构选择，如 cpc_cost、bill_should_cost 等
     
   # ========== 业务实体 ==========
   广告主:

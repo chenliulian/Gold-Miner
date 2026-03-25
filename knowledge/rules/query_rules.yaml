@@ -53,22 +53,28 @@
     名称: 聚合前先过滤数据
     描述: 在GROUP BY之前先过滤数据，减少计算量
     严重级别: 建议
-    优化前: >
-      SELECT advertiser_id, SUM(billing_actual_deduction_price)
-      FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
-      WHERE dh >= '2026031500' AND dh <= '2026031523'
+    优化原则:
+      - WHERE子句中尽早过滤不需要的数据
+      - 对聚合字段先过滤再SUM，避免计算无效值
+      - 子查询中完成过滤，外层只做聚合
+    优化示例: >
+      -- 优化前：先聚合所有数据再过滤
+      SELECT advertiser_id, SUM(cost_field)
+      FROM table
+      WHERE dh >= '...' AND dh <= '...'
       GROUP BY advertiser_id
-      HAVING SUM(billing_actual_deduction_price) > 1000000
-    优化后: >
-      SELECT advertiser_id, SUM(price) AS total_price
+      HAVING SUM(cost_field) > 1000
+      
+      -- 优化后：先过滤再聚合
+      SELECT advertiser_id, SUM(cost) AS total_cost
       FROM (
-        SELECT advertiser_id, billing_actual_deduction_price AS price
-        FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
-        WHERE dh >= '2026031500' AND dh <= '2026031523'
-          AND billing_actual_deduction_price > 0
+        SELECT advertiser_id, cost_field AS cost
+        FROM table
+        WHERE dh >= '...' AND dh <= '...'
+          AND cost_field > 0  -- 提前过滤
       )
       GROUP BY advertiser_id
-      HAVING total_price > 1000000
+      HAVING total_cost > 1000
       
   避免SELECT星号:
     规则ID: R005
@@ -76,7 +82,7 @@
     描述: 只查询需要的字段，减少数据传输
     严重级别: 建议
     错误示例: SELECT * FROM table
-    正确示例: SELECT advertiser_id, dh, billing_actual_deduction_price FROM table
+    正确示例: SELECT advertiser_id, dh, cost_field FROM table
     
   大表JOIN优化:
     规则ID: R006
@@ -89,7 +95,7 @@
       - 确保JOIN条件有分区过滤
     优化示例: >
       WITH advertiser_spend AS (
-        SELECT advertiser_id, SUM(billing_actual_deduction_price) AS spend
+        SELECT advertiser_id, SUM(cost_field) AS spend
         FROM dwd_table
         WHERE dh >= '2026031500'
         GROUP BY advertiser_id
@@ -106,21 +112,22 @@
   消耗统一口径:
     规则ID: R007
     名称: 消耗类指标使用统一口径
-    描述: 所有消耗计算必须使用 billing_actual_deduction_price / 1e5
+    描述: 消耗计算需根据表的字段定义选择合适的消耗字段，不同表可能使用不同字段
     严重级别: 强制
+    常见消耗字段:
+      - billing_actual_deduction_price: 实际扣费金额（微美元）
+      - bill_should_cost: 计费系统应扣金额
+      - pool_should_cost: 资金池实扣金额
+      - cpm_cost/cpc_cost/cpd_cost/cpi_cost: 按结算方式分的花费
+    单位转换: 微美元需除以 1e5 转为美元
     正确计算:
-      总消耗: SUM(billing_actual_deduction_price) / 1e5
-      日均消耗: AVG(daily_spend_usd)
+      总消耗: SUM(消耗字段) / 1e5
+      日均消耗: AVG(日消耗)
     错误计算:
-      - 使用其他price字段
-      - 忘记除以1e5
+      - 使用错误的消耗字段
+      - 忘记除以1e5（微美元转美元）
       - 使用MAX/MIN而不是SUM
-    示例: >
-      SELECT 
-        advertiser_id,
-        SUM(billing_actual_deduction_price) / 1e5 AS spend_usd
-      FROM table
-      GROUP BY advertiser_id
+    注意: 具体使用哪个字段需参考表结构定义
       
   CTR计算规则:
     规则ID: R008
@@ -150,16 +157,18 @@
     名称: CPM计算规则
     描述: CPM = 消耗(美元) / 展示数 * 1000
     严重级别: 强制
-    计算公式: SUM(billing_actual_deduction_price) / SUM(show_count) * 1000 / 1e5
+    计算公式: SUM(消耗字段) / SUM(show_count) * 1000 / 1e5
     单位: 美元/千次展示
+    注意: 消耗字段需根据表结构选择（如cpm_cost, bill_should_cost等）
     
   CPC计算规则:
     规则ID: R011
     名称: CPC计算规则
     描述: CPC = 消耗(美元) / 点击数
     严重级别: 强制
-    计算公式: SUM(billing_actual_deduction_price) / SUM(click_count) / 1e5
+    计算公式: SUM(消耗字段) / SUM(click_count) / 1e5
     单位: 美元/点击
+    注意: 消耗字段需根据表结构选择（如cpc_cost, bill_should_cost等）
     
   去重规则:
     规则ID: R012
@@ -179,23 +188,28 @@
     描述: 查询结果中可能存在异常值，需要识别
     严重级别: 建议
     异常类型:
-      CTR大于10%:
+      CTR异常高:
+        条件: CTR > 10% 或 CTR > 行业均值3倍
         可能原因: 作弊流量、数据错误
         处理: 标记并进一步分析
-      CTR小于0.1%:
+      CTR异常低:
+        条件: CTR < 0.1% 或 CTR < 行业均值1/10
         可能原因: 创意质量差、定向过宽
         处理: 优化建议
       消耗为0但有展示:
-        可能原因: 赠送流量、数据缺失
-        处理: 确认是否为赠送流量
+        可能原因: 赠送流量、数据缺失、结算延迟
+        处理: 确认是否为赠送流量或检查数据完整性
       点击大于展示:
         严重级别: 高
-        说明: 数据逻辑错误
-        处理: 必须排查
+        说明: 数据逻辑错误（不可能事件）
+        处理: 必须排查数据质量问题
       转化大于点击:
         严重级别: 高
-        说明: 数据逻辑错误
-        处理: 必须排查
+        说明: 数据逻辑错误（转化必须有点击前置）
+        处理: 必须排查数据质量问题
+      消耗与点击不匹配:
+        说明: CPC广告有消耗但无点击，或有点击但无消耗
+        处理: 检查消耗字段和点击字段的统计口径是否一致
         
   空值处理:
     规则ID: R014
@@ -232,6 +246,33 @@
       默认: LIMIT 1000
       最大: LIMIT 10000
     说明: 如需更多数据，使用分页或导出功能
+
+  # ========== ODPS SQL 语法规则 ==========
+  ORDER_BY必须带LIMIT:
+    规则ID: R017
+    名称: ORDER BY 必须配合 LIMIT 使用
+    描述: ODPS SQL 中，使用 ORDER BY 排序时必须同时指定 LIMIT 子句，否则查询会报错
+    严重级别: 强制
+    适用场景: 所有使用 ORDER BY 的查询
+    错误示例: >
+      SELECT advertiser_id, SUM(cost) AS total_cost
+      FROM table
+      WHERE dh >= '2026031500'
+      GROUP BY advertiser_id
+      ORDER BY total_cost DESC
+    正确示例: >
+      SELECT advertiser_id, SUM(cost) AS total_cost
+      FROM table
+      WHERE dh >= '2026031500'
+      GROUP BY advertiser_id
+      ORDER BY total_cost DESC
+      LIMIT 100
+    错误信息: "ODPS-0130071: Semantic analysis exception - ORDER BY must be used with a LIMIT clause"
+    解决方案: 在 ORDER BY 子句后添加 LIMIT 限制返回行数
+    注意事项:
+      - 如果不确定需要多少条，使用 LIMIT 1000 作为默认值
+      - 如需全部数据，考虑不使用 ORDER BY，或在外层查询中排序
+      - 分页查询时使用 LIMIT offset, count 格式
 
 规则应用优先级:
   强制级: 必须遵守，违反会导致查询失败或错误

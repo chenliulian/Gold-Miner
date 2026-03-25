@@ -10,63 +10,11 @@ adgroup_funnel_analysis
 
 本Skill用于全面分析广告组在投放过程中的漏斗转化情况，覆盖广告引擎从召回到转化的完整链路，包含消耗数据分析、CTR/CVR模型预估偏差分析、召回响应率分析、过滤项分布分析等，帮助定位投放问题、优化转化效率。
 
-## 广告引擎架构
+## 广告引擎架构说明
 
-### 系统定位
-Eagllwin广告服务器(AdServer)是一个完整的程序化广告交易平台(SSP)，支持实时竞价(RTB)、预算控制、频次控制、AB实验等能力。
+广告引擎采用分层架构：召回层 → 过滤层 → 粗排层 → 精排层 → 预算控制 → 响应层 → 曝光 → 点击/转化 → 消耗。
 
-### 核心架构分层
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           广告引擎核心架构                                    │
-├──────────┬──────────┬──────────┬──────────┬──────────┬──────────────────────┤
-│   召回层  │   过滤层  │  粗排层   │  精排层   │ 预算控制 │      响应层          │
-│  Recall  │  Filter  │ PreRank  │   Rank   │  Budget  │     Response         │
-├──────────┼──────────┼──────────┼──────────┼──────────┼──────────────────────┤
-│•ES检索   │•8大过滤  │•快速排序 │•CTR预估  │•Shard预算│•URL生成              │
-│•重定向   │•频控     │•TopN筛选 │•CVR预估  │•Hourly预算•归因链接              │
-│          │•低eCPM过滤│         │•Copc校准 │•Pacing   │•加密处理             │
-│          │•数量限制 │         │•RTA出价  │         │                      │
-└──────────┴──────────┴──────────┴──────────┴──────────┴──────────────────────┘
-```
-
-### 处理器链 (EngineV2)
-
-广告引擎使用责任链模式，通过Apollo配置动态编排处理器：
-
-| 阶段 | 处理器 | 功能说明 |
-|------|--------|---------|
-| **召回** | RecallProc | 从ES检索候选广告 |
-| | Retarget | 重定向召回 |
-| **过滤** | AdFilter | 8大过滤器链 |
-| | FreqControl | 用户频次控制 |
-| | LowEcpmFilter | 低eCPM过滤 |
-| | LimitProc | 召回数量限制 |
-| **排序** | CtrV5 | CTR预估模型 |
-| | CvrOffline | CVR离线预估 |
-| | CvrOnline | CVR在线预估 |
-| | CopcCvr | Copc校准处理 |
-| | ReRankProc | 重排序 |
-| **校准** | CpdCalibrate | CPD校准 |
-| | OcpdCalibrate | OCPD校准 |
-| | RoasLtv | LTV/ROAS校准 |
-| **响应** | RtaProc | RTA实时出价 |
-| | BidCoef | 出价系数调整 |
-
-## 漏斗阶段定义
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                              广告组投放完整漏斗                                               │
-├─────────┬─────────┬─────────┬─────────┬─────────┬─────────┬─────────────────┬───────────────┤
-│  召回    │  过滤   │  粗排   │  精排   │  响应   │  曝光   │  点击/转化       │     消耗      │
-│ Recall  │ Filter  │ PreRank │  Rank   │ Response│  Show   │ Click/Conv      │     Cost      │
-├─────────┼─────────┼─────────┼─────────┼─────────┼─────────┼─────────────────┼───────────────┤
-│ ES检索   │ 8大过滤 │ TopN    │ CTR/CVR │ 胜出    │ 用户可见│ 用户点击        │  竞价/扣费/   │
-│ 重定向   │ 频控    │ 筛选    │ 预估    │ 响应    │ 广告展示│ 下载/激活/注册  │  成本/收益    │
-└─────────┴─────────┴─────────┴─────────┴─────────┴─────────┴─────────────────┴───────────────┘
-```
+详细架构知识请参考知识库：`knowledge/glossary/ad_engine_architecture.yaml`
 
 ## 核心数据表
 
@@ -77,13 +25,13 @@ Eagllwin广告服务器(AdServer)是一个完整的程序化广告交易平台(S
 | `ads_strategy.dwd_ads_engine_compe_suc_req_hi` | 竞胜率底表 | rank_req_cnt(进精排), resp_req_cnt(响应) |
 | `ads_strategy.dwd_ads_competition_rank_hi` | 竞价排名底表 | rank_level(排名), bid_price(出价), win_price(成交价) |
 | `ads_strategy.dwd_ads_competition_rank_simple_hi` | 简化竞价表 | success_cnt(胜出), fail_cnt(失败) |
-| `ads_strategy.dwd_ew_request_sample_hi` | 请求采样表 | stage(阶段), request_id(请求ID) |
+| `ads_strategy.dwd_ew_request_sample_hi` | 请求采样表 | stage(阶段), request_id(请求ID) | **无访问权限，不建议使用** |
 
 ### 2. 漏斗下游（投放侧）- 曝光及之后数据
 
 | 表名 | 作用 | 核心字段 | 数据逻辑 |
 |------|------|----------|---------|
-| `mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi` | **曝光后漏斗分析主表** - 包含曝光、点击、下载、转化数据 | show_label, click_label, dld_label, conv_label_*, ctr, cvr, billing_actual_deduction_price | 曝光 left join 点击 left join 转化，保留request_id粒度。注意：**该表只包含曝光及之后的数据，不包含曝光前的召回/精排/响应数据** |
+| `mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi` | **曝光后漏斗分析主表** - 包含曝光、点击、下载、转化数据 | show_label, click_label, dld_label, conv_label_*, ctr, cvr, billing_actual_deduction_price (该表专用字段) | 曝光 left join 点击 left join 转化，保留request_id粒度。注意：**该表只包含曝光及之后的数据，不包含曝光前的召回/精排/响应数据** |
 | `com_cdm.dws_tracker_ad_cpc_cost_hi` | **业务数据汇总表** - 业务视角统计 | req_num, res_num, show_cnt, click_cnt, cost, cpm_cost, cpc_cost | 曝光 union 点击 union 转化后聚合统计，用于业务数据看数，**不适合模型偏差分析** |
 
 **重要说明**:
@@ -120,7 +68,7 @@ Eagllwin广告服务器(AdServer)是一个完整的程序化广告交易平台(S
 
 | 指标名称 | 计算公式 | 说明 |
 |---------|---------|------|
-| 实际扣费 | SUM(billing_actual_deduction_price) / 1e5 | 单位：美元 |
+| 实际扣费 | SUM(billing_actual_deduction_price) / 1e5 | 单位：美元（该表专用字段） |
 | 平均点击成本 | 总扣费 / 点击数 | CPC |
 | 平均千次曝光成本 | 总扣费 / 曝光数 * 1000 | CPM |
 | 平均转化成本 | 总扣费 / 转化数 | CPA |
@@ -222,51 +170,244 @@ CROSS JOIN engine_funnel e;
 
 ### Step 3: 召回率与响应率分析
 
+**注意**: `ads_strategy.dwd_ew_request_sample_hi` 表当前无访问权限，建议使用以下替代方案：
+
+#### 方案1：基于竞胜率表分析（推荐）
+
 ```sql
--- 召回率和召回响应率分析
-WITH request_stats AS (
+-- 使用竞胜率表分析召回响应链路
+WITH compete_stats AS (
     SELECT 
         SUBSTR(dh, 1, 8) as dt,
-        -- 召回数（所有请求）
-        COUNT(DISTINCT request_id) as recall_cnt,
         -- 进精排数
-        COUNT(DISTINCT CASE WHEN stage = 'RANK' THEN request_id END) as rank_cnt,
+        SUM(rank_req_cnt) as rank_cnt,
         -- 响应数
-        COUNT(DISTINCT CASE WHEN stage = 'RESP' THEN request_id END) as resp_cnt,
-        -- 截断数（召回但未响应）
-        COUNT(DISTINCT CASE WHEN stage IN ('cnt_limit', 'low_ecpm_filter', 'quality_filter') THEN request_id END) as cutoff_cnt
-    FROM ads_strategy.dwd_ew_request_sample_hi
+        SUM(resp_req_cnt) as resp_cnt,
+        -- 截断数
+        SUM(rank_req_cnt - resp_req_cnt) as cutoff_cnt
+    FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
     WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
-    AND ad_creative_id IN (
-        SELECT id FROM com_cdm.dim_creativity_dd 
-        WHERE dt = MAX_PT('com_cdm.dim_creativity_dd')
-        AND launch_group_id = '{{ad_group_id}}'
-    )
+    AND id_value = '{{ad_group_id}}'
+    AND id_type = 'ad_group_id'
+    GROUP BY SUBSTR(dh, 1, 8)
+)
+SELECT 
+    dt,
+    rank_cnt,
+    resp_cnt,
+    cutoff_cnt,
+    -- 过滤通过率 = 进精排数 / (进精排数 + 截断数) [假设召回≈进精排+截断]
+    ROUND(rank_cnt * 100.0 / NULLIF(rank_cnt + cutoff_cnt, 0), 2) as filter_pass_rate,
+    -- 竞胜率 = 响应数 / 进精排数
+    ROUND(resp_cnt * 100.0 / NULLIF(rank_cnt, 0), 2) as win_rate,
+    -- 整体召回响应率 = 响应数 / (进精排数 + 截断数)
+    ROUND(resp_cnt * 100.0 / NULLIF(rank_cnt + cutoff_cnt, 0), 2) as recall_to_resp_rate
+FROM compete_stats
+ORDER BY dt;
+```
+
+#### 方案2：基于创意维度流量漏斗表分析
+
+```sql
+-- 使用创意维度流量漏斗表分析
+WITH filter_stats AS (
+    SELECT 
+        SUBSTR(dh, 1, 8) as dt,
+        -- 召回数
+        SUM(recall) as recall_cnt,
+        -- SSP返回数
+        SUM(ssp_res_succ_cnt) as ssp_resp_cnt,
+        -- 各过滤项统计
+        SUM(mem_shield) as mem_shield_cnt,
+        SUM(ctr_filter) as ctr_filt_cnt,
+        SUM(cvr_filter) as cvr_filt_cnt,
+        SUM(budget_filter) as budget_filt_cnt,
+        SUM(cnt_limit) as cnt_limit_cnt,
+        SUM(frequency_control) as freq_filt_cnt,
+        SUM(floor_price_filter) as floor_filt_cnt
+    FROM com_ads.ads_creativity_filter_hi
+    WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
+    AND ad_group_id = '{{ad_group_id}}'
+    AND is_offline_ad = 0
     GROUP BY SUBSTR(dh, 1, 8)
 )
 SELECT 
     dt,
     recall_cnt,
-    rank_cnt,
-    resp_cnt,
-    cutoff_cnt,
-    -- 召回率（假设总请求数为recall_cnt）
-    100.0 as recall_rate,
-    -- 过滤通过率
-    ROUND(rank_cnt * 100.0 / recall_cnt, 2) as filter_pass_rate,
-    -- 竞胜率 = 响应数 / (响应数 + 截断数)
-    ROUND(resp_cnt * 100.0 / (resp_cnt + cutoff_cnt), 2) as win_rate,
-    -- 召回响应率
-    ROUND(resp_cnt * 100.0 / recall_cnt, 2) as recall_to_resp_rate
-FROM request_stats
+    ssp_resp_cnt,
+    -- SSP响应率
+    ROUND(ssp_resp_cnt * 100.0 / NULLIF(recall_cnt, 0), 2) as ssp_resp_rate,
+    -- 主要过滤项占比
+    ROUND(cnt_limit_cnt * 100.0 / NULLIF(recall_cnt, 0), 2) as cnt_limit_pct,
+    ROUND(floor_filt_cnt * 100.0 / NULLIF(recall_cnt, 0), 2) as floor_filt_pct
+FROM filter_stats
 ORDER BY dt;
 ```
+
+### Step 3.5: 全链路漏斗分析（三表关联）
+
+**完整示例**：使用 FULL OUTER JOIN 关联三张核心表，构建从召回到转化的完整漏斗
+
+```sql
+-- 全链路漏斗分析：召回表 + 竞胜率表 + 曝光转化表
+SELECT 
+   COALESCE(r.dt, e.dt, p.dt) AS dt, 
+   COALESCE(r.ad_group_id, e.ad_group_id, p.ad_group_id) AS ad_group_id, 
+ 
+   -- 召回层指标
+   r.recall_cnt, 
+   r.recall_resp_cnt, 
+   
+   -- 引擎层指标
+   e.engine_rank_req_cnt, 
+   e.engine_resp_req_cnt, 
+ 
+   -- 曝光转化层指标
+   p.post_show_cnt, 
+   p.post_click_cnt, 
+   p.post_dld_cnt, 
+   p.post_conv_active_cnt, 
+   p.post_conv_register_cnt, 
+   p.post_conv_pay_cnt, 
+   p.post_cost_usd, 
+ 
+   -- 漏斗转化率
+   ROUND(r.recall_resp_cnt * 1.0 / NULLIF(r.recall_cnt, 0), 6) AS recall_to_resp_rate, 
+   ROUND(e.engine_resp_req_cnt * 1.0 / NULLIF(e.engine_rank_req_cnt, 0), 6) AS rank_to_resp_win_rate, 
+   ROUND(p.post_show_cnt * 1.0 / NULLIF(e.engine_resp_req_cnt, 0), 6) AS resp_to_show_rate, 
+ 
+   -- 效果指标
+   ROUND(p.post_click_cnt * 1.0 / NULLIF(p.post_show_cnt, 0), 6) AS ctr, 
+   ROUND(p.post_dld_cnt * 1.0 / NULLIF(p.post_click_cnt, 0), 6) AS click_to_dld_rate, 
+   ROUND(p.post_conv_active_cnt * 1.0 / NULLIF(p.post_click_cnt, 0), 6) AS click_to_active_cvr, 
+ 
+   -- 成本指标
+   ROUND(p.post_cost_usd * 1.0 / NULLIF(p.post_click_cnt, 0), 6) AS cpc_usd, 
+   ROUND(p.post_cost_usd * 1000.0 / NULLIF(p.post_show_cnt, 0), 6) AS cpm_usd, 
+   ROUND(p.post_cost_usd * 1.0 / NULLIF(p.post_conv_active_cnt, 0), 6) AS cpa_active_usd 
+ FROM 
+ (
+   -- 召回层数据（ads_creativity_filter_hi）
+   SELECT 
+     SUBSTR(dh,1,8) AS dt, 
+     CAST(ad_group_id AS BIGINT) AS ad_group_id, 
+     SUM(recall) AS recall_cnt, 
+     SUM(resp) AS recall_resp_cnt 
+   FROM com_ads.ads_creativity_filter_hi 
+   WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}' 
+     AND CAST(ad_group_id AS STRING) = '{{ad_group_id}}' 
+     AND is_offline_ad = 0 
+   GROUP BY SUBSTR(dh,1,8), CAST(ad_group_id AS BIGINT) 
+ ) r 
+ FULL OUTER JOIN 
+ (
+   -- 引擎层数据（dwd_ads_engine_compe_suc_req_hi）
+   SELECT 
+     SUBSTR(dh,1,8) AS dt, 
+     CAST(id_value AS BIGINT) AS ad_group_id, 
+     SUM(rank_req_cnt) AS engine_rank_req_cnt, 
+     SUM(resp_req_cnt) AS engine_resp_req_cnt 
+   FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi 
+   WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}' 
+     AND id_type = 'ad_group_id' 
+     AND id_value = '{{ad_group_id}}' 
+   GROUP BY SUBSTR(dh,1,8), CAST(id_value AS BIGINT) 
+ ) e 
+ ON r.dt = e.dt AND r.ad_group_id = e.ad_group_id 
+ FULL OUTER JOIN 
+ (
+   -- 曝光转化层数据（dwd_ew_ads_show_res_clk_dld_conv_hi）
+   SELECT 
+     SUBSTR(dh,1,8) AS dt, 
+     CAST(ad_group_id AS BIGINT) AS ad_group_id, 
+     SUM(show_label) AS post_show_cnt, 
+     SUM(click_label) AS post_click_cnt, 
+     SUM(dld_label) AS post_dld_cnt, 
+     SUM(conv_label_active) AS post_conv_active_cnt, 
+     SUM(conv_label_register) AS post_conv_register_cnt, 
+     SUM(conv_label_pay) AS post_conv_pay_cnt, 
+     SUM(billing_actual_deduction_price) / 1e5 AS post_cost_usd 
+   FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi 
+   WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}' 
+     AND CAST(ad_group_id AS STRING) = '{{ad_group_id}}' 
+   GROUP BY SUBSTR(dh,1,8), CAST(ad_group_id AS BIGINT) 
+ ) p 
+ ON COALESCE(r.dt, e.dt) = p.dt 
+ AND COALESCE(r.ad_group_id, e.ad_group_id) = p.ad_group_id
+ ORDER BY dt
+ LIMIT 100;
+```
+
+**三表关联说明**：
+
+| 子查询 | 表名 | 数据层 | 核心指标 |
+|--------|------|--------|----------|
+| r | ads_creativity_filter_hi | 召回层 | recall_cnt, recall_resp_cnt |
+| e | dwd_ads_engine_compe_suc_req_hi | 引擎层 | engine_rank_req_cnt, engine_resp_req_cnt |
+| p | dwd_ew_ads_show_res_clk_dld_conv_hi | 曝光转化层 | post_show_cnt, post_click_cnt, post_conv_*, post_cost_usd |
+
+**关联技巧**：
+- 使用 `FULL OUTER JOIN` 确保各层数据都能被保留（即使某层缺失数据）
+- 使用 `COALESCE(r.dt, e.dt, p.dt)` 处理可能的 NULL 值
+- 注意 `ad_group_id` 类型转换：`CAST(ad_group_id AS STRING)` 用于 WHERE 条件，`CAST(ad_group_id AS BIGINT)` 用于 GROUP BY
 
 ### Step 4: 过滤项分布分析
 
 **注意**: 过滤项分布分析需要访问引擎侧的过滤日志表。目前主要通过以下方式分析过滤情况：
 
-#### 4.1 基于竞胜率表的过滤分析（推荐）
+#### 4.1 基于创意维度流量漏斗表的召回过滤分析（推荐）
+
+```sql
+-- 召回数据查询（ads_creativity_filter_hi 创意维度流量漏斗统计小时表）
+SELECT  advertiser_id
+       ,account_name
+       ,brief_name
+       ,ad_group_id
+       ,null as ad_group_title
+       ,app_id
+       ,app_name
+       ,code_seat_id
+       ,SUM(recall) AS recall -- 召回数
+       ,SUM(ssp_res_succ_cnt) AS ssp_res_succ_cnt -- ssp返回广告数
+       ,SUBSTR(dh,1,8) AS dt
+FROM    com_ads.ads_creativity_filter_hi
+WHERE   dh >= '${startdt}00'
+AND     dh <= '${enddt}23'
+AND     is_offline_ad = 0
+GROUP BY advertiser_id
+         ,account_name
+         ,brief_name
+         ,ad_group_id
+         ,app_id
+         ,app_name
+         ,code_seat_id
+         ,SUBSTR(dh,1,8);
+
+-- 过滤器过滤数据查询（ads_dsp_req_filter_hi DSP请求过滤小时表）
+SELECT  ad_group_id
+       ,app_id
+       ,code_seat_id
+       ,filter_type -- 过滤器类型
+       ,SUM(cnt) AS filt_cnt -- 过滤数
+       ,SUBSTR(dh,1,8) AS dt
+FROM    com_ads.ads_dsp_req_filter_hi
+WHERE   dh >= '${startdt}00'
+AND     dh <= '${enddt}23'
+AND     filter_type != 'RESP' -- 排除响应类型
+GROUP BY ad_group_id
+         ,app_id
+         ,code_seat_id
+         ,filter_type
+         ,SUBSTR(dh,1,8);
+```
+
+**关键字段说明**:
+- `recall`: 召回数，广告被召回的请求数
+- `ssp_res_succ_cnt`: SSP返回广告数
+- `filter_type`: 过滤器类型（如 AbnormalAdsFilter, BrandAdsFilter, AdBlockFilter 等）
+- `filt_cnt`: 被过滤的请求数
+
+#### 4.2 基于竞胜率表的过滤分析
 
 ```sql
 -- 通过竞胜率表分析过滤情况
@@ -306,7 +447,7 @@ FROM filter_analysis
 ORDER BY dh DESC, cutoff_cnt DESC;
 ```
 
-#### 4.2 基于竞价排名表的过滤分析
+#### 4.3 基于竞价排名表的过滤分析
 
 ```sql
 -- 通过竞价排名表分析各阶段转化
@@ -344,7 +485,7 @@ FROM rank_analysis
 ORDER BY dt;
 ```
 
-#### 4.3 过滤原因诊断清单
+#### 4.4 过滤原因诊断清单
 
 | 过滤表现 | 可能原因 | 检查指标 | 优化建议 |
 |---------|---------|---------|---------|
@@ -726,78 +867,6 @@ ORDER BY dt;
 | 消耗骤降 | 预算限制/投放暂停 | 检查日预算和状态 |
 | 无消耗 | 未产生点击/扣费异常 | 检查billing_actual_deduction_price |
 
-## 输出模板
-
-### 漏斗概览报告
-
-```markdown
-# 广告组 {{ad_group_id}} 投放漏斗分析报告
-
-## 基本信息
-- 广告组名称: {{ad_group_title}}
-- 分析时间: {{start_dh}} ~ {{end_dh}}
-- 转化目标: {{transform_target_cn}}
-
-## 漏斗总览
-
-| 阶段 | 数量 | 转化率 | 环比变化 | 状态 |
-|------|------|--------|----------|------|
-| 召回 | {{recall_cnt}} | - | {{recall_change}}% | {{status}} |
-| 过滤→精排 | {{rank_cnt}} | {{recall_to_rank_rate}}% | {{rank_change}}% | {{status}} |
-| 精排→响应 | {{resp_cnt}} | {{rank_to_resp_rate}}% | {{resp_change}}% | {{status}} |
-| 响应→曝光 | {{show_cnt}} | {{resp_to_show_rate}}% | {{show_change}}% | {{status}} |
-| 曝光→点击 | {{click_cnt}} | {{show_to_click_rate}}% | {{click_change}}% | {{status}} |
-| 点击→下载 | {{dld_cnt}} | {{click_to_dld_rate}}% | {{dld_change}}% | {{status}} |
-| 下载→转化 | {{conv_cnt}} | {{dld_to_conv_rate}}% | {{conv_change}}% | {{status}} |
-
-## 消耗分析
-
-| 指标 | 数值 | 环比变化 |
-|------|------|----------|
-| 总消耗(USD) | {{total_cost_usd}} | {{cost_change_pct}}% |
-| CPC(USD) | {{cpc_usd}} | {{cpc_change_pct}}% |
-| CPM(USD) | {{cpm_usd}} | {{cpm_change_pct}}% |
-| CPA(USD) | {{cpa_usd}} | {{cpa_change_pct}}% |
-
-## 模型预估偏差分析
-
-### CTR PCOC
-- 原始PCOC: {{pcoc_raw}}
-- 校准后PCOC: {{pcoc}}
-- 偏差方向: {{ctr_bias_direction}}
-- 评估: {{ctr_bias_evaluation}}
-
-### CVR PCOC
-- 原始PCOC: {{pcoc_raw}}
-- 校准后PCOC: {{pcoc}}
-- 偏差方向: {{cvr_bias_direction}}
-- 评估: {{cvr_bias_evaluation}}
-
-## 过滤项分布
-
-| 过滤类型 | 数量 | 占比 | 说明 |
-|---------|------|------|------|
-| {{filter_type}} | {{filter_cnt}} | {{filter_pct}}% | {{filter_reason}} |
-
-## 竞胜率分析
-- 竞胜率: {{win_rate}}%
-- 评估: {{win_rate_evaluation}}
-- 建议: {{win_rate_suggestion}}
-
-## 关键发现
-1. {{finding_1}}
-2. {{finding_2}}
-3. {{finding_3}}
-
-## 优化建议
-1. {{suggestion_1}}
-2. {{suggestion_2}}
-3. {{suggestion_3}}
-
-## 详细数据
-{{detailed_data}}
-```
-
 ## 使用示例
 
 ### 示例1: 基础漏斗分析
@@ -863,7 +932,7 @@ Agent:
 3. **归因窗口**: 转化数据可能有归因延迟，短期数据可能不完整
 4. **作弊过滤**: 分析时应考虑is_cheating标识，区分正常和作弊流量
 5. **离线广告**: is_offline_ad=1为离线广告，与在线广告分开分析
-6. **单位转换**: billing_actual_deduction_price和ecpm单位是微美元，需除以1e5转换为美元
+6. **单位转换**: 消耗字段（如billing_actual_deduction_price）和ecpm单位是微美元，需除以1e5转换为美元
 7. **PCOC解读**: PCOC=1表示准确，>1表示高估，<1表示低估，偏差在±5%内可接受
 8. **竞胜率计算**: 竞胜率 = 响应数 / (响应数 + 截断数)，不是简单的响应数/进精排数
 9. **过滤器影响**: 8大过滤器会影响广告进入精排的比例，分析过滤率时需考虑各过滤器配置
@@ -922,7 +991,7 @@ dwd_ew_ads_show_res_clk_dld_conv_hi (曝光点击转化明细)
     - conv_label_*: 各类转化标签
     - ctr/ctr_raw: 预估CTR
     - cvr/cvr_raw: 预估CVR
-    - billing_actual_deduction_price: 实际扣费(微美元)
+    - billing_actual_deduction_price: 实际扣费(微美元，该表专用字段)
     - ecpm/ecpm_raw: eCPM(微美元)
     
 dws_tracker_ad_cpc_cost_hi (小时汇总表)
@@ -936,23 +1005,6 @@ dws_tracker_ad_cpc_cost_hi (小时汇总表)
 
 ## 过滤器执行流程
 
-```
-候选广告列表（召回层输出）
-    ↓
-┌─────────────────────────────────────────────────────────────┐
-│                     过滤器链（按顺序执行）                      │
-├─────────────────────────────────────────────────────────────┤
-│ 1. AbnormalAdsFilter    - 异常广告概率过滤                    │
-│ 2. BrandAdsFilter       - 品牌广告SDK兼容性过滤               │
-│ 3. AdBlockFilter        - 用户屏蔽历史过滤                    │
-│ 4. MaterialReverseExpFilter - 素材反向实验过滤                │
-│ 5. IconRmDupFilter      - Icon去重过滤（已注释）              │
-│ 6. PackExcludeFilter    - 包排除过滤                          │
-│ 7. ShieldRuleFilter     - 关键词屏蔽过滤                      │
-│ 8. ExcludeReactiveFilter - 排除再激活过滤                     │
-└─────────────────────────────────────────────────────────────┘
-    ↓
-通过的广告进入精排/Rank阶段
-    ↓
-竞价排序 → 排名选择 → 胜出响应 → 曝光展示
-```
+详细过滤器链说明请参考知识库：`knowledge/glossary/ad_engine_architecture.yaml`
+
+过滤器执行顺序：AbnormalAdsFilter → BrandAdsFilter → AdBlockFilter → MaterialReverseExpFilter → IconRmDupFilter → PackExcludeFilter → ShieldRuleFilter → ExcludeReactiveFilter

@@ -207,13 +207,19 @@ class BusinessKnowledgeManager:
                 if business_name and business_name.lower() in question_lower:
                     score += 80
                 
-                # 3. 检查表名中的关键词匹配
+                # 3. 检查别名是否出现在问题中
+                aliases = basic_info.get('别名', [])
+                for alias in aliases:
+                    if alias.lower() in question_lower:
+                        score += 90
+                
+                # 4. 检查表名中的关键词匹配
                 table_keywords = table_name.replace('.', '_').split('_')
                 for keyword in table_keywords:
                     if len(keyword) > 2 and keyword.lower() in question_lower:
                         score += 20
                 
-                # 4. 检查核心字段名是否出现在问题中
+                # 5. 检查核心字段名是否出现在问题中
                 if '核心字段详解' in data:
                     for field_name, field_data in data['核心字段详解'].items():
                         if field_name.lower() in question_lower:
@@ -495,11 +501,33 @@ class BusinessKnowledgeManager:
                 sections.append(f"### {table.table_name}")
                 sections.append(f"业务名称: {table.business_name}")
                 sections.append(f"数据粒度: {table.data_granularity}")
+                sections.append(f"更新频率: {table.update_frequency}")
                 
+                # 展示所有核心字段（带使用注意）
                 if table.core_fields:
-                    sections.append("核心字段:")
-                    for field_name, field in list(table.core_fields.items())[:10]:  # 最多显示10个
-                        sections.append(f"  - **{field.name}** ({field.data_type}): {field.business_meaning}")
+                    sections.append("核心字段详解:")
+                    for field_name, field in table.core_fields.items():
+                        field_desc = f"  - **{field.name}** ({field.data_type}): {field.business_meaning}"
+                        if field.notes:
+                            field_desc += f" [注意: {field.notes}]"
+                        sections.append(field_desc)
+                
+                # 展示常用查询场景
+                if table.common_scenarios:
+                    sections.append("常用查询场景:")
+                    for scenario in table.common_scenarios:
+                        sections.append(f"  - {scenario['name']}: {scenario['description']}")
+                        if scenario['sql_template']:
+                            sections.append(f"    SQL模板: {scenario['sql_template'][:200]}...")
+                
+                # 展示数据质量规则
+                if table.quality_rules:
+                    sections.append("数据质量规则:")
+                    for rule in table.quality_rules:
+                        sections.append(f"  - {rule['name']}: {rule['condition']}")
+                        if rule['suggestion']:
+                            sections.append(f"    建议: {rule['suggestion']}")
+                
                 sections.append("")
         
         # 3. 查询规则

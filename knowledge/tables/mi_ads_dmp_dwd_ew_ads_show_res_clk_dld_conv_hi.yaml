@@ -1,6 +1,10 @@
 基本信息:
   表名: mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
   业务名称: 广告曝光响应点击下载转化明细小时表
+  别名:
+    - 策略表
+    - 大一统样本表
+    - 算法口径表
   数据粒度: 曝光/点击/下载/转化事件明细
   更新频率: 小时
   保留周期: 90天
@@ -8,102 +12,12 @@
   列数: 115
   分区数: 1
 使用场景:
-  - 统计模型预估偏差（PCOC分析）
-  - 严格分析曝光→点击→下载→转化的漏斗转化率
+  - 漏斗转化分析：严格分析曝光→点击→下载→转化的漏斗转化率
+  - 模型预估偏差分析（PCOC分析）：统计CTR/CVR模型预估与实际值的偏差
   - CTR/CVR模型校准效果评估
   - 广告链路漏斗归因分析
   - 注意: 该表只包含曝光及之后的数据，不包含曝光前的召回/精排/响应数据
-建表语句: "CREATE TABLE IF NOT EXISTS dwd_ew_ads_show_res_clk_dld_conv_hi\n(\n    request_id\
-  \                      STRING COMMENT '广告请求ID'\n    ,trigger_id                \
-  \     STRING COMMENT '触发ID'\n    ,show_id                        STRING COMMENT\
-  \ '曝光ID'\n    ,is_inapp_ad                    STRING COMMENT '0/否 1/是'\n    ,gaid\
-  \                           STRING COMMENT '用户ID'\n    ,app_id                 \
-  \        STRING COMMENT '应用ID'\n    ,code_seat_id                   STRING COMMENT\
-  \ '媒体代码位id'\n    ,code_seat_type                 STRING COMMENT '代码位类型=code_type'\n\
-  \    ,type                           INT COMMENT '设备类型'\n    ,brand            \
-  \              STRING COMMENT '机型品牌'\n    ,model                          STRING\
-  \ COMMENT '客户端手机型号'\n    ,maker                          STRING COMMENT '设备制造商'\n\
-  \    ,os_type                        STRING COMMENT '操作系统'\n    ,os_version    \
-  \                 STRING COMMENT '操作系统版本号'\n    ,language                      \
-  \ STRING COMMENT '语言'\n    ,net_connect_type               STRING COMMENT '网络连接类型'\n\
-  \    ,is_default_ad                  BIGINT COMMENT '是否请求打底广告'\n    ,operator_type\
-  \                  INT COMMENT '运营商类型'\n    ,ip_address                     STRING\
-  \ COMMENT '客户端ip'\n    ,screen_width                   INT COMMENT '屏幕宽'\n    ,screen_height\
-  \                  INT COMMENT '屏幕长'\n    ,screen_density                 INT COMMENT\
-  \ '屏幕密度'\n    ,national_id                    STRING COMMENT '国家ID'\n    ,state_id\
-  \                       STRING COMMENT '州ID'\n    ,city_id                     \
-  \   STRING COMMENT '城市ID'\n    ,ad_creative_id                 STRING COMMENT '创意id'\n\
-  \    ,ad_group_id                    STRING COMMENT '广告组id'\n    ,ad_plan_id   \
-  \                  STRING COMMENT '计划id'\n    ,advertiser_id                  STRING\
-  \ COMMENT '广告主id'\n    ,package_name                   STRING COMMENT '应用包名'\n \
-  \   ,ad_type                        INT COMMENT '流量类型，0 未知流量 1 api流量（媒体）2 sdk流量'\n\
-  \    ,page_id                        STRING COMMENT '页面ID'\n    ,ssp_id        \
-  \                 STRING COMMENT ''\n    ,popularize_app_install_status  STRING\
-  \ COMMENT '-1:异常情况取不到是否安装 1.非下载类广告 2.已安装目标下载应用 3.未安装目标下载应用'\n    ,first_price  \
-  \                  DOUBLE COMMENT '竞价一价'\n    ,st_ecpm                        STRING\
-  \ COMMENT '策略助力，单位：美分'\n    ,op_ecpm                        STRING COMMENT '运营助力，单位：美分'\n\
-  \    ,ee_ecpm                        STRING COMMENT '流量探索，单位：美分'\n    ,cul_ecpm\
-  \                       STRING COMMENT '保育, 单位：美分'\n    ,billing_actual_deduction_price\
-  \ BIGINT COMMENT '计费的扣费'\n    ,abtest                         STRING COMMENT '实验信息'\n\
-  \    ,ctr_model_name                 STRING COMMENT '对应原来的modelname'\n    ,cvr_model_name\
-  \                 STRING COMMENT 'cvr/dcvr modelname'\n    ,ctr                \
-  \            STRING COMMENT '实验ctr'\n    ,cvr                            DOUBLE\
-  \ COMMENT '转化率打分'\n    ,ctr_raw                        DOUBLE COMMENT '校准之前的原始ctr值'\n\
-  \    ,cvr_raw                        DOUBLE COMMENT '校准之前的原始cvr值'\n    ,dbr_raw\
-  \                        DOUBLE COMMENT '校准前的预估下载率'\n    ,dbr                  \
-  \          DOUBLE COMMENT '预估下载率'\n    ,ecpm                           DOUBLE COMMENT\
-  \ 'ecpm'\n    ,ecpm_raw                       DOUBLE COMMENT '扶持前ecpm'\n    ,ltv_ori\
-  \                        DOUBLE COMMENT '原始模型预估ltv'\n    ,ltv                  \
-  \          DOUBLE COMMENT '校准后的ltv'\n    ,ltv_raw                        DOUBLE\
-  \ COMMENT '对数还原、修正模型打分后的Itv'\n    ,roas_ltv_model_name            STRING COMMENT\
-  \ '模型名'\n    ,cost                           INT COMMENT '定价'\n    ,promotion_type\
-  \                 STRING COMMENT '推广目的'\n    ,retarget_coef                  DOUBLE\
-  \ COMMENT 'retarget系数'\n    ,retention_score                STRING COMMENT '次留打分'\n\
-  \    ,retention_model_name           STRING COMMENT '次留模型'\n    ,ps_version    \
-  \                 STRING COMMENT 'ps版本号'\n    ,sdk_version                    STRING\
-  \ COMMENT 'SDK版本'\n    ,sdk_version_int                STRING COMMENT 'sdk版本号'\n\
-  \    ,cost_type                      STRING COMMENT '广告结算方式'\n    ,is_offline_ad\
-  \                  STRING COMMENT '0-在线、1-离线'\n    ,show_ts                    \
-  \    BIGINT COMMENT '广告曝光时时间戳'\n    ,resp_ts                        STRING COMMENT\
-  \ '广告响应时时间戳'\n    ,show_dh                        STRING COMMENT 'show_dh'\n   \
-  \ ,resp_dh                        STRING COMMENT 'resp_dh'\n    ,is_cheating   \
-  \                 STRING COMMENT '1-作弊、0-正常'\n    ,ad_package_name             \
-  \   STRING COMMENT '投放产品包名'\n    ,click_ts                       BIGINT COMMENT\
-  \ '点击时间'\n    ,click_id                       STRING COMMENT '点击id'\n    ,image_width\
-  \                    STRING COMMENT '点击时素材宽'\n    ,image_height                \
-  \   STRING COMMENT '点击时的素材高'\n    ,app_version                    STRING COMMENT\
-  \ 'app版本号'\n    ,second_price                   DOUBLE COMMENT '竞价二价'\n    ,ratio\
-  \                          DOUBLE COMMENT '分成比例'\n    ,price                   \
-  \       DOUBLE COMMENT 'CPC或CPM出价'\n    ,price_v2                       DOUBLE COMMENT\
-  \ '出价，不存在时置为0'\n    ,adv_seat_type                  STRING COMMENT '广告位类型'\n   \
-  \ ,data_src                       STRING COMMENT '用于区分数据来源 1-三方、2-联运、3-JS布码、4-ps归因、5-movicebox、6-工具2334广告主、7-中小客户广告主'\n\
-  \    ,exp_no                         STRING COMMENT '转化表的AB实验信息'\n    ,transform_target_cn\
-  \            STRING COMMENT '转化目标'\n    ,click_label                    BIGINT COMMENT\
-  \ '1-点击表，0-非点击表'\n    ,dld_label                      BIGINT COMMENT '1-下载表，0-非下载表'\n\
-  \    ,conv_label_active              BIGINT COMMENT '激活转化label'\n    ,conv_label_retain\
-  \              BIGINT COMMENT '次留转化label'\n    ,conv_label_register            BIGINT\
-  \ COMMENT '注册转化label'\n    ,conv_label_first_pay           BIGINT COMMENT '首次付费转化label'\n\
-  \    ,conv_label_pay                 BIGINT COMMENT '付费转化label'\n    ,conv_label_apply_loan\
-  \          BIGINT COMMENT '金融申贷转化label'\n    ,conv_label_issue_loan          BIGINT\
-  \ COMMENT '金融放款转化label'\n    ,dld_ts                         BIGINT COMMENT '加入下载事件时间戳'\n\
-  \    ,conv_ts_active                 BIGINT COMMENT '激活事件时间戳'\n    ,conv_ts_retain\
-  \                 BIGINT COMMENT '次留事件时间戳'\n    ,conv_ts_register              \
-  \ BIGINT COMMENT '注册事件时间戳'\n    ,conv_ts_first_pay              BIGINT COMMENT '首次付费事件时间戳'\n\
-  \    ,conv_ts_pay                    BIGINT COMMENT '付费事件时间戳'\n    ,conv_ts_apply_loan\
-  \             BIGINT COMMENT '金融申贷事件时间戳'\n    ,conv_ts_issue_loan             BIGINT\
-  \ COMMENT '金融放款事件时间戳'\n    ,tracking_log_platform          STRING COMMENT '0-eagllwin、1-adx'\n\
-  \    ,show_label                     BIGINT COMMENT '1-曝光，0-非曝光'\n    ,ps_package_name\
-  \                STRING COMMENT 'ps包名'\n    ,is_effective_show              BIGINT\
-  \ COMMENT '有效曝光'\n    ,product_id                     STRING COMMENT '商品id字段'\n\
-  \    ,show_log_dh                    STRING COMMENT '曝光落表时间'\n    ,click_log_dh\
-  \                   STRING COMMENT '点击落表的dh'\n    ,dld_log_dh                  \
-  \   STRING COMMENT '下载落表的dh'\n    ,conv_log_dh                    STRING COMMENT\
-  \ '转化表中落表dh'\n    ,ad_source                      STRING COMMENT '兜底广告标识0-实时，1-缓存，2-兜底'\n\
-  \    ,transform_target_bill_v2       DOUBLE COMMENT '转化目标出价'\n    ,cur_bill_coef\
-  \                  DOUBLE COMMENT '计费系数'\n    ,mcc                            STRING\
-  \ COMMENT '国家'\n    ,country_zh                     STRING COMMENT '国家'\n)\nPARTITIONED\
-  \ BY \n(\n    dh                              STRING COMMENT '日期/小时分区，格式yyyyMMddHH'\n\
-  )\nLIFECYCLE 90;\n"
+
 分区信息:
   分区字段: dh
   分区类型: STRING

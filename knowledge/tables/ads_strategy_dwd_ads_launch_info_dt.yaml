@@ -7,528 +7,369 @@
   项目: ads_strategy
   列数: 49
   分区数: 1
-建表语句: |
-  create table if not exists dwd_ads_launch_info_dt ( 
-        ad_group_id        String    Comment "广告组ID" 
-        ,pkg               String    COMMENT "包名" 
-        ,is_new            String    COMMENT "是否新广告" 
-        ,launch_cids       String    COMMENT "在投创意数" 
-        ,is_full_launch    String   COMMENT "所有广告是否24小时投放" 
-        ,launch_rate       DOUBLE    COMMENT "投放率" 
-        ,is_bill_change    INT    COMMENT "出价是否调整" 
-        ,new_bill          DOUBLE    COMMENT "最新出价" 
-        ,old_bill          Double    COMMENT "上一日出价" 
-        ,bill_diff         DOUBLE    COMMENT "出价变化幅度" 
-        ,not_launch_size   Array<String>    COMMENT "未投放的素材尺寸" 
-        ,is_media_change   INT    COMMENT "媒体是否变化" 
-        ,is_country_change   INT    COMMENT "国家是否变化" 
-        ,is_crowd_change   INT    COMMENT "人群包是否变化" 
-        ,is_ex_crowd_change   INT    COMMENT "排除人群包是否变化" 
-        ,is_install_change   INT    COMMENT "已安装人群包是否变化" 
-        ,is_ex_install_change   INT    COMMENT "排除已安装人群包是否变化" 
-        ,new_media_cat_ids   STRING    COMMENT "最新投放媒体" 
-        ,new_country_ids   STRING    COMMENT "最新投放国家" 
-        ,new_crowd_pack_ids   STRING    COMMENT "最新投放人群包" 
-        ,new_ex_crowd_pack_ids   STRING    COMMENT "最新已排除人群包" 
-        ,new_install_pkg_ids   STRING    COMMENT "最新已安装人群包" 
-        ,new_ex_install_pkg_ids   STRING    COMMENT "最新排出已安装人群包" 
-        ,old_media_cat_ids   STRING    COMMENT "上一日投放媒体" 
-        ,old_country_ids   STRING    COMMENT "上一日投放国家" 
-        ,old_crowd_pack_ids   STRING    COMMENT "上一日投放人群包" 
-        ,old_ex_crowd_pack_ids   STRING    COMMENT "上一日已排除人群包" 
-        ,old_install_pkg_ids   STRING    COMMENT "上一日已安装人群包" 
-        ,old_ex_install_pkg_ids   STRING    COMMENT "上一日排出已安装人群包" 
-        ,is_seat_types_change  INT  COMMENT "广告位是否改变" 
-        ,new_seat_type         Array<String>   COMMENT "最新广告位" 
-        ,old_seat_type         Array<STRING>   COMMENT "上一日广告位" 
-        ,is_budget_type_change  INT  COMMENT "预估类型是否改变" 
-        ,is_budget_change       DOUBLE   COMMENT "预算是否调整" 
-        ,old_budget_type       STRING  COMMENT "上一日预算类型" 
-        ,new_budget_type       STRING  COMMENT "最新预算类型" 
-        ,old_budget            STRING  COMMENT "上一日预算" 
-        ,new_budget            STRING  COMMENT "最新预算" 
-        ,budget_diff           String  COMMENT "预算变化幅度" 
-        ,new_crowd_pack_user_cnt bigint comment '新定向人群包用户量级' 
-        ,old_crowd_pack_user_cnt bigint comment '原定向人群包用户量级' 
-        ,new_ex_crowd_pack_user_cnt bigint comment '新排除人群包用户量级' 
-        ,old_ex_crowd_pack_user_cnt bigint comment '原排除人群包用户量级' 
-        ,is_crowd_pack_user_cnt_change int comment '定向人群包量级是否变更' 
-        ,is_ex_crowd_pack_user_cnt_change int comment '排除人群包量级是否变更' 
-        ,advertiser_id     int comment '广告主ID' 
-        ,available_amount     double comment '账户余额' 
-        ,ad_cost              double comment '账户消耗' 
-        ,ext_info             string comment '扩展字段 json map' 
-   ) COMMENT "在投广告信息变更表" 
-   PARTITIONED by ( 
-       dt STRING COMMENT "yyyymmdd" 
-   ) LIFECYCLE 100;
-分区信息:
-  分区字段: dt
-  分区类型: STRING
-  分区说明: 日期/小时分区
 核心字段详解:
   ad_group_id:
     字段名: ad_group_id
     数据类型: STRING
-    业务含义: 广告组ID
-    示例值:
-    - '69121'
-    使用注意: ''
+    业务含义: 广告组ID，标识广告投放的组
+    示例值: ['69099']
+    使用注意: 关联广告组维度表获取详细信息
   pkg:
     字段名: pkg
     数据类型: STRING
-    业务含义: 包名
-    示例值:
-    - com.zk.magicalpets.mi
-    使用注意: ''
+    业务含义: 应用包名，标识投放的应用
+    示例值: ['com.tyou.Sweet.mi']
+    使用注意: 用于筛选特定应用的投放数据
   is_new:
     字段名: is_new
     数据类型: STRING
-    业务含义: 是否新广告
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 是否新广告，标识该广告组是否为新创建
+    示例值: ['1']
+    使用注意: '1'表示新广告，'0'表示老广告
   launch_cids:
     字段名: launch_cids
     数据类型: STRING
-    业务含义: 在投创意数
-    示例值:
-    - '13'
-    使用注意: ''
+    业务含义: 在投创意数，当前正在投放的创意数量
+    示例值: ['17']
+    使用注意: 反映广告组的创意丰富度
   is_full_launch:
     字段名: is_full_launch
     数据类型: STRING
-    业务含义: 所有广告是否24小时投放
-    示例值:
-    - '0'
-    使用注意: ''
+    业务含义: 所有广告是否24小时投放，标识投放时间设置
+    示例值: ['0']
+    使用注意: '1'表示全天投放，'0'表示分时段投放
   launch_rate:
     字段名: launch_rate
     数据类型: DOUBLE
-    业务含义: 投放率
-    示例值:
-    - '29.17'
-    使用注意: ''
+    业务含义: 投放率，实际投放时长占24小时的百分比
+    示例值: ['29.17']
+    使用注意: 值越低说明投放时间越短
   is_bill_change:
     字段名: is_bill_change
     数据类型: INT
-    业务含义: 出价是否调整
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 出价是否调整，标识当日是否修改出价
+    示例值: ['1']
+    使用注意: 1表示有调整，0表示无调整
   new_bill:
     字段名: new_bill
     数据类型: DOUBLE
-    业务含义: 最新出价
-    示例值:
-    - '0.25'
-    使用注意: ''
+    业务含义: 最新出价，当前设置的出价金额
+    示例值: ['0.5']
+    使用注意: 单位：美元
   old_bill:
     字段名: old_bill
     数据类型: DOUBLE
-    业务含义: 上一日出价
-    示例值:
-    - '0.0'
-    使用注意: ''
+    业务含义: 上一日出价，前一天设置的出价金额
+    示例值: ['0.0']
+    使用注意: 用于计算出价变化
   bill_diff:
     字段名: bill_diff
     数据类型: DOUBLE
-    业务含义: 出价变化幅度
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 出价变化幅度，最新出价与上一日出价的差值
+    示例值: [null]
+    使用注意: 正值表示提价，负值表示降价
   not_launch_size:
     字段名: not_launch_size
     数据类型: ARRAY<STRING>
-    业务含义: 未投放的素材尺寸
-    示例值:
-    - '[''1080*468'', ''730*300'', ''780*470'', ''985*403'']'
-    使用注意: ''
+    业务含义: 未投放的素材尺寸，当前未在投放的素材规格列表
+    示例值: ["['1080*468', '730*300', '780*470', '985*403']"]
+    使用注意: 可用于分析素材覆盖度
   is_media_change:
     字段名: is_media_change
     数据类型: INT
-    业务含义: 媒体是否变化
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 媒体是否变化，标识投放媒体是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   is_country_change:
     字段名: is_country_change
     数据类型: INT
-    业务含义: 国家是否变化
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 国家是否变化，标识投放国家是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   is_crowd_change:
     字段名: is_crowd_change
     数据类型: INT
-    业务含义: 人群包是否变化
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 人群包是否变化，标识定向人群包是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   is_ex_crowd_change:
     字段名: is_ex_crowd_change
     数据类型: INT
-    业务含义: 排除人群包是否变化
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 排除人群包是否变化，标识排除人群包是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   is_install_change:
     字段名: is_install_change
     数据类型: INT
-    业务含义: 已安装人群包是否变化
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 已安装人群包是否变化，标识已安装人群包是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   is_ex_install_change:
     字段名: is_ex_install_change
     数据类型: INT
-    业务含义: 排除已安装人群包是否变化
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 排除已安装人群包是否变化，标识排除已安装人群包是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   new_media_cat_ids:
     字段名: new_media_cat_ids
     数据类型: STRING
-    业务含义: 最新投放媒体
-    示例值:
-    - '[118,119,120,122,124,126,127,129,140,148,149,150]'
-    使用注意: ''
+    业务含义: 最新投放媒体，当前设置的投放媒体ID列表
+    示例值: ['[118,119,120,122,124,126,127,129,140,148,149,150]']
+    使用注意: JSON数组格式，需解析后使用
   new_country_ids:
     字段名: new_country_ids
     数据类型: STRING
-    业务含义: 最新投放国家
-    示例值:
-    - '["30121"]'
-    使用注意: ''
+    业务含义: 最新投放国家，当前设置的投放国家ID列表
+    示例值: ['["30223"]']
+    使用注意: JSON数组格式，需解析后使用
   new_crowd_pack_ids:
     字段名: new_crowd_pack_ids
     数据类型: STRING
-    业务含义: 最新投放人群包
-    示例值:
-    - '["-1"]'
-    使用注意: ''
+    业务含义: 最新投放人群包，当前设置的定向人群包ID列表
+    示例值: ['["-1"]']
+    使用注意: '-1'表示不限，JSON数组格式
   new_ex_crowd_pack_ids:
     字段名: new_ex_crowd_pack_ids
     数据类型: STRING
-    业务含义: 最新已排除人群包
-    示例值:
-    - '["-1"]'
-    使用注意: ''
+    业务含义: 最新已排除人群包，当前设置的排除人群包ID列表
+    示例值: ['["-1"]']
+    使用注意: '-1'表示无排除，JSON数组格式
   new_install_pkg_ids:
     字段名: new_install_pkg_ids
     数据类型: STRING
-    业务含义: 最新已安装人群包
-    示例值:
-    - '["-1"]'
-    使用注意: ''
+    业务含义: 最新已安装人群包，当前设置的已安装人群包ID列表
+    示例值: ['["-1"]']
+    使用注意: '-1'表示不限，JSON数组格式
   new_ex_install_pkg_ids:
     字段名: new_ex_install_pkg_ids
     数据类型: STRING
-    业务含义: 最新排出已安装人群包
-    示例值:
-    - '["3786"]'
-    使用注意: ''
+    业务含义: 最新排除已安装人群包，当前设置的排除已安装人群包ID列表
+    示例值: ['["3785"]']
+    使用注意: JSON数组格式
   old_media_cat_ids:
     字段名: old_media_cat_ids
     数据类型: STRING
-    业务含义: 上一日投放媒体
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日投放媒体，前一天设置的投放媒体ID列表
+    示例值: [null]
+    使用注意: 用于对比媒体变更
   old_country_ids:
     字段名: old_country_ids
     数据类型: STRING
-    业务含义: 上一日投放国家
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日投放国家，前一天设置的投放国家ID列表
+    示例值: [null]
+    使用注意: 用于对比国家变更
   old_crowd_pack_ids:
     字段名: old_crowd_pack_ids
     数据类型: STRING
-    业务含义: 上一日投放人群包
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日投放人群包，前一天设置的定向人群包ID列表
+    示例值: [null]
+    使用注意: 用于对比人群包变更
   old_ex_crowd_pack_ids:
     字段名: old_ex_crowd_pack_ids
     数据类型: STRING
-    业务含义: 上一日已排除人群包
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日已排除人群包，前一天设置的排除人群包ID列表
+    示例值: [null]
+    使用注意: 用于对比排除人群包变更
   old_install_pkg_ids:
     字段名: old_install_pkg_ids
     数据类型: STRING
-    业务含义: 上一日已安装人群包
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日已安装人群包，前一天设置的已安装人群包ID列表
+    示例值: [null]
+    使用注意: 用于对比已安装人群包变更
   old_ex_install_pkg_ids:
     字段名: old_ex_install_pkg_ids
     数据类型: STRING
-    业务含义: 上一日排出已安装人群包
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日排除已安装人群包，前一天设置的排除已安装人群包ID列表
+    示例值: [null]
+    使用注意: 用于对比排除已安装人群包变更
   is_seat_types_change:
     字段名: is_seat_types_change
     数据类型: INT
-    业务含义: 广告位是否改变
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 广告位是否改变，标识投放广告位是否有变更
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   new_seat_type:
     字段名: new_seat_type
     数据类型: ARRAY<STRING>
-    业务含义: 最新广告位
-    示例值:
-    - '[''"feeds"'', ''"interstitial"'', ''"rewarded"'', ''"sear'
-    使用注意: ''
+    业务含义: 最新广告位，当前设置的投放广告位类型列表
+    示例值: ["['feeds', 'interstitial', 'rewarded', 'search']"]
+    使用注意: 包含feeds(信息流)、interstitial(插屏)、rewarded(激励视频)等
   old_seat_type:
     字段名: old_seat_type
     数据类型: ARRAY<STRING>
-    业务含义: 上一日广告位
-    示例值:
-    - '[]'
-    使用注意: ''
+    业务含义: 上一日广告位，前一天设置的投放广告位类型列表
+    示例值: ['[]']
+    使用注意: 用于对比广告位变更
   is_budget_type_change:
     字段名: is_budget_type_change
     数据类型: INT
-    业务含义: 预估类型是否改变
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 预算类型是否改变，标识预算类型是否有变更
+    示例值: [null]
+    使用注意: 1表示有变化，0表示无变化
   is_budget_change:
     字段名: is_budget_change
     数据类型: DOUBLE
-    业务含义: 预算是否调整
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 预算是否调整，标识预算是否有变更
+    示例值: [null]
+    使用注意: 非0表示有调整
   old_budget_type:
     字段名: old_budget_type
     数据类型: STRING
-    业务含义: 上一日预算类型
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日预算类型，前一天设置的预算类型
+    示例值: [null]
+    使用注意: 用于对比预算类型变更
   new_budget_type:
     字段名: new_budget_type
     数据类型: STRING
-    业务含义: 最新预算类型
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 最新预算类型，当前设置的预算类型
+    示例值: [null]
+    使用注意: 如日预算、总预算等
   old_budget:
     字段名: old_budget
     数据类型: STRING
-    业务含义: 上一日预算
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 上一日预算，前一天设置的预算金额
+    示例值: [null]
+    使用注意: 用于计算预算变化
   new_budget:
     字段名: new_budget
     数据类型: STRING
-    业务含义: 最新预算
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 最新预算，当前设置的预算金额
+    示例值: [null]
+    使用注意: 单位：美元
   budget_diff:
     字段名: budget_diff
     数据类型: STRING
-    业务含义: 预算变化幅度
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 预算变化幅度，最新预算与上一日预算的差值
+    示例值: [null]
+    使用注意: 正值表示增加预算，负值表示减少预算
   new_crowd_pack_user_cnt:
     字段名: new_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: 新定向人群包用户量级
-    示例值:
-    - '0'
-    使用注意: ''
+    业务含义: 新定向人群包用户量级，当前定向人群包覆盖的用户数
+    示例值: ['0']
+    使用注意: 0表示不限或计算中
   old_crowd_pack_user_cnt:
     字段名: old_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: 原定向人群包用户量级
-    示例值:
-    - '0'
-    使用注意: ''
+    业务含义: 原定向人群包用户量级，前一天定向人群包覆盖的用户数
+    示例值: ['0']
+    使用注意: 用于对比人群包规模变化
   new_ex_crowd_pack_user_cnt:
     字段名: new_ex_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: 新排除人群包用户量级
-    示例值:
-    - '0'
-    使用注意: ''
+    业务含义: 新排除人群包用户量级，当前排除人群包覆盖的用户数
+    示例值: ['0']
+    使用注意: 0表示无排除
   old_ex_crowd_pack_user_cnt:
     字段名: old_ex_crowd_pack_user_cnt
     数据类型: BIGINT
-    业务含义: 原排除人群包用户量级
-    示例值:
-    - '0'
-    使用注意: ''
+    业务含义: 原排除人群包用户量级，前一天排除人群包覆盖的用户数
+    示例值: ['0']
+    使用注意: 用于对比排除人群包规模变化
   is_crowd_pack_user_cnt_change:
     字段名: is_crowd_pack_user_cnt_change
     数据类型: INT
-    业务含义: 定向人群包量级是否变更
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 定向人群包量级是否变更，标识定向人群包规模是否有变化
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   is_ex_crowd_pack_user_cnt_change:
     字段名: is_ex_crowd_pack_user_cnt_change
     数据类型: INT
-    业务含义: 排除人群包量级是否变更
-    示例值:
-    - '1'
-    使用注意: ''
+    业务含义: 排除人群包量级是否变更，标识排除人群包规模是否有变化
+    示例值: ['1']
+    使用注意: 1表示有变化，0表示无变化
   advertiser_id:
     字段名: advertiser_id
     数据类型: INT
-    业务含义: 广告主ID
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 广告主ID，标识广告所属的账户
+    示例值: [null]
+    使用注意: 关联广告主维度表获取账户信息
   available_amount:
     字段名: available_amount
     数据类型: DOUBLE
-    业务含义: 账户余额
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 账户余额，广告主账户的可用金额
+    示例值: [null]
+    使用注意: 单位：美元，余额不足会影响投放
   ad_cost:
     字段名: ad_cost
     数据类型: DOUBLE
-    业务含义: 账户消耗
-    示例值:
-    - None
-    使用注意: ''
+    业务含义: 账户消耗，广告主账户的累计消耗金额
+    示例值: [null]
+    使用注意: 单位：美元
   ext_info:
     字段名: ext_info
     数据类型: STRING
-    业务含义: 扩展字段，json map
-    示例值:
-    - '{"cvr_on_click_dt":"0.0","support_coef":null,"star'
-    使用注意: ''
+    业务含义: 扩展字段，JSON格式的额外信息
+    示例值: ['{"cvr_on_click_dt":null,"support_coef":null}']
+    使用注意: 包含cvr_on_click_dt、available_amount、plan_id等扩展信息，需JSON解析
+使用场景:
+  - 追踪广告组投放设置的变更历史
+  - 分析出价调整对投放效果的影响
+  - 监控人群包、媒体、国家等定向设置的变更
+  - 分析预算变更与消耗的关系
+  - 评估投放时间设置（全天/分时段）对效果的影响
+  - 追踪广告素材尺寸的覆盖情况
+  - 监控账户余额和消耗情况
 常用查询场景:
-  示例查询:
-    场景名称: 示例查询
-    SQL模板: SELECT * FROM ads_strategy.dwd_ads_launch_info_dt WHERE dh = '{{dh}}' LIMIT
-      100
-    参数:
-      dh: 分区值
+  出价变更分析:
+    场景名称: 分析广告组出价调整记录
+    SQL模板: |
+      SELECT 
+        ad_group_id,
+        pkg,
+        old_bill,
+        new_bill,
+        bill_diff,
+        launch_rate,
+        dt
+      FROM ads_strategy.dwd_ads_launch_info_dt
+      WHERE dt BETWEEN '{start_dt}' AND '{end_dt}'
+        AND is_bill_change = 1
+        AND ad_group_id = '{ad_group_id}'
+      ORDER BY dt DESC
+      LIMIT 100
+    关键字段:
+      - ad_group_id: 广告组ID
+      - old_bill: 原出价
+      - new_bill: 新出价
+      - bill_diff: 出价变化幅度
+      - launch_rate: 投放率
+    注意事项:
+      - 需关注出价调整与投放率的关系
+      - 大幅提价可能影响竞胜率
+  定向设置变更追踪:
+    场景名称: 追踪人群包和媒体变更记录
+    SQL模板: |
+      SELECT 
+        ad_group_id,
+        pkg,
+        is_media_change,
+        is_country_change,
+        is_crowd_change,
+        new_crowd_pack_user_cnt,
+        old_crowd_pack_user_cnt,
+        dt
+      FROM ads_strategy.dwd_ads_launch_info_dt
+      WHERE dt >= '{start_dt}'
+        AND (is_media_change = 1 
+             OR is_country_change = 1 
+             OR is_crowd_change = 1)
+      ORDER BY dt DESC
+      LIMIT 100
+    关键字段:
+      - is_media_change: 媒体变更标识
+      - is_country_change: 国家变更标识
+      - is_crowd_change: 人群包变更标识
+      - new_crowd_pack_user_cnt: 新人群包量级
+    注意事项:
+      - 定向设置变更会显著影响流量规模
+      - 人群包量级变化需关注覆盖度
 数据质量规则:
-  异常值识别: {}
-
-数据生产逻辑:
-  概述: |
-    本表通过对比昨日和前天的广告索引数据，检测广告组的各项变更情况，
-    包括出价、预算、定向、素材、投放状态等维度的变化。
-    数据粒度为广告组+包名+日，用于广告诊断和投放分析。
-  
-  输入数据源:
-    - ads_strategy.dwd_eagllwin_strategy_index_part_hf: 广告索引信息主表
-    - com_ods.crowd_pack_advertiser: 人群包信息表
-    - ads_strategy.dwd_ads_budget_info_hf: 预算信息小时表
-    - ads_strategy.ads_group_budget_cost_hi: 广告组预算消耗表
-    - com_ods.ods_eagllwin_fundpool_fund_pool_di: 资金池余额表
-    - com_cdm.dwd_log_dsp_adserver_request_hi: DSP请求日志
-    - com_ads.ads_tracker_ad_cpc_cost_hi: 点击激活统计表
-    - com_ods.ods_launch_bidding_support_strategy_dd: 扶持策略表
-    - ads_strategy.ads_pre_recall_abnormal_filter: 前置打压过滤表
-    - ads_strategy.dwd_eagllwin_strategy_index_dup_label_hf: 重复广告标记表
-    - eagllwin_full_retrieve.ods_eagllwin_index_hf: 索引原始数据表
-    - com_ads.ads_codeseatid_filter_hi: 代码位过滤统计表
-    - tmc_dmp.ads_labe_merger_base_hi: DMP标签基础表
-    - com_cdm.dim_creative_dd: 创意维度表
-    - com_cdm.dim_advertiser_account_dd: 广告主账户维度表
-  
-  核心处理流程:
-    阶段1_数据准备:
-      - tmp_launch: 从索引表获取昨日和前天的广告基础数据
-      - before_yes_last_dh_sum_crowd_pack: 前天定向人群包用户量汇总
-      - before_yes_last_dh_sum_excrowd_pack: 前天排除人群包用户量汇总
-      - before_yes_last_dh_union: 合并前天的人群包数据
-      - yes_info_sum_crowd: 昨日定向人群包用户量汇总
-      - yes_info_sum_excrowd: 昨日排除人群包用户量汇总
-      - yes_info_union: 合并昨日的人群包数据
-    
-    阶段2_变更检测:
-      - bill_info: 出价变更检测（对比昨日和前天出价）
-      - missing_material: 素材缺失检测（检查创意尺寸是否存在）
-      - missing_material_by_media_cate_seat_type: 按媒体类型细分的素材缺失
-      - other_info: 定向变更检测（媒体、国家、人群包、已安装等）
-      - seat_type: 代码位类型变更检测
-    
-    阶段3_投放状态分析:
-      - yes_launch_info_launch_hour: 投放小时统计（计算实际投放时长）
-      - yes_launch_info_cids_hour: 投放创意数统计
-      - yes_launch_info_quality_score: 创意质量分统计
-      - yes_launch_info_restrict_recall: 前置打压标记
-      - yes_launch_info_dup_creative: 重复广告标记
-      - yes_launch_info_ps_search_rec: PS搜索推荐状态
-      - yes_launch_info_is_new: 是否新广告组判断
-      - yes_launch_info: 汇总投放状态信息（是否全天投放、投放率等）
-    
-    阶段4_预算和余额分析:
-      - budget_tb: 预算信息表（转换时区并打序号）
-      - yes_budget: 昨日预算数据（17:00-次日16:00）
-      - before_yes_budget: 前天预算数据（16:00）
-      - budget_info: 预算变更分析（类型变更、金额变更、变化幅度）
-      - fundpool_tb: 余额相关信息（广告主消耗、账户余额、前日余额、二级行业）
-    
-    阶段5_召回和诊断数据:
-      - tmp_recall_tbl: 离线和在线广告召回统计
-      - tmp_recall_uv_tbl: 召回UV统计
-      - tmp_install_pkg_tbl: 已安装数据量统计
-      - tmp_traffic_restrict_nation_ids: 桌面限流国家识别
-      - tmp_traffic_ssp_req_cnt: 流量波动统计
-    
-    阶段6_扩展信息汇总:
-      - ext_info_tbl: 整合所有诊断信息到MAP（CVR、扶持系数、召回数据、预算、人群包等）
-  
-  输出字段生成逻辑:
-    - is_new: 通过LEFT JOIN判断前天是否存在该广告组
-    - is_full_launch: 根据投放小时计算（should_launch_hour > total_launch_hour）
-    - launch_rate: total_launch_hour / should_launch_hour * 100
-    - is_bill_change: 对比昨日和前天出价是否有变化
-    - bill_diff: 最新出价 - 平均历史出价
-    - is_media_change/is_country_change/is_crowd_change等: 对比定向条件是否变化
-    - is_budget_type_change/is_budget_change: 对比预算类型和金额是否变化
-    - budget_diff: 最新预算 - 平均历史预算
-    - ext_info: MAP结构包含CVR、扶持系数、召回统计、余额、人群包等扩展信息
-  
-  时间参数说明:
-    - ${pre_1_dt}: 昨日日期（数据日期）
-    - ${pre_2_dt}: 前天日期（对比基准）
-    - ${pre_3_dt}: 大前天（用于CVR计算）
-    - ${pre_5_dt}: 5天前（用于预算历史数据）
-    - ${cur_dt}: 当前日期
-
-ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/ads_strategy_dwd_ads_launch_info_dt.sql
-
-业务备注:
-  ID字段:
-    - ad_group_id
-    - advertiser_id
-  标签字段:
-    - is_new
-    - is_full_launch
-    - is_bill_change
-    - is_media_change
-    - is_country_change
-    - is_crowd_change
-    - is_ex_crowd_change
-    - is_install_change
-    - is_ex_install_change
-    - is_seat_types_change
-    - is_budget_type_change
-    - is_crowd_pack_user_cnt_change
-    - is_ex_crowd_pack_user_cnt_change
-  计费字段:
-    - ad_cost
-    - available_amount
-  时间字段:
-    - dt
-生成时间: '2026-03-18 16:27:11'
-更新时间: '2026-03-18 20:09:34'
+  异常值识别:
+    出价异常:
+      说明: 出价应在合理范围内(0.01-100)
+      检查: new_bill > 0 AND new_bill < 100
+    投放率异常:
+      说明: 投放率应在0-100之间
+      检查: launch_rate >= 0 AND launch_rate <= 100
+更新时间: '2026-03-25 17:50:30'

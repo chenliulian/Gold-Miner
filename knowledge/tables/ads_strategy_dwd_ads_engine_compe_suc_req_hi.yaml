@@ -7,24 +7,6 @@
   项目: ads_strategy
   列数: 8
   分区数: 1
-建表语句: |
-  create table if not exists dwd_ads_engine_compe_suc_req_hi 
-  ( 
-      id_type           STRING COMMENT "广告组ID、广告主ID(ad_group_id、advertiser_id)" 
-      ,country_name     STRING COMMENT '国家名' 
-      ,busniess_line    STRING COMMENT "业务线" 
-      ,code_seat_type   STRING COMMENT '代码位类型' 
-      ,is_offline_ad    STRING COMMENT '是否离线广告 1 离线 0 在线' 
-      ,id_value         STRING COMMENT '广告组ID 或者 广告主ID 具体取值' 
-      ,rank_req_cnt     BIGINT COMMENT '进精排请求数' 
-      ,resp_req_cnt     BIGINT COMMENT '响应请求数' 
-  ) 
-  COMMENT "请求维度竞胜率底表" 
-  PARTITIONED by 
-  ( 
-      dh    STRING COMMENT "yyymmddhh, 小时分区" 
-  ) 
-  LIFECYCLE 60;
 分区信息:
   分区字段: dh
   分区类型: STRING
@@ -87,182 +69,16 @@
       dh: 分区值
 数据质量规则:
   异常值识别: {}
-ETL代码: |
-  WITH creative_info AS ( 
-      SELECT  DISTINCT creativity_id id 
-          ,launch_group_id ad_group_id 
-          ,advertiser_id 
-          ,if(ps_package_name is null or length(ps_package_name) = 0, 
-            package_name, ps_package_name) ps_package_name 
-      FROM    com_ods.ods_creativity_adaptation_creativity_index 
-      WHERE   dt = MAX_PT("com_ods.ods_creativity_adaptation_creativity_index") --获取创意的广告组id 
-  ) 
-
-  , tmp_code_bus_line_tbl as ( 
-      select code_seat_id, code_seat_type, business_line_nm, sapp_id 
-      from ( 
-          select sid code_seat_id, app_id, app_sid, type_cn code_seat_type 
-          from com_cdm.dim_code_seat_dd 
-          where dt = MAX_PT('com_cdm.dim_code_seat_dd') 
-      ) b 
-      join ( 
-          select id as app_id, sid as sapp_id, business_line_nm 
-          from com_cdm.dim_media_app_dd 
-          where dt = MAX_PT('com_cdm.dim_media_app_dd') 
-      ) c 
-      on b.app_sid = c.sapp_id 
-  ) 
-
-  ,req_tb as ( 
-      SELECT 
-          t1.request_id 
-          ,t1.stage          
-          ,t1.national_id 
-          ,t1.code_seat_id 
-          ,t2.ad_group_id 
-          ,t2.advertiser_id 
-          ,t1.is_offline_ad 
-      from 
-          (select 
-              request_id 
-              ,req_ts  
-              ,ad_creative_id 
-              ,stage          
-              ,national_id 
-              ,code_seat_id 
-              ,is_offline_ad 
-          from ads_strategy.dwd_ew_request_sample_hi where dh = '${dh}' 
-              and stage in ("cnt_limit", "RESP") 
-      ) t1 
-      JOIN creative_info t2 
-      on t1.ad_creative_id = t2.id 
-  ) 
-
-  ,req_group_info as ( 
-      select 
-          national_id 
-          ,code_seat_id 
-          ,ad_group_id 
-          ,is_offline_ad 
-          ,request_id 
-          ,stage 
-      from  req_tb 
-      group by 
-          national_id 
-          ,code_seat_id 
-          ,ad_group_id 
-          ,is_offline_ad 
-          ,request_id 
-          ,stage 
-  ) 
-
-  ,req_adv_info as ( 
-      select 
-          national_id 
-          ,request_id 
-          ,code_seat_id 
-          ,advertiser_id 
-          ,is_offline_ad 
-          ,stage 
-      from  req_tb 
-      group by 
-          national_id 
-          ,request_id 
-          ,code_seat_id 
-          ,advertiser_id 
-          ,is_offline_ad 
-          ,stage 
-  ) 
-
-  , tmp_map_dd as ( 
-      select country_code national_id, country_name_zh item_name 
-      from com_cdm.dim_country_info 
-  ) 
-
-  , tmp_result_tbl as ( 
-      select 'ad_group_id' as id_type 
-          , c.item_name as country_name 
-          , a.code_seat_id 
-          , a.national_id 
-          , b.business_line_nm busniess_line 
-          , b.code_seat_type 
-          , is_offline_ad 
-          , ad_group_id as id_value 
-          , count(distinct request_id) as rank_req_cnt 
-          , count(distinct case when stage = 'RESP' then request_id end) resp_req_cnt 
-      from req_group_info a 
-      join ( 
-          select code_seat_id, code_seat_type, business_line_nm 
-          from tmp_code_bus_line_tbl 
-      ) b 
-      on a.code_seat_id = b.code_seat_id 
-      join ( 
-          select national_id, item_name 
-          from tmp_map_dd 
-      ) c  
-      on a.national_id = c.national_id 
-      GROUP BY c.item_name 
-          , a.code_seat_id 
-          , a.national_id 
-          , b.business_line_nm 
-          , b.code_seat_type 
-          , is_offline_ad 
-          , ad_group_id 
-
-      union 
-      select 'advertiser_id' as id_type 
-          , c.item_name as country_name 
-          , a.code_seat_id 
-          , a.national_id 
-          , b.business_line_nm busniess_line 
-          , b.code_seat_type 
-          , is_offline_ad 
-          , advertiser_id as id_value 
-          , count(distinct request_id) as rank_req_cnt 
-          , count(distinct case when stage = 'RESP' then request_id end) resp_req_cnt 
-      from req_adv_info a 
-      join ( 
-          select code_seat_id, code_seat_type, business_line_nm 
-          from tmp_code_bus_line_tbl 
-      ) b 
-      on a.code_seat_id = b.code_seat_id 
-      join ( 
-          select national_id, item_name 
-          from tmp_map_dd 
-      ) c  
-      on a.national_id = c.national_id 
-      GROUP BY c.item_name 
-          , a.code_seat_id 
-          , a.national_id 
-          , b.business_line_nm 
-          , b.code_seat_type 
-          , is_offline_ad 
-          , advertiser_id 
-  ) 
-
-
-  INSERT OVERWRITE table dwd_ads_engine_compe_suc_req_hi PARTITION (dh = '${dh}') 
-  select 
-      id_type 
-      , country_name 
-      , busniess_line 
-      , code_seat_type 
-      , is_offline_ad 
-      , id_value 
-      , rank_req_cnt 
-      , resp_req_cnt 
-  from tmp_result_tbl;
-
 业务备注:
   ID字段:
-    - id_value
+  - id_value
   标签字段:
-    - id_type
-    - busniess_line
-    - code_seat_type
-    - is_offline_ad
+  - id_type
+  - busniess_line
+  - code_seat_type
+  - is_offline_ad
   计费字段: []
   时间字段:
-    - dh
+  - dh
 生成时间: '2026-03-18 14:59:56'
-更新时间: '2026-03-18 20:09:27'
+更新时间: '2026-03-25 17:43:40'

@@ -15,7 +15,7 @@ calc_summary_stats
 - conv_num: 转化数
 - pctr_sum: pCTR 求和
 - pcvr_sum: pCVR 求和
-- cost_sum: 成本 (SUM(billing_actual_deduction_price) / 1e5, 单位: 美元)
+- cost_sum: 成本 (SUM(消耗字段) / 1e5, 单位: 美元)
 - ecpm_sum: eCPM (SUM(ecpm) / 1e5, 单位: 美元)
 
 ## 参数

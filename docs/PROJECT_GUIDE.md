@@ -239,9 +239,9 @@ GoldMiner 的业务知识系统包含三个核心层次：
     类型: BIGINT
     业务含义: 是否点击，1=点击，0=未点击
     
-  - 列名: billing_actual_deduction_price
+  - 列名: 消耗字段
     类型: BIGINT
-    业务含义: 实际扣费金额，单位：微美元（需除以1e5转为美元）
+    业务含义: 实际扣费金额，如 billing_actual_deduction_price, bill_should_cost 等，单位：微美元（需除以1e5转为美元）
     
   - 列名: ctr
     类型: DOUBLE
@@ -276,8 +276,8 @@ GoldMiner 的业务知识系统包含三个核心层次：
 业务术语:
   消耗:
     英文: spend / cost
-    定义: 广告投放实际扣费金额
-    计算公式: billing_actual_deduction_price / 1e5 (转为美元)
+    定义: 广告投放实际扣费金额，根据结算方式不同使用不同字段
+    计算公式: 消耗字段 / 1e5 (转为美元)，字段如 billing_actual_deduction_price, bill_should_cost 等
     
   CTR:
     英文: Click Through Rate

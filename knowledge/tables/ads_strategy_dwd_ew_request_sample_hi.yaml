@@ -1,0 +1,160 @@
+基本信息:
+  表名: ads_strategy.dwd_ew_request_sample_hi
+  业务名称: EW请求采样明细表
+  数据粒度: 请求ID级别
+  更新频率: 小时
+  保留周期: 7天
+  项目: ads_strategy
+  列数: 14
+  分区数: 1
+  说明: 该表当前无访问权限，不建议使用
+分区信息:
+  dh: 小时分区，格式yyyyMMddHH
+核心字段详解:
+  request_id:
+    字段名: request_id
+    数据类型: STRING
+    业务含义: 请求唯一标识ID，标识一次广告请求
+    示例值: []
+    使用注意: 用于关联曝光点击转化表
+  req_ts:
+    字段名: req_ts
+    数据类型: STRING
+    业务含义: 请求时间戳，记录请求发生的时间
+    示例值: []
+    使用注意: 可用于分析请求时间分布
+  gaid:
+    字段名: gaid
+    数据类型: STRING
+    业务含义: Google广告标识符，用户设备唯一标识
+    示例值: []
+    使用注意: 用于用户级过滤和频次控制
+  national_id:
+    字段名: national_id
+    数据类型: STRING
+    业务含义: 国家ID，标识请求来源国家/地区
+    示例值: []
+    使用注意: 关联国家维度表获取国家信息
+  code_seat_id:
+    字段名: code_seat_id
+    数据类型: STRING
+    业务含义: 代码位ID，标识广告展示位置
+    示例值: []
+    使用注意: 关联代码位维度表获取代码位详情
+  stage:
+    字段名: stage
+    数据类型: STRING
+    业务含义: 请求所处阶段，标识广告在漏斗中的位置
+    示例值: ['RECALL', 'FILTER', 'RANK', 'RESP', 'cnt_limit']
+    使用注意: |
+      关键阶段说明：
+      - RECALL: 召回阶段
+      - FILTER: 过滤阶段
+      - RANK: 精排阶段
+      - RESP: 响应阶段（胜出）
+      - cnt_limit: 数量限制截断
+  ad_creative_id:
+    字段名: ad_creative_id
+    数据类型: STRING
+    业务含义: 广告创意ID，标识具体的广告创意
+    示例值: []
+    使用注意: 关联创意维度表获取创意详情
+  stage_rank:
+    字段名: stage_rank
+    数据类型: BIGINT
+    业务含义: 在RESP和cnt_limit阶段的eCPM排序排名，0表示第1名
+    示例值: [0, 1, 2, 3, 4]
+    使用注意: 排名越靠前（数值越小），竞价竞争力越强
+  code_type:
+    字段名: code_type
+    数据类型: INT
+    业务含义: 代码位类型，标识广告位类型
+    示例值: [1, 2, 3, 4]
+    使用注意: |
+      代码位类型：
+      - 1: native（原生）
+      - 2: banner（横幅）
+      - 3: 插屏
+      - 4: 开屏
+  is_ps:
+    字段名: is_ps
+    数据类型: INT
+    业务含义: 是否PS流量，标识是否为特定流量来源
+    示例值: [0, 1]
+    使用注意: 1表示PS流量，0表示非PS流量
+  var_ids:
+    字段名: var_ids
+    数据类型: STRING
+    业务含义: 子实验ID列表，标识AB实验分组信息
+    示例值: []
+    使用注意: 用于实验效果分析，可能包含多个实验ID
+  is_offline_ad:
+    字段名: is_offline_ad
+    数据类型: STRING
+    业务含义: 是否离线广告，区分在线/离线广告
+    示例值: ['0', '1']
+    使用注意: |
+      - 0: 在线广告
+      - 1: 离线广告
+      分析时通常过滤离线广告
+  material_type_cn:
+    字段名: material_type_cn
+    数据类型: STRING
+    业务含义: 素材类型，标识广告素材的媒体类型
+    示例值: ['图片', '视频', 'HTML']
+    使用注意: 用于分析不同素材类型的效果
+  ssp_id:
+    字段名: ssp_id
+    数据类型: STRING
+    业务含义: 媒体主ID，SSP平台标识
+    示例值: []
+    使用注意: 关联媒体维度表获取媒体信息
+使用场景:
+  - 分析请求在漏斗各阶段的分布情况
+  - 统计召回数、进精排数、响应数等漏斗指标
+  - 分析竞价排名分布（stage_rank）
+  - 按阶段分析广告转化链路
+  - 注意: 该表当前无访问权限，建议使用竞胜率表或创意维度流量漏斗表替代
+常用查询场景:
+  漏斗阶段分析:
+    场景名称: 分析请求在各阶段的分布
+    SQL模板: |
+      SELECT 
+        stage,
+        COUNT(DISTINCT request_id) as req_cnt
+      FROM ads_strategy.dwd_ew_request_sample_hi
+      WHERE dh BETWEEN '{{start_dh}}' AND '{{end_dh}}'
+        AND ad_creative_id IN (
+          SELECT id FROM com_cdm.dim_creativity_dd 
+          WHERE launch_group_id = '{{ad_group_id}}'
+        )
+      GROUP BY stage
+    参数:
+      start_dh: 开始小时
+      end_dh: 结束小时
+      ad_group_id: 广告组ID
+    注意事项:
+      - 该表当前无访问权限
+      - 建议使用 ads_strategy.dwd_ads_engine_compe_suc_req_hi 替代
+数据质量规则:
+  异常值识别:
+    stage字段异常:
+      说明: stage应为预定义值之一
+      检查: stage IN ('RECALL', 'FILTER', 'RANK', 'RESP', 'cnt_limit')
+业务备注:
+  ID字段:
+    - request_id: 请求ID
+    - ad_creative_id: 创意ID
+    - national_id: 国家ID
+    - code_seat_id: 代码位ID
+    - ssp_id: 媒体主ID
+  标签字段:
+    - stage: 阶段标签
+    - is_offline_ad: 离线广告标识
+    - is_ps: PS流量标识
+  计费字段: []
+  时间字段:
+    - req_ts: 请求时间戳
+    - dh: 分区小时
+生成时间: '2026-03-25 15:43:50'
+更新时间: '2026-03-25 15:52:39'

@@ -14,10 +14,11 @@ The primary agent that coordinates all tasks:
 
 ## ODPS Project Access
 
-- **Default Project**: The default ODPS project is `mi_ads_dmp_dev`
-- **Cross-Project Access**: The agent CAN access tables from other projects like `com_ads`, `mi_ads_dmp`, etc.
-- **Permission**: Do NOT assume permission denied for cross-project tables. Always try to execute SQL first.
-- **Full Table Names**: When accessing tables from other projects, use the full table name format: `project_name.table_name`
+- **Default Project**: `mi_ads_dmp_dev`
+- **Cross-Project Access**: Can access tables from other projects (`com_ads`, `mi_ads_dmp`, etc.)
+- **Full Table Names**: Use `project_name.table_name` format for cross-project tables
+
+See main prompts for detailed cross-project access rules.
 
 ## Agent Behavior
 
@@ -31,12 +32,14 @@ The primary agent that coordinates all tasks:
 
 Skills are modular capabilities that can be called:
 
-- `build_adgroup_data`: Build aggregation tables
-- `analyze_ctr_pcoc`: CTR bias analysis
-- `analyze_cvr_pcoc`: CVR bias analysis
-- `calc_summary_stats`: Summary statistics
-- `calc_model_mae`: Model MAE calculation
-- `basic_stats`: Quick data overview
-- `tavily_search`: Web search
-- `feishu_notify`: Send notifications
-- `self_improvement`: Record learnings
+- `build_adgroup_data`: Build intermediate aggregation table with show/click/download/conversion data
+- `calc_summary_stats`: Calculate summary metrics like cost/CTR/CVR/eCPM
+- `analyze_ctr_pcoc`: CTR bias analysis (PCOC) at adgroup or pkg_buz level
+- `analyze_cvr_pcoc`: CVR bias analysis (PCOC), supports cpi/ocpc/ocpi conv types
+- `calc_model_mae`: Model MAE calculation (requires analyze_ctr_pcoc and analyze_cvr_pcoc first)
+- `explore_table`: Explore table structure, field types, partitions, and sample data
+- `basic_stats`: Summarize the latest query result
+- `tavily_search`: Search web for documentation
+- `self_improvement`: Log learnings, errors, corrections to .learnings/ for continuous improvement
+
+For complete skill descriptions and parameters, see the main prompts.

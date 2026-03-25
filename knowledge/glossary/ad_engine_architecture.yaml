@@ -1,0 +1,118 @@
+# 广告引擎架构知识
+# 描述Eagllwin广告服务器(AdServer)的核心架构和处理器链
+
+基本概念:
+  系统定位: Eagllwin广告服务器(AdServer)是一个完整的程序化广告交易平台(SSP)，支持实时竞价(RTB)、预算控制、频次控制、AB实验等能力
+  
+  核心架构分层:
+    召回层(Recall):
+      功能: 从ES检索候选广告、重定向召回
+      关键组件: ES检索、重定向
+      
+    过滤层(Filter):
+      功能: 8大过滤器链、用户频次控制、低eCPM过滤、召回数量限制
+      关键组件: AdFilter、FreqControl、LowEcpmFilter、LimitProc
+      
+    粗排层(PreRank):
+      功能: 快速排序、TopN筛选
+      
+    精排层(Rank):
+      功能: CTR预估、CVR预估、Copc校准、RTA出价
+      关键组件: CtrV5、CvrOffline、CvrOnline、CopcCvr、ReRankProc
+      
+    预算控制(Budget):
+      功能: Shard预算、Hourly预算、Pacing
+      
+    响应层(Response):
+      功能: URL生成、归因链接、加密处理
+      关键组件: RtaProc、BidCoef
+
+处理器链(EngineV2):
+  说明: 广告引擎使用责任链模式，通过Apollo配置动态编排处理器
+  
+  召回阶段:
+    - RecallProc: 从ES检索候选广告
+    - Retarget: 重定向召回
+    
+  过滤阶段:
+    - AdFilter: 8大过滤器链
+    - FreqControl: 用户频次控制
+    - LowEcpmFilter: 低eCPM过滤
+    - LimitProc: 召回数量限制
+    
+  排序阶段:
+    - CtrV5: CTR预估模型
+    - CvrOffline: CVR离线预估
+    - CvrOnline: CVR在线预估
+    - CopcCvr: Copc校准处理
+    - ReRankProc: 重排序
+    
+  校准阶段:
+    - CpdCalibrate: CPD校准
+    - OcpdCalibrate: OCPD校准
+    - RoasLtv: LTV/ROAS校准
+    
+  响应阶段:
+    - RtaProc: RTA实时出价
+    - BidCoef: 出价系数调整
+
+漏斗阶段定义:
+  完整链路: 召回 → 过滤 → 粗排 → 精排 → 响应 → 曝光 → 点击/转化 → 消耗
+  
+  各阶段说明:
+    召回(Recall): ES检索、重定向
+    过滤(Filter): 8大过滤、频控
+    粗排(PreRank): TopN筛选
+    精排(Rank): CTR/CVR预估
+    响应(Response): 胜出响应
+    曝光(Show): 用户可见广告展示
+    点击/转化(Click/Conv): 用户点击、下载、激活、注册
+    消耗(Cost): 竞价、扣费、成本、收益
+
+过滤器链(8大过滤器):
+  执行顺序:
+    1. AbnormalAdsFilter: 异常广告概率过滤
+    2. BrandAdsFilter: 品牌广告SDK兼容性过滤
+    3. AdBlockFilter: 用户屏蔽历史过滤
+    4. MaterialReverseExpFilter: 素材反向实验过滤
+    5. IconRmDupFilter: Icon去重过滤（已注释）
+    6. PackExcludeFilter: 包排除过滤
+    7. ShieldRuleFilter: 关键词屏蔽过滤
+    8. ExcludeReactiveFilter: 排除再激活过滤
+    
+  处理流程: |
+    候选广告列表（召回层输出）
+        ↓
+    ┌─────────────────────────────────────────────────────────────┐
+    │                     过滤器链（按顺序执行）                      │
+    ├─────────────────────────────────────────────────────────────┤
+    │ 1. AbnormalAdsFilter    - 异常广告概率过滤                    │
+    │ 2. BrandAdsFilter       - 品牌广告SDK兼容性过滤               │
+    │ 3. AdBlockFilter        - 用户屏蔽历史过滤                    │
+    │ 4. MaterialReverseExpFilter - 素材反向实验过滤                │
+    │ 5. IconRmDupFilter      - Icon去重过滤（已注释）              │
+    │ 6. PackExcludeFilter    - 包排除过滤                          │
+    │ 7. ShieldRuleFilter     - 关键词屏蔽过滤                      │
+    │ 8. ExcludeReactiveFilter - 排除再激活过滤                     │
+    └─────────────────────────────────────────────────────────────┘
+        ↓
+    通过的广告进入精排/Rank阶段
+        ↓
+    竞价排序 → 排名选择 → 胜出响应 → 曝光展示
+
+相关数据表:
+  引擎侧表:
+    - ads_strategy.dwd_ads_engine_compe_suc_req_hi: 竞胜率底表
+    - ads_strategy.dwd_ads_competition_rank_hi: 竞价排名底表
+    - ads_strategy.dwd_ads_competition_rank_simple_hi: 简化竞价表
+    
+  投放侧表:
+    - mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi: 曝光点击转化明细
+    - com_cdm.dws_tracker_ad_cpc_cost_hi: 小时汇总表
+
+别名:
+  - 广告引擎
+  - AdServer
+  - Eagllwin
+  - SSP
+  - 程序化广告平台
