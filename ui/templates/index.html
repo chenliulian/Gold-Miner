@@ -1491,7 +1491,8 @@
                 }
             }
 
-            const activeSessionId = currentSessionId;
+            // 锁定当前会话ID，防止发送过程中会话切换导致消息错位
+            const lockedSessionId = currentSessionId;
 
             // 检查当前会话是否正在处理中
             if (isCurrentSessionProcessing()) {
@@ -1499,25 +1500,26 @@
                 return;
             }
 
-            addMessage(message, 'user');
+            // 添加用户消息（关联到锁定的会话）
+            addMessage(message, 'user', lockedSessionId);
             input.value = '';
             input.style.height = 'auto';
 
             // 设置当前会话为处理中状态
-            setSessionProcessing(activeSessionId, true);
+            setSessionProcessing(lockedSessionId, true);
 
-            // 创建日志消息容器
-            const logContainer = addLogMessage();
+            // 创建日志消息容器（关联到锁定的会话）
+            const logContainer = addLogMessage(lockedSessionId);
 
             try {
-                const state = getSessionState(activeSessionId);
+                const state = getSessionState(lockedSessionId);
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message,
                         stream: true,
-                        session_id: activeSessionId
+                        session_id: lockedSessionId
                     }),
                     signal: state.abortController.signal
                 });
@@ -1546,14 +1548,14 @@
                                 const data = JSON.parse(line.slice(6));
                                 
                                 if (data.type === 'status' || data.type === 'log') {
-                                    // 更新日志
-                                    appendLog(logContainer, data.content);
+                                    // 更新日志（关联到锁定的会话）
+                                    appendLog(logContainer, data.content, lockedSessionId);
                                 } else if (data.type === 'message' && data.role === 'assistant') {
                                     // 最终响应
                                     fullResponse = data.content;
                                     hasReceivedContent = true;
                                 } else if (data.type === 'error') {
-                                    appendLog(logContainer, '错误: ' + data.content);
+                                    appendLog(logContainer, '错误: ' + data.content, lockedSessionId);
                                 } else if (data.type === 'done') {
                                     // 完成
                                 }
@@ -1566,26 +1568,26 @@
                 
                 // 完成日志记录（折叠日志，保留供用户查看）
                 const success = hasReceivedContent;
-                finalizeLog(logContainer, success);
+                finalizeLog(logContainer, success, lockedSessionId);
                 
-                // 显示最终结果
+                // 显示最终结果（关联到锁定的会话）
                 if (hasReceivedContent && fullResponse) {
-                    addMessage(fullResponse, 'assistant');
+                    addMessage(fullResponse, 'assistant', lockedSessionId);
                 } else {
-                    addMessage('任务执行完成', 'assistant');
+                    addMessage('任务执行完成', 'assistant', lockedSessionId);
                 }
                 
             } catch (error) {
                 // 完成日志记录（标记为失败）
-                finalizeLog(logContainer, false);
+                finalizeLog(logContainer, false, lockedSessionId);
                 if (error.name === 'AbortError') {
-                    addMessage('已取消', 'assistant');
+                    addMessage('已取消', 'assistant', lockedSessionId);
                 } else {
-                    addMessage('网络错误，请稍后重试: ' + error.message, 'assistant');
+                    addMessage('网络错误，请稍后重试: ' + error.message, 'assistant', lockedSessionId);
                 }
             } finally {
                 // 重置当前会话的处理状态
-                setSessionProcessing(activeSessionId, false);
+                setSessionProcessing(lockedSessionId, false);
             }
         }
         
@@ -1709,19 +1711,34 @@
             }
         }
         
-        // 兼容旧函数名
-        function addLogMessage() {
+        // 兼容旧函数名 - 支持目标会话ID参数
+        function addLogMessage(targetSessionId) {
+            // 如果指定了目标会话ID，且不是当前查看的会话，则不创建UI元素
+            if (targetSessionId && targetSessionId !== currentSessionId) {
+                // 返回一个虚拟容器，用于兼容后续操作
+                return { virtual: true, targetSessionId: targetSessionId };
+            }
             if (!currentThinkingBox) {
                 currentThinkingBox = createThinkingBox();
             }
             return currentThinkingBox;
         }
         
-        function appendLog(logContainer, text) {
+        function appendLog(logContainer, text, targetSessionId) {
+            // 如果是虚拟容器或目标会话不是当前查看的会话，则不更新UI
+            if (logContainer.virtual || (targetSessionId && targetSessionId !== currentSessionId)) {
+                return;
+            }
             addThinkingStep(logContainer, text);
         }
         
-        function finalizeLog(logContainer, success) {
+        function finalizeLog(logContainer, success, targetSessionId) {
+            // 如果是虚拟容器或目标会话不是当前查看的会话，则不更新UI
+            if (logContainer.virtual || (targetSessionId && targetSessionId !== currentSessionId)) {
+                currentThinkingBox = null;
+                thinkingStepCount = 0;
+                return;
+            }
             finalizeThinkingBox(logContainer, success);
             currentThinkingBox = null;
             thinkingStepCount = 0;
@@ -1743,19 +1760,24 @@
             input.style.height = Math.min(input.scrollHeight, 200) + 'px';
         }
 
-        // 添加消息到聊天区
-        function addMessage(text, sender) {
+        // 添加消息到聊天区（支持目标会话ID参数，防止消息错位）
+        function addMessage(text, sender, targetSessionId) {
+            // 如果指定了目标会话ID，且不是当前查看的会话，则不显示消息
+            if (targetSessionId && targetSessionId !== currentSessionId) {
+                return;
+            }
+
             const container = document.getElementById('chat-messages');
-            
+
             // 隐藏欢迎区域
             const welcome = container.querySelector('.welcome-section');
             if (welcome) welcome.style.display = 'none';
-            
+
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
-            
+
             const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-            
+
             // 处理文本中的表格和SQL
             let processedText;
             if (sender === 'assistant') {
@@ -1766,7 +1788,7 @@
             } else {
                 processedText = escapeHtml(text).replace(/\n/g, '<br>');
             }
-            
+
             messageDiv.innerHTML = `
                 <div class="message-avatar ${sender}">${sender === 'user' ? '👤' : '◈'}</div>
                 <div class="message-content ${sender}">
@@ -1774,7 +1796,7 @@
                     <div class="message-time">${time}</div>
                 </div>
             `;
-            
+
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight;
         }
@@ -2381,7 +2403,7 @@
             try {
                 const response = await fetch(`/sessions/${sessionId}`);
                 const data = await handleApiResponse(response);
-                
+
                 if (data === null) return; // 已处理跳转
 
                 if (!data.success) {
@@ -2399,7 +2421,7 @@
                 const chatContainer = document.getElementById('chat-messages');
                 chatContainer.innerHTML = '';
 
-                // 渲染对话步骤
+                // 渲染对话步骤（加载历史消息时不传递targetSessionId，因为currentSessionId已经设置好了）
                 if (session.steps && session.steps.length > 0) {
                     session.steps.forEach(step => {
                         if (step.role === 'user') {
