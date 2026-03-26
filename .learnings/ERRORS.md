@@ -1617,3 +1617,153 @@ LIMIT 50
 - Fingerprint: cc576c2e04f4aadd
 
 ---
+
+## [ERR-20260326-227] skill_or_command
+
+**Logged**: 2026-03-26T17:03:23
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326090320582ghq3c822qen4
+ODPS-0130071:[43,25] Sem...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326090320582ghq3c822qen4
+ODPS-0130071:[43,25] Semantic analysis exception - expect equality expression (i.e., only use '=' and 'AND') for join condition without mapjoin hint, but get: (1 = 1)
+
+上下文: sql_execution
+时间: 2026-03-26T17:03:23.346177
+
+相关 SQL:
+```sql
+WITH engine_funnel AS (
+    SELECT 
+        SUM(rank_req_cnt) as rank_req_cnt,
+        SUM(resp_req_cnt) as resp_req_cnt
+    FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+    WHERE dh BETWEEN '2026032400' AND '2026032423'
+    AND id_type = 'ad_group_id'
+    AND id_value = '65491'
+),
+show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_active_cnt,
+        SUM(conv_labe
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+- Fingerprint: f2e312407ba2d51c
+
+---
+
+## [ERR-20260326-705] skill_or_command
+
+**Logged**: 2026-03-26T17:03:42
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260326090340136git3c822qen4
+ODPS-0130252:[42,19] Car...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260326090340136git3c822qen4
+ODPS-0130252:[42,19] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-26T17:03:42.908314
+
+相关 SQL:
+```sql
+WITH engine_funnel AS (
+    SELECT 
+        SUM(rank_req_cnt) as rank_req_cnt,
+        SUM(resp_req_cnt) as resp_req_cnt
+    FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+    WHERE dh BETWEEN '2026032400' AND '2026032423'
+    AND id_type = 'ad_group_id'
+    AND id_value = '65491'
+),
+show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_active_cnt,
+        SUM(conv_labe
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+- Fingerprint: 706eafcd1f2c1de4
+
+---
+
+## [ERR-20260326-749] skill_or_command
+
+**Logged**: 2026-03-26T17:33:08
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326093305465gusagh957jh
+ODPS-0130071:[1,201] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326093305465gusagh957jh
+ODPS-0130071:[1,201] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[1,8] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[1,21] Semantic analysis exception - column ad_group_title cannot be resolved
+ODPS-0130071:[1,64] Semantic analysis exception - column purpose_type_cn cannot be resolved
+ODPS-0130071:[1,102] Semantic analysis exception - column status_v2 cannot be resolved
+上下文: sql_execution
+时间: 2026-03-26T17:33:08.181809
+
+相关 SQL:
+```sql
+SELECT ad_group_id, ad_group_title, ad_plan_id, advertiser_id, purpose_type_cn, transform_target_cn, status_v2, cost_type FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND ad_group_id = '81117' LIMIT 10;
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+- Fingerprint: e62b85f7e557d745
+
+---

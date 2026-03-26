@@ -855,3 +855,530 @@ SELECT
 - Tags: 
 
 ---
+
+## [LRN-20260326-948] knowledge_gap
+
+**Logged**: 2026-03-26T16:35:51
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-26T16:35:51.548116
+
+相关 SQL:
+```sql
+SELECT 
+    t2.business_line_nm,
+    SUM(t1.show_label) AS show_cnt,
+    SUM(t1.click_label) AS click_cnt,
+    SUM(t1.dld_label) AS dld_cnt,
+    SUM(t1.conv_label_active) AS conv_cnt_active,
+    SUM(t1.billing_actual_deduction_price) / 1e5 AS total_cost_usd
+FROM (
+    SELECT show_id, show_label, click_label, dld_label, conv_label_active, 
+           billing_actual_deduction_price, code_seat_id
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh >= '2026032300' AND dh <= '2026032
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+- Fingerprint: 387f5e8a5c4e21e4
+
+---
+
+## [LRN-20260326-055] correction
+
+**Logged**: 2026-03-26T17:04:00
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326090357818g3jka5v9aio2
+ODPS-0130071:[43,25] Sem...
+
+### Details
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326090357818g3jka5v9aio2
+ODPS-0130071:[43,25] Semantic analysis exception - expect equality expression (i.e., only use '=' and 'AND') for join condition without mapjoin hint, but get: (1 = 1)
+
+上下文: sql_execution
+时间: 2026-03-26T17:04:00.595071
+
+相关 SQL:
+```sql
+WITH engine_funnel AS (
+    SELECT 
+        SUM(rank_req_cnt) as rank_req_cnt,
+        SUM(resp_req_cnt) as resp_req_cnt
+    FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+    WHERE dh BETWEEN '2026032400' AND '2026032423'
+    AND id_type = 'ad_group_id'
+    AND id_value = '65491'
+),
+show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_active_cnt,
+        SUM(conv_labe
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+- Fingerprint: ea973aca5ae31a92
+
+---
+
+## [LRN-20260326-144] correction
+
+**Logged**: 2026-03-26T17:04:27
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260326090424730g8b1yqbb4r1
+ODPS-0130252:[42,19] Cart...
+
+### Details
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260326090424730g8b1yqbb4r1
+ODPS-0130252:[42,19] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-26T17:04:27.445396
+
+相关 SQL:
+```sql
+WITH engine_funnel AS (
+    SELECT 
+        SUM(rank_req_cnt) as rank_req_cnt,
+        SUM(resp_req_cnt) as resp_req_cnt
+    FROM ads_strategy.dwd_ads_engine_compe_suc_req_hi
+    WHERE dh BETWEEN '2026032400' AND '2026032423'
+    AND id_type = 'ad_group_id'
+    AND id_value = '65491'
+),
+show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_active_cnt,
+        SUM(conv_labe
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+- Fingerprint: 100f551b19fafbc3
+
+---
+
+## [LRN-20260326-670] best_practice
+
+**Logged**: 2026-03-26T17:05:06
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS不支持CROSS JOIN和JOIN ON 1=1，需使用常量join_key进行等值JOIN
+
+### Details
+MaxCompute (ODPS) 不允许笛卡尔积操作，包括CROSS JOIN、逗号连接、JOIN ON 1=1。解决方案是在两个子查询中各添加一个常量字段如 1 as join_key，然后使用 ON s.join_key = e.join_key 进行等值JOIN。
+
+### Suggested Action
+在需要笛卡尔积的场景中，始终使用常量join_key方式替代
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cross_join, cartesian_product, join
+- Fingerprint: b76d7621fd6fd821
+
+---
+
+## [LRN-20260326-038] best_practice
+
+**Logged**: 2026-03-26T17:05:20
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS不支持CROSS JOIN和JOIN ON 1=1，需要使用常量join_key进行等值JOIN
+
+### Details
+在ODPS中合并两个聚合子查询（各返回1行）时，不能使用CROSS JOIN或JOIN ON 1=1。正确做法是在每个子查询中添加一个常量字段（如 1 as join_key），然后用等值JOIN（ON s.join_key = e.join_key）连接。
+
+### Suggested Action
+更新查询规则，添加ODPS笛卡尔积替代方案的说明
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cross-join, cartesian-product, join
+- Fingerprint: b6022bc72c667284
+
+---
+
+## [LRN-20260326-770] best_practice
+
+**Logged**: 2026-03-26T17:05:30
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or tables directly. Use subquery inline views for cartesian product of single-row results.
+
+### Details
+When joining two single-row aggregation results in ODPS: CTE + JOIN ON 1=1 fails, comma join fails, but subquery inline views with JOIN ON 1=1 works. Also ads_strategy.dwd_ads_engine_compe_suc_req_hi may not have data for all ad_group_ids - the id_type and id_value fields need to match exactly.
+
+### Suggested Action
+Always use subquery inline views (not CTEs) when doing cartesian product joins in ODPS. Check if engine-side tables have data before relying on them.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cross_join, cartesian_product, engine_funnel
+- Fingerprint: 9ccce23d8b545632
+
+---
+
+## [LRN-20260326-505] best_practice
+
+**Logged**: 2026-03-26T17:05:40
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS不支持CROSS JOIN和JOIN ON 1=1，需要使用常量join_key进行等值JOIN来实现笛卡尔积
+
+### Details
+MaxCompute (ODPS) 不允许笛卡尔积操作，包括：1) CROSS JOIN 语法不支持；2) JOIN ON 1=1 会报错 expect equality expression；3) 隐式逗号连接 FROM a, b 也会报 cartesian product not allowed。解决方案：在两个子查询中各添加一个常量字段如 1 as join_key，然后使用 JOIN ON s.join_key = e.join_key 进行等值连接。
+
+### Suggested Action
+在需要笛卡尔积的场景中，始终使用常量join_key方式：SELECT 1 as join_key 然后 JOIN ON a.join_key = b.join_key
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: ODPS, SQL, CROSS JOIN, cartesian product, join_key
+- Fingerprint: 11fd8f31ec57ef49
+
+---
+
+## [LRN-20260326-535] best_practice
+
+**Logged**: 2026-03-26T17:05:51
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 with subqueries (inline views) but not with CTEs or table references directly. Cartesian product workaround: use subqueries in FROM clause with JOIN ON 1=1.
+
+### Details
+When needing to join two single-row aggregation results in ODPS: 1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. 2) Comma join (implicit cartesian) fails with 'cartesian product not allowed'. 3) Subquery inline views + JOIN ON 1=1 WORKS. The key is that both sides must be subqueries (not CTE references or table names).
+
+### Suggested Action
+Always use subquery inline views when doing cartesian joins of single-row results in ODPS.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian-join, cross-join, sql-syntax
+- Fingerprint: c638a0599a5674d3
+
+---
+
+## [LRN-20260326-966] best_practice
+
+**Logged**: 2026-03-26T17:06:06
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 with subqueries but not with CTEs or plain tables. Use subquery inline views for cartesian product of single-row aggregations.
+
+### Details
+When joining two single-row aggregation results in ODPS: CTE + JOIN ON 1=1 fails, comma join fails, but subquery inline views + JOIN ON 1=1 works. Also, ads_strategy.dwd_ads_engine_compe_suc_req_hi may not have data for all ad_group_ids - the id_type/id_value filter may need verification.
+
+### Suggested Action
+Always use subquery inline views (not CTEs) when doing cartesian product joins in ODPS. When engine table returns NULL, note it in the report and suggest checking if the ad group has engine-side data.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian-join, engine-funnel
+- Fingerprint: 8798948ce718c92f
+
+---
+
+## [LRN-20260326-540] best_practice
+
+**Logged**: 2026-03-26T17:06:21
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 with subqueries (inline views) but not with CTE references or plain tables for cartesian products
+
+### Details
+When joining two single-row aggregation results in ODPS: 1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. 2) CTE + comma join fails with 'Cartesian product not allowed'. 3) Subquery inline views + JOIN ON 1=1 WORKS. The key is to use subqueries directly in the FROM clause, not CTE references.
+
+### Suggested Action
+Always use subquery inline views (not CTEs) when doing cartesian joins of single-row aggregations in ODPS
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, sql, cartesian-join, cross-join
+- Fingerprint: ebcb6954e4cbb910
+
+---
+
+## [LRN-20260326-937] best_practice
+
+**Logged**: 2026-03-26T17:06:53
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or plain tables. Use subquery-based approach for cartesian joins of single-row aggregations.
+
+### Details
+When joining two single-row aggregation results in ODPS: CTE + JOIN ON 1=1 fails, CTE + comma join fails, but subquery + JOIN ON 1=1 works. Also, ads_strategy.dwd_ads_engine_compe_suc_req_hi may not have data for all ad_group_ids - need to check id_type and id_value fields.
+
+### Suggested Action
+Always use subquery approach for cartesian joins in ODPS. When engine funnel data is NULL, note it in the report and suggest checking if the table has data for the given ad_group_id.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian_join, engine_funnel, ads_strategy
+- Fingerprint: 22dc961ae6b58353
+
+---
+
+## [LRN-20260326-490] best_practice
+
+**Logged**: 2026-03-26T17:07:15
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 with subqueries but not with CTEs or plain tables for cartesian products
+
+### Details
+When joining two single-row aggregation results in ODPS: 1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. 2) Comma join (implicit cartesian) fails with 'Cartesian product is not allowed without mapjoin'. 3) Subquery + JOIN ON 1=1 WORKS. Solution: use inline subqueries instead of CTEs when doing cartesian joins.
+
+### Suggested Action
+Always use subquery-based JOIN ON 1=1 for single-row cartesian products in ODPS, not CTE-based joins.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian-join, sql-syntax
+- Fingerprint: 20294bc083f22271
+
+---
+
+## [LRN-20260326-227] best_practice
+
+**Logged**: 2026-03-26T17:07:32
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or plain tables. Use subquery-based approach for cartesian joins.
+
+### Details
+When joining two single-row aggregation results in ODPS: (1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. (2) Comma join (FROM a, b) fails with 'Cartesian product not allowed'. (3) Subquery + JOIN ON 1=1 works successfully. The key is wrapping aggregations as inline subqueries rather than CTEs.
+
+### Suggested Action
+Always use subquery-based approach for cartesian joins in ODPS, not CTE-based.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, sql, cartesian-join, cross-join
+- Fingerprint: 88352a3681e88a50
+
+---
+
+## [LRN-20260326-540] best_practice
+
+**Logged**: 2026-03-26T17:07:48
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or plain tables. Use subquery inline views for cartesian product of single-row aggregations.
+
+### Details
+When joining two single-row aggregation results in ODPS: CTE + JOIN ON 1=1 fails, comma join fails, but subquery inline views with JOIN ON 1=1 works. Also, ads_strategy.dwd_ads_engine_compe_suc_req_hi may not have data for all ad_group_ids - the id_type/id_value filter needs verification.
+
+### Suggested Action
+Always use subquery inline views (not CTEs) when doing cartesian product joins in ODPS. Also check if engine-side tables have data before relying on them.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian_join, cross_join, subquery
+- Fingerprint: 3ed717c58481e979
+
+---
+
+## [LRN-20260326-388] best_practice
+
+**Logged**: 2026-03-26T17:08:02
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 with subqueries but not with CTEs or plain tables. Use subquery-based inline views for cartesian joins.
+
+### Details
+When joining two single-row aggregation results in ODPS: CTE + JOIN ON 1=1 fails, comma join fails, but subquery inline views + JOIN ON 1=1 works. Also, ads_strategy.dwd_ads_engine_compe_suc_req_hi may not have data for all ad_group_ids - the id_type/id_value filter needs verification.
+
+### Suggested Action
+Always use subquery inline views for cartesian joins in ODPS. When engine funnel data is NULL, note it in the report and suggest checking if the table has data for the given ad_group_id.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian_join, engine_funnel
+- Fingerprint: d14ef24a73ba355b
+
+---
+
+## [LRN-20260326-594] best_practice
+
+**Logged**: 2026-03-26T17:08:45
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or plain tables. Use subquery-based approach for cartesian joins.
+
+### Details
+When joining two single-row aggregation results in ODPS: (1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. (2) Comma join (FROM a, b) fails with 'cartesian product not allowed'. (3) Subquery + JOIN ON 1=1 works successfully. The key is wrapping aggregations as inline subqueries rather than CTEs.
+
+### Suggested Action
+Always use subquery-based approach for cartesian joins in ODPS, not CTE-based.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, sql, cartesian-join, cross-join
+- Fingerprint: f41715d48f5e9341
+
+---
+
+## [LRN-20260326-174] best_practice
+
+**Logged**: 2026-03-26T17:08:58
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or tables directly. Use inline subqueries for cartesian joins.
+
+### Details
+When joining two single-row aggregation results in ODPS: (1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. (2) Comma join (implicit cartesian) fails with 'cartesian product not allowed'. (3) Inline subqueries with JOIN ON 1=1 works successfully.
+
+### Suggested Action
+Always use inline subqueries (not CTEs) when doing cartesian joins in ODPS. Pattern: SELECT ... FROM (SELECT ...) a JOIN (SELECT ...) b ON 1=1
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, sql, cartesian-join, cross-join
+- Fingerprint: f9ec6cc35701fd87
+
+---
+
+## [LRN-20260326-336] best_practice
+
+**Logged**: 2026-03-26T17:09:12
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 between subqueries but not between CTEs or plain tables. Use subquery inline views for cartesian product of single-row aggregations.
+
+### Details
+When joining two single-row aggregation results in ODPS: (1) CTE + JOIN ON 1=1 fails with 'expect equality expression'. (2) CTE + comma join fails with 'cartesian product not allowed'. (3) Subquery inline views + JOIN ON 1=1 works successfully.
+
+### Suggested Action
+Always use subquery inline views (not CTEs) when doing cartesian joins of single-row aggregations in ODPS.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian-join, cte, subquery
+- Fingerprint: c0bc3f6f22617222
+
+---
+
+## [LRN-20260326-729] best_practice
+
+**Logged**: 2026-03-26T17:09:26
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+ODPS supports JOIN ON 1=1 with subqueries but not with CTE references or plain tables. Use inline subqueries for cartesian joins.
+
+### Details
+When joining two single-row aggregation results in ODPS: CTE + JOIN ON 1=1 fails, comma join fails, but inline subquery + JOIN ON 1=1 works. Also, ads_strategy.dwd_ads_engine_compe_suc_req_hi may not have data for all ad_group_ids - the id_type/id_value filter needs verification.
+
+### Suggested Action
+Always use inline subqueries (not CTEs) when doing cartesian joins in ODPS. Check if engine tables have data before relying on them.
+
+### Metadata
+- Source: error
+- Related Files: 
+- Tags: odps, cartesian_join, cross_join, engine_funnel
+- Fingerprint: 505b540c3f710442
+
+---

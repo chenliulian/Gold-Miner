@@ -161,6 +161,20 @@ def init_schedulers():
 # Initialize schedulers after all functions are defined
 init_schedulers()
 
+# Initialize services (agent pool, task queue) for API v2
+from gold_miner.services import init_services
+
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+skills_dir = os.path.join(project_root, "skills")
+sessions_dir = os.path.join(project_root, "sessions")
+
+init_services(
+    config=_config,
+    skills_dir=skills_dir,
+    sessions_dir=sessions_dir,
+)
+print("[App] Services initialized: agent_pool, task_queue")
+
 
 def get_current_user_or_redirect():
     """Get current user from token or redirect to login."""

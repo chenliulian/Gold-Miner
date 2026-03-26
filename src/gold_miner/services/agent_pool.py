@@ -89,6 +89,8 @@ class AgentPool:
                         pooled_agent.last_used = datetime.now()
                         pooled_agent.use_count += 1
                         pooled_agent.session_id = session_id
+                        # 设置 session 的 user_id 以确保使用正确的目录
+                        pooled_agent.agent.session.user_id = user_id
                         return pooled_agent
             
             # 如果没有找到匹配的，找任何可用的 Agent
@@ -98,6 +100,9 @@ class AgentPool:
                     pooled_agent.last_used = datetime.now()
                     pooled_agent.use_count += 1
                     pooled_agent.session_id = session_id
+                    # 设置 agent 和 session 的 user_id
+                    pooled_agent.agent.user_id = user_id
+                    pooled_agent.agent.session.user_id = user_id
                     return pooled_agent
 
             # Create new agent if under max size

@@ -25,10 +25,23 @@ class SessionStore:
     """管理单次对话的历史记录"""
     
     def __init__(self, sessions_dir: str = "./sessions", user_id: str = ""):
-        self.sessions_dir = sessions_dir
+        self._base_sessions_dir = sessions_dir
         self.user_id = user_id  # 当前用户ID，用于数据隔离
         self.current_session: Optional[SessionState] = None
         self._ensure_dir()
+    
+    @property
+    def sessions_dir(self) -> str:
+        """动态获取会话目录，如果设置了user_id则使用用户特定目录"""
+        if self.user_id:
+            # 使用用户特定的会话目录
+            from .user_data import get_user_data_manager
+            user_data_manager = get_user_data_manager()
+            paths = user_data_manager.get_user_paths(self.user_id)
+            # 确保目录存在
+            os.makedirs(paths.sessions_dir, exist_ok=True)
+            return paths.sessions_dir
+        return self._base_sessions_dir
     
     def _ensure_dir(self) -> None:
         """确保会话目录存在"""

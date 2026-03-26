@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import os
 import time
 from typing import Any, Callable, Dict, Optional
 
@@ -272,7 +273,7 @@ def chat():
         
         # Read report
         response_text = ""
-        if report_path and json.os.path.exists(report_path):
+        if report_path and os.path.exists(report_path):
             with open(report_path, "r", encoding="utf-8") as f:
                 response_text = f.read()
         
@@ -359,7 +360,16 @@ def chat_stream():
         if result_holder["error"]:
             yield f"data: {json.dumps({'type': 'error', 'content': result_holder['error']})}\n\n"
         else:
-            yield f"data: {json.dumps({'type': 'done', 'report_path': result_holder['report_path']})}\n\n"
+            # 读取报告内容返回给前端
+            report_content = ""
+            report_path = result_holder["report_path"]
+            if report_path and os.path.exists(report_path):
+                try:
+                    with open(report_path, "r", encoding="utf-8") as f:
+                        report_content = f.read()
+                except Exception as e:
+                    report_content = f"Error reading report: {e}"
+            yield f"data: {json.dumps({'type': 'done', 'report_path': report_path, 'content': report_content})}\n\n"
     
     return Response(generate(), mimetype="text/event-stream")
 
@@ -367,6 +377,23 @@ def chat_stream():
 # =============================================================================
 # Session Management
 # =============================================================================
+
+def _get_user_sessions_dir(user_id: str) -> str:
+    """获取用户特定的会话目录"""
+    from gold_miner.user_data import get_user_data_manager
+    user_data_manager = get_user_data_manager()
+    paths = user_data_manager.get_user_paths(user_id)
+    return paths.sessions_dir
+
+
+def _load_session_file(session_path: str) -> Optional[Dict]:
+    """加载会话文件"""
+    try:
+        with open(session_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
 
 @api_v2.route("/sessions", methods=["GET"])
 @require_auth
@@ -376,17 +403,32 @@ def list_sessions():
     from flask import g
     user = g.current_user
     
-    pool = get_agent_pool()
-    agent_wrapper = pool.acquire(user_id=user.id)
-    try:
-        # 只列出当前用户的会话
-        sessions = agent_wrapper.agent.session.list_sessions(limit=50, user_id=user.id)
-        return jsonify({
-            "success": True,
-            "data": {"sessions": sessions},
-        })
-    finally:
-        pool.release(agent_wrapper)
+    # 使用用户特定的会话目录
+    sessions_dir = _get_user_sessions_dir(user.id)
+    sessions = []
+    
+    if os.path.exists(sessions_dir):
+        for filename in sorted(os.listdir(sessions_dir), reverse=True):
+            if not filename.endswith(".json"):
+                continue
+            
+            path = os.path.join(sessions_dir, filename)
+            raw = _load_session_file(path)
+            if raw:
+                sessions.append({
+                    "session_id": raw.get("session_id", filename[:-5]),
+                    "title": raw.get("title", "未命名对话"),
+                    "start_time": raw.get("start_time", ""),
+                    "step_count": len(raw.get("steps", []))
+                })
+            
+            if len(sessions) >= 50:
+                break
+    
+    return jsonify({
+        "success": True,
+        "data": {"sessions": sessions},
+    })
 
 
 @api_v2.route("/sessions/<session_id>", methods=["GET"])
@@ -397,26 +439,46 @@ def get_session(session_id: str):
     from flask import g
     user = g.current_user
     
-    pool = get_agent_pool()
-    agent_wrapper = pool.acquire(user_id=user.id)
-    try:
-        # 设置用户ID以确保只能加载自己的会话
-        agent_wrapper.agent.session.user_id = user.id
-        success = agent_wrapper.agent.session.load_session(session_id)
-        if not success:
-            return jsonify({
-                "success": False,
-                "error": "session_not_found",
-                "message": f"Session {session_id} not found or access denied",
-            }), 404
-        
-        context = agent_wrapper.agent.session.get_context(max_steps=10000)
+    # 使用用户特定的会话目录
+    sessions_dir = _get_user_sessions_dir(user.id)
+    session_path = os.path.join(sessions_dir, f"{session_id}.json")
+    
+    if not os.path.exists(session_path):
         return jsonify({
-            "success": True,
-            "data": {"session": context},
-        })
-    finally:
-        pool.release(agent_wrapper)
+            "success": False,
+            "error": "session_not_found",
+            "message": f"Session {session_id} not found or access denied",
+        }), 404
+    
+    raw = _load_session_file(session_path)
+    if not raw:
+        return jsonify({
+            "success": False,
+            "error": "session_not_found",
+            "message": f"Session {session_id} not found or access denied",
+        }), 404
+    
+    # 验证用户权限
+    session_user_id = raw.get("user_id", "")
+    if session_user_id and session_user_id != user.id:
+        return jsonify({
+            "success": False,
+            "error": "session_not_found",
+            "message": f"Session {session_id} not found or access denied",
+        }), 404
+    
+    steps = raw.get("steps", [])
+    context = {
+        "session_id": raw.get("session_id", session_id),
+        "title": raw.get("title", "未命名对话"),
+        "steps": steps,
+        "step_count": len(steps)
+    }
+    
+    return jsonify({
+        "success": True,
+        "data": {"session": context},
+    })
 
 
 @api_v2.route("/sessions/<session_id>", methods=["DELETE"])
@@ -427,25 +489,40 @@ def delete_session_v2(session_id: str):
     from flask import g
     user = g.current_user
     
-    pool = get_agent_pool()
-    agent_wrapper = pool.acquire(user_id=user.id)
-    try:
-        # 设置用户ID以确保只能删除自己的会话
-        agent_wrapper.agent.session.user_id = user.id
-        success = agent_wrapper.agent.session.delete_session(session_id)
-        if not success:
+    # 使用用户特定的会话目录
+    sessions_dir = _get_user_sessions_dir(user.id)
+    session_path = os.path.join(sessions_dir, f"{session_id}.json")
+    
+    if not os.path.exists(session_path):
+        return jsonify({
+            "success": False,
+            "error": "session_not_found",
+            "message": f"Session {session_id} not found or access denied",
+        }), 404
+    
+    # 验证用户权限
+    raw = _load_session_file(session_path)
+    if raw:
+        session_user_id = raw.get("user_id", "")
+        if session_user_id and session_user_id != user.id:
             return jsonify({
                 "success": False,
                 "error": "session_not_found",
                 "message": f"Session {session_id} not found or access denied",
             }), 404
-        
+    
+    try:
+        os.remove(session_path)
         return jsonify({
             "success": True,
             "data": {"deleted": True},
         })
-    finally:
-        pool.release(agent_wrapper)
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": "delete_failed",
+            "message": str(e),
+        }), 500
 
 
 # =============================================================================
