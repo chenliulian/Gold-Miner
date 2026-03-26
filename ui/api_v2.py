@@ -475,6 +475,20 @@ def health_check():
         }), 503
 
 
+@api_v2.route("/llm/providers", methods=["GET"])
+@require_auth
+@handle_errors
+def get_llm_providers():
+    """Get LLM provider status."""
+    from gold_miner.llm_provider import get_provider_manager
+    
+    manager = get_provider_manager()
+    return jsonify({
+        "success": True,
+        "providers": manager.get_provider_status(),
+    })
+
+
 @api_v2.route("/metrics", methods=["GET"])
 def metrics():
     """Prometheus-style metrics."""

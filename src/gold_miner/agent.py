@@ -13,6 +13,7 @@ from .auto_improvement import get_auto_improvement_manager
 from .business_knowledge import get_knowledge_manager
 from .config import Config
 from .llm import AnthropicClient, OpenAICompatibleClient
+from .llm_provider import get_provider_manager
 from .memory import MemoryStore
 from .odps_client import OdpsClient, OdpsConfig
 from .prompts import (
@@ -121,17 +122,8 @@ class SqlAgent:
     ):
         self.config = config
         self.user_id = user_id  # 当前用户ID
-        # 根据 base_url 自动选择合适的 LLM 客户端
-        if "/messages" in config.llm_base_url.lower():
-            # Anthropic 原生 API 格式
-            self.llm = AnthropicClient(
-                config.llm_base_url, config.llm_api_key, config.llm_model
-            )
-        else:
-            # OpenAI 兼容格式
-            self.llm = OpenAICompatibleClient(
-                config.llm_base_url, config.llm_api_key, config.llm_model
-            )
+        # 使用新的 Provider Manager 支持多 LLM 故障转移
+        self.llm_provider = get_provider_manager()
         self.odps = OdpsClient(
             OdpsConfig(
                 access_id=config.odps_access_id,
@@ -343,7 +335,7 @@ class SqlAgent:
                 ),
             },
         ]
-        content = self.llm.chat(messages, enforce_json=True)
+        content = self.llm_provider.chat(messages, enforce_json=True)
         action = _parse_json(content)
         
         # Validate action
@@ -502,7 +494,7 @@ class SqlAgent:
                 ),
             },
         ]
-        return self.llm.chat(messages, temperature=0.3)
+        return self.llm_provider.chat(messages, temperature=0.3)
 
     def _generate_report_from_results(self, question: str) -> str:
         """基于已获取的结果生成报告（当LLM不可用时使用）"""
@@ -583,7 +575,7 @@ class SqlAgent:
                 ]
                 
                 # 调用LLM生成标题
-                title = self.llm.chat(messages, enforce_json=False).strip()
+                title = self.llm_provider.chat(messages, enforce_json=False).strip()
                 
                 # 清理标题
                 title = title.replace('"', '').replace("'", "").replace("「", "").replace("」", "").replace("标题：", "").replace("标题:", "").strip()
@@ -636,7 +628,7 @@ class SqlAgent:
                     {"role": "user", "content": prompt}
                 ]
 
-                title = self.llm.chat(messages, enforce_json=False).strip()
+                title = self.llm_provider.chat(messages, enforce_json=False).strip()
 
                 # 清理标题
                 title = title.replace('"', '').replace("'", "").replace("「", "").replace("」", "")
@@ -719,7 +711,7 @@ class SqlAgent:
                 ),
             },
         ]
-        raw = self.llm.chat(messages, temperature=0.2, enforce_json=True)
+        raw = self.llm_provider.chat(messages, temperature=0.2, enforce_json=True)
         try:
             data = json.loads(raw)
         except json.JSONDecodeError:
