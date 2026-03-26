@@ -2246,7 +2246,10 @@
                         // 如果已经有空的对话，直接切换到它
                         currentSessionId = emptySession.session_id;
                         loadHistoryList(); // 刷新历史列表
-                        
+
+                        // 更新发送按钮状态
+                        updateSendButton();
+
                         document.getElementById('chat-messages').innerHTML = `
                             <div class="welcome-section">
                                 <h2 class="welcome-title">👋 你好，我是 GoldMiner</h2>
@@ -2304,6 +2307,9 @@
                 alert('创建新会话失败: ' + error.message);
                 return;
             }
+
+            // 更新发送按钮状态（新会话默认不在处理中）
+            updateSendButton();
 
             document.getElementById('chat-messages').innerHTML = `
                 <div class="welcome-section">
@@ -2385,6 +2391,9 @@
 
                 currentSessionId = sessionId;
                 const session = data.session;
+
+                // 更新发送按钮状态（根据当前会话的处理状态）
+                updateSendButton();
 
                 // 清空并重建对话内容
                 const chatContainer = document.getElementById('chat-messages');
