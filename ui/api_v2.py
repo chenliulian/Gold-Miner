@@ -7,7 +7,7 @@ import json
 import time
 from typing import Any, Callable, Dict, Optional
 
-from flask import Blueprint, jsonify, request, Response
+from flask import Blueprint, jsonify, request, Response, g
 
 from gold_miner.config import Config
 from gold_miner.rate_limiter import RateLimitExceeded
@@ -36,11 +36,70 @@ def get_client_ip() -> str:
         return request.remote_addr
 
 
+def get_token_from_request() -> Optional[str]:
+    """从请求中提取token
+    
+    支持:
+    - Authorization: Bearer <token>
+    - Cookie: session_token=<token>
+    - Query param: ?token=<token>
+    """
+    # 从Header获取
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    
+    # 从Cookie获取
+    token = request.cookies.get("session_token")
+    if token:
+        return token
+    
+    # 从Query参数获取
+    token = request.args.get("token")
+    if token:
+        return token
+    
+    return None
+
+
+def get_auth_service():
+    """获取认证服务实例"""
+    from flask import current_app
+    return getattr(current_app, "auth_service", None)
+
+
 def require_auth(f: Callable) -> Callable:
     """Decorator to require authentication."""
     @functools.wraps(f)
     def decorated(*args, **kwargs):
-        # Add API key validation here if needed
+        auth_service = get_auth_service()
+        if not auth_service:
+            return jsonify({
+                "success": False,
+                "error": "auth_service_not_initialized",
+                "message": "Authentication service not initialized",
+            }), 500
+        
+        token = get_token_from_request()
+        if not token:
+            return jsonify({
+                "success": False,
+                "error": "missing_token",
+                "message": "Authentication token is required",
+            }), 401
+        
+        user, error = auth_service.verify_token(token)
+        if not user:
+            return jsonify({
+                "success": False,
+                "error": "invalid_token",
+                "message": error or "Invalid token",
+            }), 401
+        
+        # 设置当前用户到Flask全局对象
+        g.current_user = user
+        g.current_token = token
+        
         return f(*args, **kwargs)
     return decorated
 
@@ -310,13 +369,18 @@ def chat_stream():
 # =============================================================================
 
 @api_v2.route("/sessions", methods=["GET"])
+@require_auth
 @handle_errors
 def list_sessions():
-    """List all sessions."""
+    """List all sessions for current user."""
+    from flask import g
+    user = g.current_user
+    
     pool = get_agent_pool()
-    agent_wrapper = pool.acquire()
+    agent_wrapper = pool.acquire(user_id=user.id)
     try:
-        sessions = agent_wrapper.agent.session.list_sessions(limit=50)
+        # 只列出当前用户的会话
+        sessions = agent_wrapper.agent.session.list_sessions(limit=50, user_id=user.id)
         return jsonify({
             "success": True,
             "data": {"sessions": sessions},
@@ -326,24 +390,59 @@ def list_sessions():
 
 
 @api_v2.route("/sessions/<session_id>", methods=["GET"])
+@require_auth
 @handle_errors
 def get_session(session_id: str):
-    """Get session details."""
+    """Get session details for current user."""
+    from flask import g
+    user = g.current_user
+    
     pool = get_agent_pool()
-    agent_wrapper = pool.acquire()
+    agent_wrapper = pool.acquire(user_id=user.id)
     try:
+        # 设置用户ID以确保只能加载自己的会话
+        agent_wrapper.agent.session.user_id = user.id
         success = agent_wrapper.agent.session.load_session(session_id)
         if not success:
             return jsonify({
                 "success": False,
                 "error": "session_not_found",
-                "message": f"Session {session_id} not found",
+                "message": f"Session {session_id} not found or access denied",
             }), 404
         
         context = agent_wrapper.agent.session.get_context(max_steps=10000)
         return jsonify({
             "success": True,
             "data": {"session": context},
+        })
+    finally:
+        pool.release(agent_wrapper)
+
+
+@api_v2.route("/sessions/<session_id>", methods=["DELETE"])
+@require_auth
+@handle_errors
+def delete_session_v2(session_id: str):
+    """Delete a session for current user."""
+    from flask import g
+    user = g.current_user
+    
+    pool = get_agent_pool()
+    agent_wrapper = pool.acquire(user_id=user.id)
+    try:
+        # 设置用户ID以确保只能删除自己的会话
+        agent_wrapper.agent.session.user_id = user.id
+        success = agent_wrapper.agent.session.delete_session(session_id)
+        if not success:
+            return jsonify({
+                "success": False,
+                "error": "session_not_found",
+                "message": f"Session {session_id} not found or access denied",
+            }), 404
+        
+        return jsonify({
+            "success": True,
+            "data": {"deleted": True},
         })
     finally:
         pool.release(agent_wrapper)

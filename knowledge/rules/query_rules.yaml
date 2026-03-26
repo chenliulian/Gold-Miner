@@ -178,8 +178,8 @@
     去重维度:
       按请求去重: COUNT(DISTINCT request_id)
       按广告主去重: COUNT(DISTINCT advertiser_id)
-      按用户去重: COUNT(DISTINCT user_id) 或 device_id
-      按广告去重: COUNT(DISTINCT creative_id)
+      按用户去重: COUNT(DISTINCT gaid) 或 gazj
+      按广告去重: COUNT(DISTINCT ad_creative_id)
       
   # ========== 数据质量规则 ==========
   异常值检查:
@@ -509,6 +509,41 @@
       - 金融申贷类广告需特别注意区分"申贷"、"授信"、"借款"等不同事件
 
   # ========== ODPS SQL 语法规则 ==========
+  避免使用CROSS JOIN:
+    规则ID: R021
+    名称: 禁止使用 CROSS JOIN，使用子查询方式替代
+    描述: ODPS SQL 不支持 CROSS JOIN（笛卡尔积），需要使用子查询或 JOIN ON 1=1 方式替代
+    严重级别: 强制
+    适用场景: 所有需要生成笛卡尔积的场景
+    错误示例: >
+      -- 错误的 CROSS JOIN 用法
+      SELECT a.*, b.*
+      FROM table_a a
+      CROSS JOIN table_b b
+    正确示例: >
+      -- 方法1：使用子查询生成笛卡尔积
+      SELECT a.*, b.*
+      FROM (
+        SELECT * FROM table_a
+      ) a
+      JOIN (
+        SELECT * FROM table_b
+      ) b
+      ON 1=1
+      
+      -- 方法2：使用 CTE 方式
+      WITH a AS (SELECT * FROM table_a),
+           b AS (SELECT * FROM table_b)
+      SELECT a.*, b.*
+      FROM a JOIN b ON 1=1
+    错误信息: "ODPS-0130071: Semantic analysis exception - CROSS JOIN is not supported"
+    解决方案: 将 CROSS JOIN 改为 JOIN ON 1=1，并使用子查询或 CTE 方式包装表
+    注意事项:
+      - ODPS 明确不支持 CROSS JOIN 语法
+      - 使用 JOIN ON 1=1 可以实现笛卡尔积效果
+      - 子查询或 CTE 包装是必要的，直接用表名 JOIN ON 1=1 可能仍报错
+      - 笛卡尔积会产生大量数据，务必确认业务逻辑需要
+      
   ORDER_BY必须带LIMIT:
     规则ID: R017
     名称: ORDER BY 必须配合 LIMIT 使用

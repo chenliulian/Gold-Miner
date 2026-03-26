@@ -643,3 +643,215 @@ SELECT
 - Tags: 
 
 ---
+
+## [LRN-20260326-134] correction
+
+**Logged**: 2026-03-26T11:15:15
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: SQL validation failed: Statement type 'set' is not allowed. Only SELECT, WITH, D...
+
+### Details
+错误类型: unknown
+错误信息: SQL validation failed: Statement type 'set' is not allowed. Only SELECT, WITH, DESC, SHOW are permitted
+上下文: sql_validation
+时间: 2026-03-26T11:15:15.714795
+
+相关 SQL:
+```sql
+SET odps.sql.allow.cartesian.product=true;
+WITH show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_cnt,
+        SUM(conv_label_register) as conv_register_cnt,
+        SUM(conv_label_pay) as conv_pay_cnt,
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh BETWEEN '2026032300' AND '202603232
+```
+
+### Suggested Action
+需要进一步调查
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260326-047] knowledge_gap
+
+**Logged**: 2026-03-26T11:30:22
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-26T11:30:22.659301
+
+相关 SQL:
+```sql
+SELECT 
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    SUM(dld_label) as dld_cnt,
+    SUM(conv_label_active) as conv_cnt,
+    SUM(conv_label_register) as conv_register_cnt,
+    SUM(conv_label_pay) as conv_pay_cnt,
+    SUM(billing_actual_deduction_price) / 1e5 as total_cost_usd,
+    ROUND(SUM(click_label) * 100.0 / NULLIF(SUM(show_label), 0), 2) as ctr_pct,
+    ROUND(SUM(dld_label) * 100.0 / NULLIF(SUM(click_label), 0), 2) as click_to_dld_rate_pct,
+    ROUND(SUM(conv_labe
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260326-836] knowledge_gap
+
+**Logged**: 2026-03-26T11:39:01
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-26T11:39:01.116212
+
+相关 SQL:
+```sql
+SELECT 
+    e.rank_req_cnt,
+    e.resp_req_cnt,
+    (e.rank_req_cnt - e.resp_req_cnt) as cutoff_cnt,
+    ROUND(e.resp_req_cnt * 100.0 / NULLIF(e.rank_req_cnt, 0), 2) as win_rate_pct,
+    s.show_cnt,
+    ROUND(s.show_cnt * 100.0 / NULLIF(e.resp_req_cnt, 0), 2) as resp_to_show_rate_pct,
+    s.click_cnt,
+    ROUND(s.click_cnt * 100.0 / NULLIF(s.show_cnt, 0), 2) as ctr_pct,
+    s.dld_cnt,
+    ROUND(s.dld_cnt * 100.0 / NULLIF(s.click_cnt, 0), 2) as dld_rate_pct,
+    s.conv_cnt,
+    ROUND(s.conv_cnt *
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260326-971] knowledge_gap
+
+**Logged**: 2026-03-26T11:52:59
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-26T11:52:59.508827
+
+相关 SQL:
+```sql
+WITH show_funnel AS (
+    SELECT 
+        ad_group_id,
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_active_cnt,
+        SUM(conv_label_register) as conv_register_cnt,
+        SUM(conv_label_pay) as conv_pay_cnt,
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost_usd
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh BETWEEN '2026032300' AND '2026032323'
+    AND 
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---
+
+## [LRN-20260326-012] knowledge_gap
+
+**Logged**: 2026-03-26T14:20:28
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+执行超时错误: SQL submission timeout after 60 seconds...
+
+### Details
+错误类型: timeout_error
+错误信息: SQL submission timeout after 60 seconds
+上下文: sql_execution
+时间: 2026-03-26T14:20:28.926199
+
+相关 SQL:
+```sql
+SELECT 
+    e.rank_req_cnt,
+    e.resp_req_cnt,
+    (e.rank_req_cnt - e.resp_req_cnt) as cutoff_cnt,
+    ROUND(e.resp_req_cnt * 100.0 / NULLIF(e.rank_req_cnt, 0), 2) as win_rate_pct,
+    s.show_cnt,
+    ROUND(s.show_cnt * 100.0 / NULLIF(e.resp_req_cnt, 0), 2) as resp_to_show_rate_pct,
+    s.click_cnt,
+    ROUND(s.click_cnt * 100.0 / NULLIF(s.show_cnt, 0), 2) as ctr_pct,
+    s.dld_cnt,
+    ROUND(s.dld_cnt * 100.0 / NULLIF(s.click_cnt, 0), 2) as click_to_dld_rate_pct,
+    s.conv_cnt_active,
+    RO
+```
+
+### Suggested Action
+优化 SQL 性能，添加分区过滤条件，减少数据扫描量
+
+### Metadata
+- Source: auto_detect
+- Related Files: 
+- Tags: 
+
+---

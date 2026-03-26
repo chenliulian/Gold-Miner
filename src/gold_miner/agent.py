@@ -12,7 +12,7 @@ from tabulate import tabulate
 from .auto_improvement import get_auto_improvement_manager
 from .business_knowledge import get_knowledge_manager
 from .config import Config
-from .llm import OpenAICompatibleClient
+from .llm import AnthropicClient, OpenAICompatibleClient
 from .memory import MemoryStore
 from .odps_client import OdpsClient, OdpsConfig
 from .prompts import (
@@ -121,9 +121,17 @@ class SqlAgent:
     ):
         self.config = config
         self.user_id = user_id  # 当前用户ID
-        self.llm = OpenAICompatibleClient(
-            config.llm_base_url, config.llm_api_key, config.llm_model
-        )
+        # 根据 base_url 自动选择合适的 LLM 客户端
+        if "/messages" in config.llm_base_url.lower():
+            # Anthropic 原生 API 格式
+            self.llm = AnthropicClient(
+                config.llm_base_url, config.llm_api_key, config.llm_model
+            )
+        else:
+            # OpenAI 兼容格式
+            self.llm = OpenAICompatibleClient(
+                config.llm_base_url, config.llm_api_key, config.llm_model
+            )
         self.odps = OdpsClient(
             OdpsConfig(
                 access_id=config.odps_access_id,

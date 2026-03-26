@@ -57,11 +57,11 @@ class AgentPool:
             agent = self._create_agent()
             self._pool.append(agent)
 
-    def _create_agent(self) -> PooledAgent:
+    def _create_agent(self, user_id: str = "") -> PooledAgent:
         """Create a new agent instance."""
         now = datetime.now()
         return PooledAgent(
-            agent=SqlAgent(self.config, self.skills_dir, self.sessions_dir),
+            agent=SqlAgent(self.config, self.skills_dir, self.sessions_dir, user_id=user_id),
             agent_id=str(uuid.uuid4()),
             created_at=now,
             last_used=now,
@@ -69,13 +69,29 @@ class AgentPool:
             use_count=0,
         )
 
-    def acquire(self, session_id: Optional[str] = None) -> PooledAgent:
-        """Acquire an agent from the pool."""
+    def acquire(self, session_id: Optional[str] = None, user_id: str = "") -> PooledAgent:
+        """Acquire an agent from the pool.
+        
+        Args:
+            session_id: 可选的会话ID
+            user_id: 可选的用户ID，用于创建用户特定的Agent
+        """
         with self._lock:
             if self._shutdown:
                 raise RuntimeError("Agent pool is shutdown")
 
-            # Try to find an available agent
+            # Try to find an available agent with matching user_id
+            for pooled_agent in self._pool:
+                if not pooled_agent.in_use:
+                    # 如果指定了 user_id，优先找匹配的 Agent
+                    if user_id and getattr(pooled_agent.agent, 'user_id', None) == user_id:
+                        pooled_agent.in_use = True
+                        pooled_agent.last_used = datetime.now()
+                        pooled_agent.use_count += 1
+                        pooled_agent.session_id = session_id
+                        return pooled_agent
+            
+            # 如果没有找到匹配的，找任何可用的 Agent
             for pooled_agent in self._pool:
                 if not pooled_agent.in_use:
                     pooled_agent.in_use = True
@@ -86,7 +102,7 @@ class AgentPool:
 
             # Create new agent if under max size
             if len(self._pool) < self.max_size:
-                new_agent = self._create_agent()
+                new_agent = self._create_agent(user_id=user_id)
                 new_agent.in_use = True
                 new_agent.use_count = 1
                 new_agent.session_id = session_id

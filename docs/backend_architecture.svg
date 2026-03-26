@@ -1,0 +1,297 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" width="1400" height="1000">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="flaskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#dbeafe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#bfdbfe;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="agentGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f3e8ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e9d5ff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="serviceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef3c7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fde68a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="dataGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ecfdf5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d1fae5;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="externalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fee2e2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fecaca;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="1000" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <rect x="20" y="20" width="1360" height="60" rx="12" fill="url(#headerGrad)" filter="url(#shadow)"/>
+  <text x="700" y="58" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" fill="white">GoldMiner 后端架构图</text>
+
+  <!-- Main Container -->
+  <rect x="20" y="100" width="1360" height="880" rx="16" fill="white" stroke="#e2e8f0" stroke-width="2" filter="url(#shadow)"/>
+
+  <!-- ============================================ -->
+  <!-- Layer 1: Flask Web Layer (Top) -->
+  <!-- ============================================ -->
+  <rect x="40" y="120" width="1320" height="180" rx="12" fill="url(#flaskGrad)" stroke="#3b82f6" stroke-width="2"/>
+  <text x="700" y="150" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#1e40af">🌐 Flask Web Layer (HTTP 接口层)</text>
+
+  <!-- app.py Routes -->
+  <rect x="60" y="170" width="400" height="115" rx="8" fill="white" stroke="#60a5fa" stroke-width="1"/>
+  <text x="260" y="195" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#1e40af">app.py - 核心路由</text>
+  <text x="260" y="220" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">POST /chat (流式响应)</text>
+  <text x="260" y="240" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">GET/POST/DELETE /sessions/*</text>
+  <text x="260" y="260" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">GET /memory, /skills, /learnings</text>
+  <text x="260" y="275" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">POST /interrupt, /memory/*</text>
+
+  <!-- api_v2.py -->
+  <rect x="480" y="170" width="400" height="115" rx="8" fill="white" stroke="#60a5fa" stroke-width="1"/>
+  <text x="680" y="195" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#1e40af">api_v2.py - API v2</text>
+  <text x="680" y="220" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">GET /api/v2/agents (Agent池管理)</text>
+  <text x="680" y="240" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">POST /api/v2/tasks (任务队列)</text>
+  <text x="680" y="260" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">POST /api/v2/chat/stream (流式)</text>
+  <text x="680" y="275" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">认证装饰器: @require_auth</text>
+
+  <!-- auth_routes.py -->
+  <rect x="900" y="170" width="200" height="115" rx="8" fill="white" stroke="#60a5fa" stroke-width="1"/>
+  <text x="1000" y="195" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#1e40af">auth_routes.py</text>
+  <text x="1000" y="220" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">/auth/login</text>
+  <text x="1000" y="240" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">/auth/logout</text>
+  <text x="1000" y="260" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#475569">JWT Token 认证</text>
+
+  <!-- Middleware -->
+  <rect x="1120" y="170" width="220" height="115" rx="8" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1230" y="195" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#92400e">中间件 &amp; 装饰器</text>
+  <text x="1230" y="220" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#b45309">RateLimiter 限流</text>
+  <text x="1230" y="240" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#b45309">@require_auth 认证</text>
+  <text x="1230" y="260" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#b45309">@handle_errors 错误处理</text>
+
+  <!-- ============================================ -->
+  <!-- Layer 2: Service Layer -->
+  <!-- ============================================ -->
+  <rect x="40" y="320" width="1320" height="140" rx="12" fill="url(#serviceGrad)" stroke="#f59e0b" stroke-width="2"/>
+  <text x="700" y="350" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#92400e">⚙️ Service Layer (服务层)</text>
+
+  <!-- Agent Pool -->
+  <rect x="60" y="375" width="280" height="70" rx="8" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="200" y="400" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#92400e">Agent Pool (Agent池)</text>
+  <text x="200" y="420" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">get_agent_pool() · 复用Agent实例</text>
+  <text x="200" y="435" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">cleanup_idle_agents() · 清理空闲</text>
+
+  <!-- Task Queue -->
+  <rect x="360" y="375" width="280" height="70" rx="8" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="500" y="400" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#92400e">Task Queue (任务队列)</text>
+  <text x="500" y="420" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">submit_task() · 提交任务</text>
+  <text x="500" y="435" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">get_task_status() · 查询状态</text>
+
+  <!-- User Data Manager -->
+  <rect x="660" y="375" width="280" height="70" rx="8" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="800" y="400" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#92400e">User Data Manager</text>
+  <text x="800" y="420" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">用户数据隔离管理</text>
+  <text x="800" y="435" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">会话/记忆/技能存储</text>
+
+  <!-- Auth Service -->
+  <rect x="960" y="375" width="280" height="70" rx="8" fill="white" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1100" y="400" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#92400e">Auth Service (认证服务)</text>
+  <text x="1100" y="420" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">JWT Token 生成/验证</text>
+  <text x="1100" y="435" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">用户权限检查</text>
+
+  <!-- ============================================ -->
+  <!-- Layer 3: Agent Core Layer -->
+  <!-- ============================================ -->
+  <rect x="40" y="480" width="860" height="280" rx="12" fill="url(#agentGrad)" stroke="#9333ea" stroke-width="2"/>
+  <text x="470" y="510" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#6b21a8">🤖 Agent Core Layer (智能体核心层)</text>
+
+  <!-- SqlAgent -->
+  <rect x="60" y="535" width="200" height="100" rx="8" fill="white" stroke="#c084fc" stroke-width="2"/>
+  <text x="160" y="560" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#6b21a8">SqlAgent</text>
+  <text x="160" y="585" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">run() · 执行查询</text>
+  <text x="160" y="605" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">chat() · 对话模式</text>
+  <text x="160" y="620" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">AgentState (状态管理)</text>
+
+  <!-- AgentState -->
+  <rect x="280" y="535" width="180" height="100" rx="8" fill="#f3e8ff" stroke="#c084fc" stroke-width="1"/>
+  <text x="370" y="560" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#6b21a8">AgentState</text>
+  <text x="370" y="580" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#7c3aed">results[] · 查询结果</text>
+  <text x="370" y="595" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#7c3aed">notes[] · 执行笔记</text>
+  <text x="370" y="610" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#7c3aed">executed_sqls[] · SQL历史</text>
+  <text x="370" y="625" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#7c3aed">recent_skills[] · 技能调用</text>
+
+  <!-- LLM Client -->
+  <rect x="480" y="535" width="180" height="100" rx="8" fill="white" stroke="#c084fc" stroke-width="1"/>
+  <text x="570" y="560" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#6b21a8">LLM Client</text>
+  <text x="570" y="585" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">AnthropicClient (Claude)</text>
+  <text x="570" y="605" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">OpenAICompatibleClient</text>
+  <text x="570" y="620" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">generate() · 文本生成</text>
+
+  <!-- Prompts -->
+  <rect x="680" y="535" width="200" height="100" rx="8" fill="white" stroke="#c084fc" stroke-width="1"/>
+  <text x="780" y="560" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#6b21a8">Prompts</text>
+  <text x="780" y="585" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">SYSTEM_PROMPT</text>
+  <text x="780" y="605" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">MEMORY_EXTRACT_PROMPT</text>
+  <text x="780" y="620" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#7c3aed">FINAL_REPORT_PROMPT</text>
+
+  <!-- Supporting Components -->
+  <rect x="60" y="655" width="150" height="90" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="135" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#92400e">SkillRegistry</text>
+  <text x="135" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">技能注册与管理</text>
+  <text x="135" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">execute_skill()</text>
+  <text x="135" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">discover_skills()</text>
+
+  <rect x="230" y="655" width="150" height="90" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="305" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#92400e">SQLValidator</text>
+  <text x="305" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">SQL 安全验证</text>
+  <text x="305" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">危险操作检测</text>
+  <text x="305" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">权限检查</text>
+
+  <rect x="400" y="655" width="150" height="90" rx="6" fill="#dbeafe" stroke="#60a5fa" stroke-width="1"/>
+  <text x="475" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#1e40af">MemoryStore</text>
+  <text x="475" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">长期记忆存储</text>
+  <text x="475" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">save_memory()</text>
+  <text x="475" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">search_memory()</text>
+
+  <rect x="570" y="655" width="150" height="90" rx="6" fill="#dbeafe" stroke="#60a5fa" stroke-width="1"/>
+  <text x="645" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#1e40af">SessionStore</text>
+  <text x="645" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">会话数据存储</text>
+  <text x="645" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">save_session()</text>
+  <text x="645" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">load_session()</text>
+
+  <rect x="740" y="655" width="140" height="90" rx="6" fill="#ecfdf5" stroke="#34d399" stroke-width="1"/>
+  <text x="810" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#065f46">AutoImprovement</text>
+  <text x="810" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#059669">自动错误学习</text>
+  <text x="810" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#059669">记录错误模式</text>
+  <text x="810" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#059669">优化建议</text>
+
+  <!-- ============================================ -->
+  <!-- Layer 4: Data Access Layer -->
+  <!-- ============================================ -->
+  <rect x="920" y="480" width="440" height="280" rx="12" fill="url(#dataGrad)" stroke="#10b981" stroke-width="2"/>
+  <text x="1140" y="510" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#065f46">🗄️ Data Access Layer (数据访问层)</text>
+
+  <!-- ODPS Client -->
+  <rect x="940" y="535" width="190" height="100" rx="8" fill="white" stroke="#34d399" stroke-width="2"/>
+  <text x="1035" y="560" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#065f46">OdpsClient</text>
+  <text x="1035" y="585" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#059669">execute_sql_with_priority()</text>
+  <text x="1035" y="605" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#059669">get_table_schema()</text>
+  <text x="1035" y="620" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#059669">list_tables()</text>
+
+  <!-- DataWorks Client -->
+  <rect x="1150" y="535" width="190" height="100" rx="8" fill="white" stroke="#34d399" stroke-width="1"/>
+  <text x="1245" y="560" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#065f46">DataWorksClient</text>
+  <text x="1245" y="585" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#059669">get_lineage()</text>
+  <text x="1245" y="605" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#059669">get_table_info()</text>
+  <text x="1245" y="620" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#059669">血缘关系分析</text>
+
+  <!-- File Storage -->
+  <rect x="940" y="655" width="120" height="90" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1000" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#92400e">File Storage</text>
+  <text x="1000" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">Session JSON</text>
+  <text x="1000" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">Memory YAML</text>
+  <text x="1000" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">Learnings MD</text>
+
+  <!-- Business Knowledge -->
+  <rect x="1080" y="655" width="120" height="90" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1140" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#92400e">BusinessKnowledge</text>
+  <text x="1140" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">Query Rules</text>
+  <text x="1140" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">Best Practices</text>
+  <text x="1140" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#b45309">Table Knowledge</text>
+
+  <!-- User Data -->
+  <rect x="1220" y="655" width="120" height="90" rx="6" fill="#dbeafe" stroke="#60a5fa" stroke-width="1"/>
+  <text x="1280" y="680" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#1e40af">UserDataManager</text>
+  <text x="1280" y="705" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">用户目录隔离</text>
+  <text x="1280" y="720" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">get_user_path()</text>
+  <text x="1280" y="735" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="9" fill="#3b82f6">数据权限控制</text>
+
+  <!-- ============================================ -->
+  <!-- Layer 5: External Services (Bottom) -->
+  <!-- ============================================ -->
+  <rect x="40" y="780" width="1320" height="180" rx="12" fill="url(#externalGrad)" stroke="#dc2626" stroke-width="2"/>
+  <text x="700" y="810" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#991b1b">🔌 External Services (外部服务)</text>
+
+  <!-- LLM Services -->
+  <rect x="60" y="835" width="200" height="110" rx="8" fill="white" stroke="#f87171" stroke-width="1"/>
+  <text x="160" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#991b1b">LLM Services</text>
+  <text x="160" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">Anthropic Claude API</text>
+  <text x="160" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">OpenAI Compatible API</text>
+  <text x="160" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#ef4444">流式响应 / Function Calling</text>
+
+  <!-- ODPS/DataWorks -->
+  <rect x="280" y="835" width="200" height="110" rx="8" fill="white" stroke="#f87171" stroke-width="1"/>
+  <text x="380" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#991b1b">Alibaba Cloud ODPS</text>
+  <text x="380" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">MaxCompute SQL 执行</text>
+  <text x="380" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">数据表查询</text>
+  <text x="380" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#ef4444">优先级队列 / 实例管理</text>
+
+  <!-- DataWorks -->
+  <rect x="500" y="835" width="180" height="110" rx="8" fill="white" stroke="#f87171" stroke-width="1"/>
+  <text x="590" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#991b1b">DataWorks</text>
+  <text x="590" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">数据地图 API</text>
+  <text x="590" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">血缘关系</text>
+  <text x="590" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#ef4444">元数据管理</text>
+
+  <!-- File System -->
+  <rect x="700" y="835" width="160" height="110" rx="8" fill="white" stroke="#f87171" stroke-width="1"/>
+  <text x="780" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#991b1b">File System</text>
+  <text x="780" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">Session 存储</text>
+  <text x="780" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">Memory 存储</text>
+  <text x="780" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#ef4444">用户数据隔离</text>
+
+  <!-- Auth Provider -->
+  <rect x="880" y="835" width="160" height="110" rx="8" fill="white" stroke="#f87171" stroke-width="1"/>
+  <text x="960" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#991b1b">Auth Provider</text>
+  <text x="960" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">JWT 认证服务</text>
+  <text x="960" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" fill="#dc2626">用户管理</text>
+  <text x="960" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#ef4444">Token 验证</text>
+
+  <!-- Circuit Breaker -->
+  <rect x="1060" y="835" width="140" height="110" rx="8" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1130" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#92400e">Circuit Breaker</text>
+  <text x="1130" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">熔断器模式</text>
+  <text x="1130" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">故障保护</text>
+  <text x="1130" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">自动恢复</text>
+
+  <!-- Rate Limiter -->
+  <rect x="1220" y="835" width="120" height="110" rx="8" fill="#fef3c7" stroke="#fbbf24" stroke-width="1"/>
+  <text x="1280" y="865" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#92400e">Rate Limiter</text>
+  <text x="1280" y="895" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">请求限流</text>
+  <text x="1280" y="915" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">IP 限制</text>
+  <text x="1280" y="935" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#b45309">防刷保护</text>
+
+  <!-- Note: Connection lines removed for cleaner view -->
+
+  <!-- Legend -->
+  <rect x="40" y="960" width="500" height="30" rx="6" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="55" y="980" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="600" fill="#334155">图例:</text>
+  
+  <rect x="100" y="965" width="15" height="12" rx="2" fill="url(#flaskGrad)" stroke="#3b82f6" stroke-width="1"/>
+  <text x="120" y="977" font-family="Inter, Arial, sans-serif" font-size="9" fill="#64748b">Web层</text>
+  
+  <rect x="170" y="965" width="15" height="12" rx="2" fill="url(#serviceGrad)" stroke="#f59e0b" stroke-width="1"/>
+  <text x="190" y="977" font-family="Inter, Arial, sans-serif" font-size="9" fill="#64748b">服务层</text>
+  
+  <rect x="245" y="965" width="15" height="12" rx="2" fill="url(#agentGrad)" stroke="#9333ea" stroke-width="1"/>
+  <text x="265" y="977" font-family="Inter, Arial, sans-serif" font-size="9" fill="#64748b">Agent层</text>
+  
+  <rect x="320" y="965" width="15" height="12" rx="2" fill="url(#dataGrad)" stroke="#10b981" stroke-width="1"/>
+  <text x="340" y="977" font-family="Inter, Arial, sans-serif" font-size="9" fill="#64748b">数据层</text>
+  
+  <rect x="390" y="965" width="15" height="12" rx="2" fill="url(#externalGrad)" stroke="#dc2626" stroke-width="1"/>
+  <text x="410" y="977" font-family="Inter, Arial, sans-serif" font-size="9" fill="#64748b">外部服务</text>
+
+  <!-- File Info -->
+  <text x="700" y="985" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" fill="#94a3b8">后端核心文件: ui/app.py, ui/api_v2.py, src/gold_miner/agent.py, src/gold_miner/odps_client.py</text>
+</svg>

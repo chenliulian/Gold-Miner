@@ -12,6 +12,177 @@ class LLMError(RuntimeError):
     pass
 
 
+class AnthropicClient:
+    """Anthropic API 客户端 (原生格式)"""
+    
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        timeout: int = 60,
+        enable_circuit_breaker: bool = True,
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.model = model
+        self.timeout = timeout
+        
+        # Circuit breaker for LLM API calls
+        if enable_circuit_breaker:
+            try:
+                from .config import Config
+                config = Config.from_env()
+                failure_threshold = config.circuit_breaker_failure_threshold
+                recovery_timeout = config.circuit_breaker_recovery_timeout
+            except Exception:
+                failure_threshold = 5
+                recovery_timeout = 30.0
+
+            self._circuit_breaker = CircuitBreaker(
+                name="anthropic_llm_api",
+                config=CircuitBreakerConfig(
+                    failure_threshold=failure_threshold,
+                    recovery_timeout=recovery_timeout,
+                    expected_exception=(requests.RequestException, LLMError),
+                ),
+            )
+        else:
+            self._circuit_breaker = None
+
+    def chat(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.2,
+        enforce_json: bool = False,
+        retries: int = 2,
+    ) -> str:
+        """Send chat request to Anthropic API."""
+        if self._circuit_breaker:
+            return self._circuit_breaker.call(
+                self._chat_with_retry,
+                messages,
+                temperature,
+                enforce_json,
+                retries,
+            )
+        else:
+            return self._chat_with_retry(
+                messages,
+                temperature,
+                enforce_json,
+                retries,
+            )
+
+    def _chat_with_retry(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.2,
+        enforce_json: bool = False,
+        retries: int = 2,
+    ) -> str:
+        """Internal method with retry logic."""
+        url = f"{self.base_url}"
+        headers = {
+            "x-api-key": self.api_key,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01",
+        }
+
+        # 转换消息格式 (OpenAI -> Anthropic)
+        anthropic_messages = self._convert_messages(messages)
+        
+        # 提取 system message
+        system_message = ""
+        if messages and messages[0].get("role") == "system":
+            system_message = messages[0].get("content", "")
+        
+        # 如果需要 JSON，在 system message 中添加提示
+        if enforce_json:
+            json_instruction = "\n\nIMPORTANT: You MUST respond with a valid JSON object only, no extra text, no markdown formatting."
+            system_message = system_message + json_instruction if system_message else json_instruction
+
+        def _request() -> requests.Response:
+            payload: Dict[str, Any] = {
+                "model": self.model,
+                "messages": anthropic_messages,
+                "max_tokens": 4096,
+                "temperature": temperature,
+            }
+            if system_message:
+                payload["system"] = system_message
+            return requests.post(
+                url, headers=headers, data=json.dumps(payload), timeout=self.timeout
+            )
+
+        attempt = 0
+        last_error: Optional[str] = None
+
+        while attempt <= retries:
+            try:
+                resp = _request()
+                if resp.status_code < 400:
+                    data = resp.json()
+                    try:
+                        content = data["content"][0]["text"]
+                        # 如果强制要求 JSON，验证返回内容
+                        if enforce_json:
+                            content = self._validate_and_fix_json(content)
+                        return content
+                    except Exception as exc:
+                        raise LLMError(f"Unexpected Anthropic response: {data}") from exc
+                last_error = f"{resp.status_code}: {resp.text}"
+                time.sleep(0.5 * (2**attempt))
+            except requests.exceptions.ReadTimeout as e:
+                last_error = f"Read timeout: {e}"
+                print(f"[Anthropic LLM] Request timeout (attempt {attempt + 1}/{retries + 1}), retrying...")
+                time.sleep(1.0 * (2**attempt))
+            except requests.exceptions.RequestException as e:
+                last_error = f"Request error: {e}"
+                print(f"[Anthropic LLM] Request error (attempt {attempt + 1}/{retries + 1}): {e}")
+                time.sleep(0.5 * (2**attempt))
+            attempt += 1
+
+        raise LLMError(f"LLM error after {retries + 1} attempts: {last_error}")
+
+    def _convert_messages(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """将 OpenAI 格式的消息转换为 Anthropic 格式"""
+        anthropic_messages = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                continue  # Anthropic 使用单独的 system 字段
+            anthropic_messages.append({
+                "role": msg.get("role"),
+                "content": msg.get("content", "")
+            })
+        return anthropic_messages
+
+    def _validate_and_fix_json(self, content: str) -> str:
+        """验证并尝试修复 JSON 内容"""
+        content = content.strip()
+        try:
+            json.loads(content)
+            return content
+        except json.JSONDecodeError:
+            pass
+        
+        # 移除可能的 markdown 代码块标记
+        if content.startswith("```json"):
+            content = content[7:]
+        elif content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        
+        try:
+            json.loads(content)
+            return content
+        except json.JSONDecodeError as e:
+            print(f"[Warning] LLM returned invalid JSON: {e}")
+            return content
+
+
 class OpenAICompatibleClient:
     def __init__(
         self,

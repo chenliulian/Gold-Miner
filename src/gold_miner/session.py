@@ -172,9 +172,10 @@ class SessionStore:
                     raw = json.load(f)
                 
                 # 只返回当前用户的会话
+                # 兼容旧数据：如果 session_user_id 为空，也显示给当前用户
                 session_user_id = raw.get("user_id", "")
-                if target_user_id and session_user_id != target_user_id:
-                    continue  # 跳过其他用户的会话
+                if target_user_id and session_user_id and session_user_id != target_user_id:
+                    continue  # 跳过其他用户的会话（只跳过明确属于其他用户的）
                 
                 sessions.append({
                     "session_id": raw.get("session_id", filename[:-5]),

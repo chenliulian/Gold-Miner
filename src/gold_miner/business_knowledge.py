@@ -534,10 +534,12 @@ class BusinessKnowledgeManager:
         if context.rules:
             sections.append("## 查询规则")
             for rule in context.rules:
-                if rule.severity == '强制':
-                    sections.append(f"- **{rule.name}** (强制): {rule.description}")
-                    if rule.correct_example:
-                        sections.append(f"  - 正确示例: {rule.correct_example[:100]}...")
+                # 所有级别的规则都加载：强制、警告、建议
+                sections.append(f"- **{rule.name}** ({rule.severity}): {rule.description}")
+                if rule.correct_example:
+                    sections.append(f"  - 正确示例: {rule.correct_example[:100]}...")
+                if rule.incorrect_example:
+                    sections.append(f"  - 错误示例: {rule.incorrect_example[:100]}...")
             sections.append("")
         
         # 4. 注意事项

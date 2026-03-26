@@ -53,6 +53,27 @@ User-requested capabilities and feature ideas.
 """
 
 
+def _generate_content_fingerprint(summary: str, details: str) -> str:
+    """生成内容指纹用于去重"""
+    import hashlib
+    # 提取关键信息生成指纹
+    content = f"{summary}:{details[:200]}"
+    return hashlib.md5(content.encode("utf-8")).hexdigest()[:16]
+
+
+def _is_duplicate(file_path: Path, fingerprint: str) -> bool:
+    """检查文件是否已包含相同指纹的记录"""
+    if not file_path.exists():
+        return False
+    
+    try:
+        content = file_path.read_text(encoding="utf-8")
+        # 检查是否已存在相同指纹（存储在Metadata中）
+        return f"Fingerprint: {fingerprint}" in content
+    except Exception:
+        return False
+
+
 def run(
     category: str = "insight",
     summary: str = "",
@@ -82,18 +103,31 @@ def run(
     """
     _ensure_learnings_dir()
 
+    # 生成内容指纹用于去重
+    fingerprint = _generate_content_fingerprint(summary, details)
+
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
     entry_id = _generate_entry_id(entry_type)
 
     if entry_type == "error":
-        content = _build_error_entry(entry_id, timestamp, summary, details, suggested_action, area, priority, source, related_files)
+        content = _build_error_entry(entry_id, timestamp, summary, details, suggested_action, area, priority, source, related_files, fingerprint)
         file_path = ERRORS_FILE
     elif entry_type == "feature_request":
         content = _build_feature_entry(entry_id, timestamp, summary, details, suggested_action, area, priority)
         file_path = FEATURE_REQUESTS_FILE
     else:
-        content = _build_learning_entry(entry_id, timestamp, category, summary, details, suggested_action, area, priority, source, related_files, tags)
+        content = _build_learning_entry(entry_id, timestamp, category, summary, details, suggested_action, area, priority, source, related_files, tags, fingerprint)
         file_path = LEARNINGS_FILE
+
+    # 检查是否重复
+    if _is_duplicate(file_path, fingerprint):
+        return {
+            "status": "skipped",
+            "entry_id": entry_id,
+            "entry_type": entry_type,
+            "file": str(file_path),
+            "message": f"Duplicate entry skipped (same content fingerprint)",
+        }
 
     with open(file_path, "a", encoding="utf-8") as f:
         f.write("\n" + content)
@@ -127,6 +161,7 @@ def _build_learning_entry(
     source: str,
     related_files: Optional[List[str]],
     tags: Optional[List[str]],
+    fingerprint: str = "",
 ) -> str:
     files_str = ", ".join(related_files) if related_files else ""
     tags_str = ", ".join(tags) if tags else ""
@@ -151,6 +186,7 @@ def _build_learning_entry(
 - Source: {source}
 - Related Files: {files_str}
 - Tags: {tags_str}
+- Fingerprint: {fingerprint}
 
 ---
 """
@@ -166,6 +202,7 @@ def _build_error_entry(
     priority: str,
     source: str,
     related_files: Optional[List[str]],
+    fingerprint: str = "",
 ) -> str:
     files_str = ", ".join(related_files) if related_files else ""
 
@@ -193,6 +230,7 @@ def _build_error_entry(
 ### Metadata
 - Reproducible: unknown
 - Related Files: {files_str}
+- Fingerprint: {fingerprint}
 
 ---
 """

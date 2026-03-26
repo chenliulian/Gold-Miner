@@ -1201,3 +1201,285 @@ post_hour AS (
 - Related Files: 
 
 ---
+
+## [ERR-20260326-324] skill_or_command
+
+**Logged**: 2026-03-26T11:14:38
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260326031436280gppmhv05aio2
+ODPS-0130252:[43,1] Cart...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260326031436280gppmhv05aio2
+ODPS-0130252:[43,1] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-26T11:14:38.916006
+
+相关 SQL:
+```sql
+WITH show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_cnt,
+        SUM(conv_label_register) as conv_register_cnt,
+        SUM(conv_label_pay) as conv_pay_cnt,
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh BETWEEN '2026032300' AND '2026032323'
+    AND ad_group_id = '80554'
+),
+engine_
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260326-903] skill_or_command
+
+**Logged**: 2026-03-26T11:14:57
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260326031455283g36ac1cb4r1
+ODPS-0130252:[42,19] Cart...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260326031455283g36ac1cb4r1
+ODPS-0130252:[42,19] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-26T11:14:57.983169
+
+相关 SQL:
+```sql
+WITH show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_cnt,
+        SUM(conv_label_register) as conv_register_cnt,
+        SUM(conv_label_pay) as conv_pay_cnt,
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh BETWEEN '2026032300' AND '2026032323'
+    AND ad_group_id = '80554'
+),
+engine_
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260326-666] skill_or_command
+
+**Logged**: 2026-03-26T11:35:20
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260326033517927ghv1fx62qen4
+ODPS-0130252:[39,1] Cart...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260326033517927ghv1fx62qen4
+ODPS-0130252:[39,1] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-26T11:35:20.617880
+
+相关 SQL:
+```sql
+WITH show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_cnt,
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh BETWEEN '2026032300' AND '2026032323'
+    AND ad_group_id = '80554'
+),
+engine_funnel AS (
+    SELECT 
+        SUM(rank_req_cnt) as rank_req_cnt,
+        SUM(resp_req_cnt) as resp
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260326-356] skill_or_command
+
+**Logged**: 2026-03-26T11:50:37
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326035034409ga23fx62qen4
+ODPS-0130071:[1,8] Seman...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326035034409ga23fx62qen4
+ODPS-0130071:[1,8] Semantic analysis exception - column ad_group_id cannot be resolved
+ODPS-0130071:[1,21] Semantic analysis exception - column ad_group_title cannot be resolved
+ODPS-0130071:[1,64] Semantic analysis exception - column purpose_type_cn cannot be resolved
+ODPS-0130071:[1,102] Semantic analysis exception - column status_v2 cannot be resolved; Did you mean status_cn ?
+
+上下文: sql_execution
+时间: 2026-03-26T11:50:37.098547
+
+相关 SQL:
+```sql
+SELECT ad_group_id, ad_group_title, ad_plan_id, advertiser_id, purpose_type_cn, transform_target_cn, status_v2 FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND advertiser_id = '2368' ORDER BY ad_group_id LIMIT 100;
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260326-323] skill_or_command
+
+**Logged**: 2026-03-26T11:57:24
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326035721942g1v2elo9aio2
+ODPS-0130071:[1,132] Sem...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326035721942g1v2elo9aio2
+ODPS-0130071:[1,132] Semantic analysis exception - column cost cannot be resolved
+
+上下文: sql_execution
+时间: 2026-03-26T11:57:24.583484
+
+相关 SQL:
+```sql
+SELECT ad_group_id, SUM(req_num) as req_cnt, SUM(res_num) as resp_cnt, SUM(show_cnt) as show_cnt, SUM(click_cnt) as click_cnt, SUM(cost) / 100.0 as cost_usd, ROUND(SUM(click_cnt) * 100.0 / NULLIF(SUM(show_cnt), 0), 2) as ctr_pct, ROUND(SUM(show_cnt) * 100.0 / NULLIF(SUM(res_num), 0), 2) as resp_to_show_pct, ROUND(SUM(res_num) * 100.0 / NULLIF(SUM(req_num), 0), 2) as req_to_resp_pct FROM com_cdm.dws_tracker_ad_cpc_cost_hi WHERE dh BETWEEN '2026032300' AND '2026032323' AND advertiser_id = '2368' G
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---
+
+## [ERR-20260326-551] skill_or_command
+
+**Logged**: 2026-03-26T14:05:17
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130252: InstanceId: 20260326060514353gewnj52xmv1
+ODPS-0130252:[43,1] Carte...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130252: InstanceId: 20260326060514353gewnj52xmv1
+ODPS-0130252:[43,1] Cartesian product is not allowed - cartesian product is not allowed without mapjoin
+
+上下文: sql_execution
+时间: 2026-03-26T14:05:17.071217
+
+相关 SQL:
+```sql
+WITH show_funnel AS (
+    SELECT 
+        SUM(show_label) as show_cnt,
+        SUM(click_label) as click_cnt,
+        SUM(dld_label) as dld_cnt,
+        SUM(conv_label_active) as conv_cnt_active,
+        SUM(conv_label_register) as conv_cnt_register,
+        SUM(conv_label_pay) as conv_cnt_pay,
+        SUM(billing_actual_deduction_price) / 1e5 as total_cost
+    FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+    WHERE dh BETWEEN '2026032300' AND '2026032323'
+    AND CAST(ad_group_id AS STRIN
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+
+---

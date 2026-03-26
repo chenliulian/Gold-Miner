@@ -30,12 +30,18 @@ from gold_miner.rate_limiter import RateLimitExceeded, get_chat_limiter, get_def
 from gold_miner.user_data import init_user_data_manager
 
 # Import and register API v2
-from api_v2 import api_v2, init_config
+try:
+    from api_v2 import api_v2, init_config
+except ImportError:
+    from ui.api_v2 import api_v2, init_config
 init_config(_config)
 app.register_blueprint(api_v2)
 
 # Import and initialize authentication
-from auth_routes import init_auth
+try:
+    from auth_routes import init_auth
+except ImportError:
+    from ui.auth_routes import init_auth
 auth_service = init_auth(app, _config)
 
 # Initialize user data manager
@@ -100,7 +106,15 @@ def get_agent(user_id: str = None):
         
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         skills_dir = os.path.join(project_root, "skills")
-        sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
+        
+        # 使用用户特定的会话目录
+        if user_id and user_id != "anonymous":
+            # 为用户创建独立的会话目录
+            user_paths = user_data_manager.create_user_directories(user_id)
+            sessions_dir = user_paths.sessions_dir
+        else:
+            # 未认证用户使用默认目录（但不应该发生，因为已添加认证检查）
+            sessions_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sessions")
         
         # 创建新的 Agent 实例，传入用户ID
         AGENT = SqlAgent(CONFIG, skills_dir, sessions_dir=sessions_dir, user_id=user_id)
@@ -186,12 +200,16 @@ def chat():
     if not user_message:
         return jsonify({"error": "Empty message"}), 400
 
+    # 获取当前用户ID
+    user = get_current_user_or_redirect()
+    user_id = user.id if user else "anonymous"
+
     # 从 Agent Pool 获取 Agent 实例
     from gold_miner.services import get_agent_pool
     agent_pool = get_agent_pool()
 
     try:
-        pooled_agent = agent_pool.acquire(session_id=session_id)
+        pooled_agent = agent_pool.acquire(session_id=session_id, user_id=user_id)
         agent = pooled_agent.agent
 
         # 加载指定会话或创建新会话
@@ -340,11 +358,19 @@ def chat():
 
 @app.route("/sessions", methods=["GET"])
 def list_sessions():
-    """获取所有历史会话列表"""
-    agent = get_agent()
+    """获取当前用户的所有历史会话列表"""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
-        sessions = agent.session.list_sessions(limit=50)
+        # 只列出当前用户的会话
+        sessions = agent.session.list_sessions(limit=50, user_id=user.id)
         return jsonify({
             "success": True,
             "sessions": sessions
@@ -358,16 +384,25 @@ def list_sessions():
 
 @app.route("/sessions/<session_id>", methods=["GET"])
 def get_session(session_id):
-    """获取特定会话的详情"""
-    agent = get_agent()
+    """获取特定会话的详情（仅当前用户自己的会话）"""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
+        # 设置用户ID以确保只能加载自己的会话
+        agent.session.user_id = user.id
         # 临时加载指定会话
         success = agent.session.load_session(session_id)
         if not success:
             return jsonify({
                 "success": False,
-                "error": "Session not found"
+                "error": "Session not found or access denied"
             }), 404
         
         context = agent.session.get_context(max_steps=10000)
@@ -385,7 +420,14 @@ def get_session(session_id):
 @app.route("/sessions/new", methods=["POST"])
 def new_session():
     """开启新会话"""
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
         data = request.json or {}
@@ -404,13 +446,27 @@ def new_session():
 
 @app.route("/sessions/<session_id>", methods=["DELETE"])
 def delete_session(session_id):
-    """删除指定会话"""
-    agent = get_agent()
+    """删除指定会话（仅当前用户自己的会话）"""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
+        # 设置用户ID以确保只能删除自己的会话
+        agent.session.user_id = user.id
         success = agent.session.delete_session(session_id)
+        if not success:
+            return jsonify({
+                "success": False,
+                "error": "Session not found or access denied"
+            }), 404
         return jsonify({
-            "success": success
+            "success": True
         })
     except Exception as e:
         return jsonify({
@@ -422,7 +478,14 @@ def delete_session(session_id):
 @app.route("/memory", methods=["GET"])
 def get_memory():
     """获取长期记忆内容"""
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
         return jsonify({
@@ -439,7 +502,14 @@ def get_memory():
 @app.route("/memory/clear", methods=["POST"])
 def clear_memory():
     """清空长期记忆（谨慎使用）"""
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
         agent.memory.clear()
@@ -451,7 +521,14 @@ def clear_memory():
 @app.route("/memory/save", methods=["POST"])
 def save_to_memory():
     """手动保存内容到长期记忆"""
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
         data = request.json
@@ -483,6 +560,13 @@ def save_to_memory():
 @app.route("/interrupt", methods=["POST"])
 def interrupt_agent():
     """中断指定会话的 Agent 执行"""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     data = request.json or {}
     session_id = data.get("session_id")
 
@@ -491,6 +575,15 @@ def interrupt_agent():
 
     try:
         if session_id:
+            # 验证会话是否属于当前用户
+            agent = get_agent(user_id=user.id)
+            agent.session.user_id = user.id
+            if not agent.session.load_session(session_id):
+                return jsonify({
+                    "success": False,
+                    "error": "Session not found or access denied"
+                }), 404
+            
             # 按会话ID取消特定会话
             success = agent_pool.cancel_session(session_id)
             if success:
@@ -526,7 +619,14 @@ def interrupt_agent():
 
 @app.route("/skills", methods=["GET"])
 def list_skills():
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
         skills = agent.skills.list()
@@ -543,7 +643,14 @@ def list_skills():
 
 @app.route("/skills/<skill_name>/call", methods=["POST"])
 def call_skill(skill_name):
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     data = request.json
     
     try:
@@ -563,6 +670,13 @@ def call_skill(skill_name):
 @app.route("/api/tables", methods=["GET"])
 def list_tables():
     """List all available tables from knowledge base."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     try:
         import yaml
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -609,7 +723,14 @@ def list_tables():
 @app.route("/config", methods=["GET"])
 def get_config():
     """获取当前配置信息（不包含敏感信息）"""
-    agent = get_agent()
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
+    agent = get_agent(user_id=user.id)
     
     try:
         return jsonify({

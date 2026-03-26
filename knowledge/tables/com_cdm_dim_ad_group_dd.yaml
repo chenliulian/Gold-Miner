@@ -150,13 +150,13 @@
     数据类型: INT
     业务含义: 是否删除
     示例值: '0'
-    使用注意: '0-未删除，1-已删除'
+    使用注意: 0-未删除，1-已删除
   is_put:
     字段名: is_put
     数据类型: INT
     业务含义: 是否投放
     示例值: '1'
-    使用注意: '0-未投放，1-投放中'
+    使用注意: 0-未投放，1-投放中
   affect_put_status:
     字段名: affect_put_status
     数据类型: INT
@@ -204,7 +204,7 @@
     数据类型: STRING
     业务含义: 转化目标
     示例值: '2'
-    使用注意: '0-无，1-安装，2-激活，3-注册，4-付费'
+    使用注意: 0-无，1-安装，2-激活，3-注册，4-付费
   transform_target_bill:
     字段名: transform_target_bill
     数据类型: STRING
@@ -216,7 +216,7 @@
     数据类型: BIGINT
     业务含义: 投放类型
     示例值: '1'
-    使用注意: '1-在线，2-离线，3-离线在线都支持'
+    使用注意: 1-在线，2-离线，3-离线在线都支持
   offline_type_cn:
     字段名: offline_type_cn
     数据类型: STRING
@@ -228,7 +228,7 @@
     数据类型: BIGINT
     业务含义: 预算投放速度
     示例值: '1'
-    使用注意: '1-匀速，2-加速，3-智能'
+    使用注意: 1-匀速，2-加速，3-智能
   pacing_type_cn:
     字段名: pacing_type_cn
     数据类型: STRING
@@ -240,31 +240,31 @@
     数据类型: STRING
     业务含义: 转化目标(中文)
     示例值: 激活
-    使用注意: '转化目标描述：0-无，1-安装，2-激活，3-注册，4-付费'
+    使用注意: 转化目标描述：0-无，1-安装，2-激活，3-注册，4-付费
   ascribe_channel:
     字段名: ascribe_channel
     数据类型: BIGINT
     业务含义: 归因渠道
     示例值: '1'
     使用注意: 归因渠道编码
-  ascribe_channel_cn:
-    字段名: ascribe_channel_cn
-    数据类型: STRING
-    业务含义: 归因渠道(中文)
-    示例值: 归因
-    使用注意: 归因渠道描述
   extend_status:
     字段名: extend_status
     数据类型: STRING
     业务含义: 通投状态
     示例值: '3'
-    使用注意: '0-不派生，1-待派生广告，2-派生中，3-通投中，4-已删除'
+    使用注意: 0-不派生，1-待派生广告，2-派生中，3-通投中，4-已删除
   extend_status_cn:
     字段名: extend_status_cn
     数据类型: STRING
     业务含义: 通投状态(中文)
     示例值: 通投中
     使用注意: 通投状态描述
+  ascribe_channel_cn:
+    字段名: ascribe_channel_cn
+    数据类型: STRING
+    业务含义: 归因渠道(中文)
+    示例值: 归因
+    使用注意: 归因渠道描述
   country_codes:
     字段名: country_codes
     数据类型: STRING
@@ -276,7 +276,7 @@
     数据类型: STRING
     业务含义: 已安装本包定向类型
     示例值: '0'
-    使用注意: '0-不限，1-定向，2-排除'
+    使用注意: 0-不限，1-定向，2-排除
   installed_this_pkg_type_cn:
     字段名: installed_this_pkg_type_cn
     数据类型: STRING
@@ -312,53 +312,57 @@
     数据类型: INT
     业务含义: 是否优选广告
     示例值: '0'
-    使用注意: '0-否，1-是'
+    使用注意: 0-否，1-是
 常用查询场景:
   示例查询:
     场景名称: 查询广告组基本信息
-    SQL模板: SELECT id, title, advertiser_id, ad_plan_id, transform_target_cn, status_cn FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND id = '{{ad_group_id}}'
+    SQL模板: SELECT id, title, advertiser_id, ad_plan_id, transform_target_cn, status_cn
+      FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND
+      id = '{{ad_group_id}}'
     参数:
       ad_group_id: 广告组ID
   示例查询2:
     场景名称: 批量查询广告组
-    SQL模板: SELECT id, title, ad_plan_id, budget, transform_target_cn FROM com_cdm.dim_ad_group_dd WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND advertiser_id = '{{advertiser_id}}'
+    SQL模板: SELECT id, title, ad_plan_id, budget, transform_target_cn FROM com_cdm.dim_ad_group_dd
+      WHERE dt = MAX_PT('com_cdm.dim_ad_group_dd') AND advertiser_id = '{{advertiser_id}}'
     参数:
       advertiser_id: 广告主ID
 数据质量规则:
   异常值识别:
-    - 规则: is_deleted = 1 的记录应为已删除广告组
-    - 规则: start_time > end_time 为异常数据
-    - 规则: budget <= 0 且 is_put = 1 为异常
+  - 规则: is_deleted = 1 的记录应为已删除广告组
+  - 规则: start_time > end_time 为异常数据
+  - 规则: budget <= 0 且 is_put = 1 为异常
 业务备注:
   ID字段:
-    - id
-    - advertiser_id
-    - ad_plan_id
-    - creator
-    - modifier
+  - id
+  - advertiser_id
+  - ad_plan_id
+  - creator
+  - modifier
   标签字段:
-    - transform_target
-    - transform_target_cn
-    - bill_type
-    - bill_type_cn
-    - pacing_type
-    - pacing_type_cn
-    - offline_type
-    - offline_type_cn
-    - extend_status
-    - extend_status_cn
-    - directional_type
-    - directional_type_cn
-    - installed_this_pkg_type
-    - installed_this_pkg_type_cn
+  - transform_target
+  - transform_target_cn
+  - bill_type
+  - bill_type_cn
+  - pacing_type
+  - pacing_type_cn
+  - offline_type
+  - offline_type_cn
+  - extend_status
+  - extend_status_cn
+  - directional_type
+  - directional_type_cn
+  - installed_this_pkg_type
+  - installed_this_pkg_type_cn
   计费字段:
-    - budget
-    - bill
-    - transform_target_bill
-    - transform_target_ratio
+  - budget
+  - bill
+  - transform_target_bill
+  - transform_target_ratio
   时间字段:
-    - start_time
-    - end_time
-    - gmt_create
-    - gmt_modified
+  - start_time
+  - end_time
+  - gmt_create
+  - gmt_modified
 生成时间: '2026-03-21'
+更新时间: '2026-03-26 11:51:01'

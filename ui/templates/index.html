@@ -1468,16 +1468,25 @@
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({title: message.slice(0, 30)})
                     });
+                    
+                    // 检查是否未授权
+                    if (response.status === 401) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+                    
                     const data = await response.json();
                     if (data.success) {
                         currentSessionId = data.session_id;
                         loadHistoryList(); // 刷新历史列表
                     } else {
                         console.error('创建会话失败:', data.error);
+                        alert('创建会话失败: ' + (data.error || '未知错误'));
                         return;
                     }
                 } catch (error) {
                     console.error('创建会话失败:', error);
+                    alert('创建会话失败，请检查网络连接');
                     return;
                 }
             }
@@ -1512,6 +1521,12 @@
                     }),
                     signal: state.abortController.signal
                 });
+                
+                // 检查是否未授权
+                if (response.status === 401) {
+                    window.location.href = '/auth/login';
+                    return;
+                }
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -2178,11 +2193,17 @@
 
             // 2. 通知后端取消对应会话的处理
             try {
-                await fetch('/interrupt', {
+                const response = await fetch('/interrupt', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session_id: activeSessionId })
                 });
+                
+                // 检查是否未授权
+                if (response.status === 401) {
+                    window.location.href = '/auth/login';
+                    return;
+                }
             } catch (error) {
                 console.error('取消失败:', error);
             }
@@ -2203,6 +2224,13 @@
             try {
                 // 先检查是否已经有空的对话（标题为"新对话"且没有消息）
                 const response = await fetch('/sessions');
+                
+                // 检查是否未授权
+                if (response.status === 401) {
+                    window.location.href = '/auth/login';
+                    return;
+                }
+                
                 const data = await response.json();
                 console.log('Fetched sessions:', data);
                 
@@ -2255,6 +2283,13 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({title: '新对话'})
                 });
+                
+                // 检查是否未授权
+                if (newResponse.status === 401) {
+                    window.location.href = '/auth/login';
+                    return;
+                }
+                
                 const newData = await newResponse.json();
                 console.log('New session response:', newData);
                 if (!newData.success) {
@@ -2298,12 +2333,24 @@
             console.log('New chat created, sessionId:', currentSessionId);
         }
 
+        // 处理API响应，检查是否未授权
+        async function handleApiResponse(response) {
+            if (response.status === 401) {
+                // 未授权，跳转到登录页面
+                window.location.href = '/auth/login';
+                return null;
+            }
+            return response.json();
+        }
+
         // 加载历史对话列表
         async function loadHistoryList() {
             const container = document.getElementById('history-list');
             try {
                 const response = await fetch('/sessions');
-                const data = await response.json();
+                const data = await handleApiResponse(response);
+                
+                if (data === null) return; // 已处理跳转
 
                 if (!data.success || !data.sessions || data.sessions.length === 0) {
                     container.innerHTML = '<div class="history-empty">暂无历史对话</div>';
@@ -2318,7 +2365,8 @@
                     </div>
                 `).join('');
             } catch (error) {
-                container.innerHTML = '<div class="history-empty">加载失败</div>';
+                console.error('加载历史列表失败:', error);
+                container.innerHTML = '<div class="history-empty">加载失败，请刷新重试</div>';
             }
         }
 
@@ -2326,10 +2374,12 @@
         async function loadSession(sessionId) {
             try {
                 const response = await fetch(`/sessions/${sessionId}`);
-                const data = await response.json();
+                const data = await handleApiResponse(response);
+                
+                if (data === null) return; // 已处理跳转
 
                 if (!data.success) {
-                    alert('加载会话失败');
+                    alert('加载会话失败: ' + (data.error || '未知错误'));
                     return;
                 }
 
@@ -2377,7 +2427,7 @@
                 updateActiveHistoryItem();
             } catch (error) {
                 console.error('加载会话失败:', error);
-                alert('加载会话失败');
+                alert('加载会话失败，请稍后重试');
             }
         }
 
@@ -2389,7 +2439,9 @@
                 const response = await fetch(`/sessions/${sessionId}`, {
                     method: 'DELETE'
                 });
-                const data = await response.json();
+                const data = await handleApiResponse(response);
+                
+                if (data === null) return; // 已处理跳转
 
                 if (data.success) {
                     if (currentSessionId === sessionId) {

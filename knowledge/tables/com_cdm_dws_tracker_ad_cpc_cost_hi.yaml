@@ -984,25 +984,35 @@
 查询注意事项:
   转化数统计规范:
     说明: 统计转化数必须基于 event_type 和 click_conv_pv 两个字段，使用 CASE WHEN 进行条件聚合
-    SQL代码示例: |
-      -- 注册转化数
-      SUM(CASE WHEN event_type LIKE '%注册%' THEN click_conv_pv ELSE 0 END) AS reg_conv_num,
+    SQL代码示例: '-- 注册转化数
+
+      SUM(CASE WHEN event_type LIKE ''%注册%'' THEN click_conv_pv ELSE 0 END) AS reg_conv_num,
+
       -- 申贷转化数
-      SUM(CASE WHEN event_type LIKE '%申贷%' THEN click_conv_pv ELSE 0 END) AS apply_loan_conv_num,
+
+      SUM(CASE WHEN event_type LIKE ''%申贷%'' THEN click_conv_pv ELSE 0 END) AS apply_loan_conv_num,
+
       -- 激活转化数
-      SUM(CASE WHEN event_type LIKE '%激活%' THEN click_conv_pv ELSE 0 END) AS active_conv_num,
+
+      SUM(CASE WHEN event_type LIKE ''%激活%'' THEN click_conv_pv ELSE 0 END) AS active_conv_num,
+
       -- 付费转化数
-      SUM(CASE WHEN event_type LIKE '%付费%' THEN click_conv_pv ELSE 0 END) AS pay_conv_num,
+
+      SUM(CASE WHEN event_type LIKE ''%付费%'' THEN click_conv_pv ELSE 0 END) AS pay_conv_num,
+
       -- 首次付费转化数
-      SUM(CASE WHEN event_type LIKE '%首次付费%' THEN click_conv_pv ELSE 0 END) AS first_pay_conv_num
+
+      SUM(CASE WHEN event_type LIKE ''%首次付费%'' THEN click_conv_pv ELSE 0 END) AS first_pay_conv_num
+
+      '
     关键字段:
-      - event_type: 事件类型，用于筛选转化类型（如'%申贷%'、'%注册%'、'%付费%'、'%激活%'、'%首次付费%'）
-      - click_conv_pv: 点击时间转化数，必须使用此字段统计转化量
+    - event_type: 事件类型，用于筛选转化类型（如'%申贷%'、'%注册%'、'%付费%'、'%激活%'、'%首次付费%'）
+    - click_conv_pv: 点击时间转化数，必须使用此字段统计转化量
     注意事项:
-      - event_type 支持模糊匹配，如 '%申贷%' 可匹配所有申贷相关事件
-      - 转化数必须按 click_conv_pv 统计，表示点击时间归因的转化数
-      - 不要使用 pv 字段统计转化数，pv 字段在事件类型为转化时才有值，且口径与 click_conv_pv 不同
-      - dh 分区字段必须指定，格式为 yyyyMMddHH
+    - event_type 支持模糊匹配，如 '%申贷%' 可匹配所有申贷相关事件
+    - 转化数必须按 click_conv_pv 统计，表示点击时间归因的转化数
+    - 不要使用 pv 字段统计转化数，pv 字段在事件类型为转化时才有值，且口径与 click_conv_pv 不同
+    - dh 分区字段必须指定，格式为 yyyyMMddHH
 数据生产逻辑:
   概述: '本表是程序化广告的核心DWS汇总表，汇总了请求、响应、展现、点击、计费等多阶段数据。
 
@@ -1147,4 +1157,4 @@ ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/com_cdm_dws_trac
   - attri_dh
   - active_attr_delta_dt
 生成时间: '2026-03-18 17:42:40'
-更新时间: '2026-03-24 22:32:53'
+更新时间: '2026-03-26 11:57:44'
