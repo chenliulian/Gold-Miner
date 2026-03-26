@@ -27,7 +27,9 @@ class LLMProviderConfig:
     api_key: str
     model: str
     priority: int  # Lower number = higher priority
-    timeout: int = 60
+    timeout: int = 30  # Reduced from 60 to 30 seconds for faster failover
+    connect_timeout: int = 10  # Connection timeout for quick failure detection
+    read_timeout: int = 30  # Read timeout for response
     is_anthropic: bool = False  # True for Anthropic API format
 
 
@@ -143,13 +145,16 @@ class LLMProviderManager:
         # Primary provider (highest priority) - try LLM_BASE_URL first, then ANTHROPIC
         primary_url = get_env("LLM_BASE_URL") or get_env("ANTHROPIC_BASE_URL")
         if primary_url:
+            timeout = int(get_env("LLM_TIMEOUT") or "30")  # Default 30s for faster failover
             providers_config.append(LLMProviderConfig(
                 name="primary",
                 base_url=primary_url,
                 api_key=get_env("LLM_API_KEY") or get_env("ANTHROPIC_API_KEY", ""),
                 model=get_env("LLM_MODEL") or get_env("ANTHROPIC_MODEL", ""),
                 priority=1,
-                timeout=int(get_env("LLM_TIMEOUT") or "60"),
+                timeout=timeout,
+                connect_timeout=min(10, timeout // 3),  # Connection timeout: 10s or 1/3 of total
+                read_timeout=timeout,
                 is_anthropic="anthropic" in primary_url.lower() or 
                             "claude" in (get_env("LLM_MODEL") or get_env("ANTHROPIC_MODEL", "")).lower() or
                             "/messages" in primary_url.lower()
@@ -158,13 +163,16 @@ class LLMProviderManager:
         # Backup 1 - try LLM_BASE_URL_backup1 first, then OPENAI
         backup1_url = get_env("LLM_BASE_URL_backup1") or get_env("OPENAI_BASE_URL")
         if backup1_url:
+            timeout = int(get_env("LLM_TIMEOUT_backup1") or "30")
             providers_config.append(LLMProviderConfig(
                 name="backup1",
                 base_url=backup1_url,
                 api_key=get_env("LLM_API_KEY_backup1") or get_env("OPENAI_API_KEY", ""),
                 model=get_env("LLM_MODEL_backup1") or get_env("OPENAI_MODEL", ""),
                 priority=2,
-                timeout=int(get_env("LLM_TIMEOUT_backup1") or "60"),
+                timeout=timeout,
+                connect_timeout=min(10, timeout // 3),
+                read_timeout=timeout,
                 is_anthropic="anthropic" in backup1_url.lower() or
                             "claude" in (get_env("LLM_MODEL_backup1") or get_env("OPENAI_MODEL", "")).lower()
             ))
@@ -172,13 +180,16 @@ class LLMProviderManager:
         # Backup 2 - try LLM_BASE_URL_backup2 first, then DASHSCOPE
         backup2_url = get_env("LLM_BASE_URL_backup2") or get_env("DASHSCOPE_BASE_URL")
         if backup2_url:
+            timeout = int(get_env("LLM_TIMEOUT_backup2") or "30")
             providers_config.append(LLMProviderConfig(
                 name="backup2",
                 base_url=backup2_url,
                 api_key=get_env("LLM_API_KEY_backup2") or get_env("DASHSCOPE_API_KEY", ""),
                 model=get_env("LLM_MODEL_backup2") or get_env("DASHSCOPE_MODEL", ""),
                 priority=3,
-                timeout=int(get_env("LLM_TIMEOUT_backup2") or "60"),
+                timeout=timeout,
+                connect_timeout=min(10, timeout // 3),
+                read_timeout=timeout,
                 is_anthropic="anthropic" in backup2_url.lower() or
                             "claude" in (get_env("LLM_MODEL_backup2") or get_env("DASHSCOPE_MODEL", "")).lower()
             ))
@@ -203,7 +214,7 @@ class LLMProviderManager:
         messages: List[Dict[str, str]],
         temperature: float = 0.2,
         enforce_json: bool = False,
-        max_retries_per_provider: int = 3,
+        max_retries_per_provider: int = 2,  # Reduced from 3 to 2 for faster failover
         **kwargs
     ) -> str:
         """
@@ -265,6 +276,7 @@ class LLMProviderManager:
             # All retries failed for this provider
             provider.record_failure()
             print(f"[LLM Provider Manager] {provider.config.name} marked as {provider.health.status.value}")
+            print(f"[LLM Provider Manager] Switching to next provider...")
         
         # All providers failed
         error_msg = f"All LLM providers failed after retries. Attempted: {', '.join(attempted_providers)}. Last error: {last_error}"

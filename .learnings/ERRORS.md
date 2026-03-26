@@ -1483,3 +1483,137 @@ WITH show_funnel AS (
 - Related Files: 
 
 ---
+
+## [ERR-20260326-174] skill_or_command
+
+**Logged**: 2026-03-26T16:09:22
+**Priority**: high
+**Status**: pending
+**Area**: odps
+
+### Summary
+mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi 按 code_seat_type 全日(24h)聚合 GROUP BY 提交超时
+
+### Error
+```
+在 2026032300-2026032323 范围内对 dwd_ew_ads_show_res_clk_dld_conv_hi 做 GROUP BY code_seat_type，SQL submission timeout after 60 seconds。将时间拆成 00-11h 和 12-23h 两段分别聚合后成功。
+```
+
+### Context
+- Source: error
+
+### Suggested Fix
+对该大表做 code_seat_type 等维度聚合时，优先拆分 dh 小时分区(如 6h/12h)，或先用更窄过滤条件/分桶临时表再汇总；避免全日直接 group by + order by。
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+- Fingerprint: 06d6cdfb02508dd7
+
+---
+
+## [ERR-20260326-003] skill_or_command
+
+**Logged**: 2026-03-26T16:17:15
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326081713244gspiai7xmv1
+ODPS-0130071:[13,10] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326081713244gspiai7xmv1
+ODPS-0130071:[13,10] Semantic analysis exception - column busniess_line cannot be resolved
+ODPS-0130071:[2,5] Semantic analysis exception - column busniess_line cannot be resolved
+
+上下文: sql_execution
+时间: 2026-03-26T16:17:15.959343
+
+相关 SQL:
+```sql
+SELECT 
+    busniess_line,
+    SUM(recall) AS recall_cnt,
+    SUM(resp) AS resp_cnt,
+    SUM(ssp_res_succ_cnt) AS ssp_res_succ_cnt,
+    SUM(show_cnt) AS show_cnt,
+    SUM(click_cnt) AS click_cnt,
+    SUM(cnt_limit) AS cnt_limit
+FROM com_ads.ads_creativity_filter_hi
+WHERE dh >= '2026032300' AND dh <= '2026032323'
+AND CAST(ad_group_id AS STRING) = '80554'
+AND is_offline_ad = 0
+GROUP BY busniess_line
+ORDER BY recall_cnt DESC
+LIMIT 50
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+- Fingerprint: 6c797ee1da6bac19
+
+---
+
+## [ERR-20260326-685] skill_or_command
+
+**Logged**: 2026-03-26T16:17:32
+**Priority**: medium
+**Status**: pending
+**Area**: odps
+
+### Summary
+未知错误: ODPS-0130071: InstanceId: 20260326081729909gd2gxwdffn9
+ODPS-0130071:[11,10] Sema...
+
+### Error
+```
+错误类型: unknown
+错误信息: ODPS-0130071: InstanceId: 20260326081729909gd2gxwdffn9
+ODPS-0130071:[11,10] Semantic analysis exception - column busniess_line cannot be resolved
+ODPS-0130071:[2,5] Semantic analysis exception - column busniess_line cannot be resolved
+
+上下文: sql_execution
+时间: 2026-03-26T16:17:32.616855
+
+相关 SQL:
+```sql
+SELECT 
+    busniess_line,
+    SUM(show_label) as show_cnt,
+    SUM(click_label) as click_cnt,
+    SUM(dld_label) as dld_cnt,
+    SUM(conv_label_active) as conv_cnt_active,
+    SUM(billing_actual_deduction_price) / 1e5 as total_cost_usd
+FROM mi_ads_dmp.dwd_ew_ads_show_res_clk_dld_conv_hi
+WHERE dh >= '2026032300' AND dh <= '2026032311'
+AND CAST(ad_group_id AS STRING) = '80554'
+GROUP BY busniess_line
+ORDER BY show_cnt DESC
+LIMIT 50
+```
+```
+
+### Context
+- Source: auto_detect
+
+### Suggested Fix
+需要进一步调查
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 
+- Fingerprint: cc576c2e04f4aadd
+
+---
