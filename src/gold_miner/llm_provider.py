@@ -145,7 +145,7 @@ class LLMProviderManager:
         # Primary provider (highest priority) - try LLM_BASE_URL first, then ANTHROPIC
         primary_url = get_env("LLM_BASE_URL") or get_env("ANTHROPIC_BASE_URL")
         if primary_url:
-            timeout = int(get_env("LLM_TIMEOUT") or "30")  # Default 30s for faster failover
+            timeout = int(get_env("LLM_TIMEOUT") or "120")  # Default 120s
             providers_config.append(LLMProviderConfig(
                 name="primary",
                 base_url=primary_url,
@@ -163,7 +163,7 @@ class LLMProviderManager:
         # Backup 1 - try LLM_BASE_URL_backup1 first, then OPENAI
         backup1_url = get_env("LLM_BASE_URL_backup1") or get_env("OPENAI_BASE_URL")
         if backup1_url:
-            timeout = int(get_env("LLM_TIMEOUT_backup1") or "30")
+            timeout = int(get_env("LLM_TIMEOUT_backup1") or "120")
             providers_config.append(LLMProviderConfig(
                 name="backup1",
                 base_url=backup1_url,
@@ -180,7 +180,7 @@ class LLMProviderManager:
         # Backup 2 - try LLM_BASE_URL_backup2 first, then DASHSCOPE
         backup2_url = get_env("LLM_BASE_URL_backup2") or get_env("DASHSCOPE_BASE_URL")
         if backup2_url:
-            timeout = int(get_env("LLM_TIMEOUT_backup2") or "30")
+            timeout = int(get_env("LLM_TIMEOUT_backup2") or "120")
             providers_config.append(LLMProviderConfig(
                 name="backup2",
                 base_url=backup2_url,
