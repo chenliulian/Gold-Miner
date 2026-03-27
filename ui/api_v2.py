@@ -369,7 +369,10 @@ def chat_stream():
                         report_content = f.read()
                 except Exception as e:
                     report_content = f"Error reading report: {e}"
-            yield f"data: {json.dumps({'type': 'done', 'report_path': report_path, 'content': report_content})}\n\n"
+            # 发送最终结果消息（前端期望 type: 'message'）
+            yield f"data: {json.dumps({'type': 'message', 'role': 'assistant', 'content': report_content})}\n\n"
+            # 发送完成标记
+            yield f"data: {json.dumps({'type': 'done', 'report_path': report_path})}\n\n"
     
     return Response(generate(), mimetype="text/event-stream")
 
