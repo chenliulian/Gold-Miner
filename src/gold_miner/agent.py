@@ -758,6 +758,8 @@ def _df_preview(df: pd.DataFrame, max_rows: int = 10) -> str:
 
 def _parse_json(content: str) -> Dict[str, Any]:
     import re
+    import os
+    from datetime import datetime
     
     original_content = content.strip()
     content = original_content
@@ -822,6 +824,8 @@ def _parse_json(content: str) -> Dict[str, Any]:
         (lambda c: c.replace("'", '"'), "replace single quotes"),
         # 修复7: 修复可能的 Unicode 转义问题
         (lambda c: re.sub(r'\\u([0-9a-fA-F]{0,3})(?![0-9a-fA-F])', r'\\u0000', c), "fix unicode escapes"),
+        # 修复8: 修复未转义的双引号（在字符串值中）
+        # 这个比较复杂，需要识别哪些双引号是 JSON 结构的一部分，哪些是字符串内容
     ]
     
     for fix_func, fix_name in fixes:
@@ -848,7 +852,56 @@ def _parse_json(content: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
-    # 如果所有修复都失败，记录详细的错误信息
+    # 尝试修复未转义的双引号问题（在字符串值中）
+    # 策略：找到 "report_markdown": 后面的内容，将其中的未转义双引号转义
+    try:
+        # 匹配 report_markdown 字段的内容
+        pattern = r'("report_markdown"\s*:\s*")(.*?)"\s*[,}]'
+        match = re.search(pattern, content, re.DOTALL)
+        if match:
+            prefix = content[:match.start(2)]
+            markdown_content = match.group(2)
+            suffix = content[match.end(2):]
+            
+            # 转义 markdown 内容中的双引号
+            escaped_markdown = markdown_content.replace('"', '\\"')
+            
+            fixed_content = prefix + escaped_markdown + suffix
+            return json.loads(fixed_content, strict=False)
+    except (json.JSONDecodeError, re.error):
+        pass
+
+    # 尝试处理内容被截断的情况（补全未闭合的字符串）
+    try:
+        fixed_content = content
+        # 检查是否有未闭合的字符串
+        quote_count = fixed_content.count('"') - fixed_content.count('\\"')
+        if quote_count % 2 != 0:
+            # 奇数个双引号，说明有未闭合的字符串
+            fixed_content += '"'
+        # 检查括号是否匹配
+        if fixed_content.count('{') > fixed_content.count('}'):
+            fixed_content += '}' * (fixed_content.count('{') - fixed_content.count('}'))
+        if fixed_content.count('[') > fixed_content.count(']'):
+            fixed_content += ']' * (fixed_content.count('[') - fixed_content.count(']'))
+        return json.loads(fixed_content, strict=False)
+    except json.JSONDecodeError:
+        pass
+
+    # 如果所有修复都失败，保存错误日志并记录详细的错误信息
+    error_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    error_log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'logs', f'json_parse_error_{error_timestamp}.log')
+    
+    try:
+        os.makedirs(os.path.dirname(error_log_path), exist_ok=True)
+        with open(error_log_path, 'w', encoding='utf-8') as f:
+            f.write(f"Error: {first_error}\n")
+            f.write(f"Content length: {len(content)}\n")
+            f.write(f"Content:\n{content}\n")
+        print(f"[JSON Parse Error] Error log saved to: {error_log_path}")
+    except Exception as log_e:
+        print(f"[JSON Parse Error] Failed to save error log: {log_e}")
+    
     print(f"[JSON Parse Error] Could not parse JSON (length={len(content)})")
     print(f"[JSON Parse Error] First error: {first_error}")
     print(f"[JSON Parse Error] Content preview: {content[:200]}...")
