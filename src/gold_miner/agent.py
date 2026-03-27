@@ -759,17 +759,21 @@ def _df_preview(df: pd.DataFrame, max_rows: int = 10) -> str:
 def _parse_json(content: str) -> Dict[str, Any]:
     import re
     
-    content = content.strip()
+    original_content = content.strip()
+    content = original_content
     
     # 如果内容以 ... 结尾，说明可能被截断了，记录警告
     if content.endswith('...'):
         print(f"[Warning] LLM response appears to be truncated: {content[:100]}...")
     
+    # 尝试直接解析
     try:
         return json.loads(content, strict=False)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        first_error = str(e)
         pass
 
+    # 尝试提取 JSON 对象（从第一个 { 到最后一个 }）
     try:
         start = content.find("{")
         end = content.rfind("}")
@@ -778,6 +782,7 @@ def _parse_json(content: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
+    # 尝试通过括号计数找到最外层的 JSON 对象
     brace_count = 0
     start = -1
     for i, c in enumerate(content):
@@ -793,6 +798,7 @@ def _parse_json(content: str) -> Dict[str, Any]:
                 except json.JSONDecodeError:
                     pass
 
+    # 尝试匹配简单的 JSON 对象
     match = re.search(r'\{[^{}]*\}', content)
     if match:
         try:
@@ -801,26 +807,51 @@ def _parse_json(content: str) -> Dict[str, Any]:
             pass
 
     # 尝试修复常见的 JSON 格式问题
+    fixes = [
+        # 修复1: 移除尾部逗号
+        (lambda c: re.sub(r',(\s*[}\]])', r'\1', c), "remove trailing commas"),
+        # 修复2: 修复反引号转义
+        (lambda c: c.replace(r'\`', '`'), "fix backtick escape"),
+        # 修复3: 修复换行符（将裸换行符转为 \n）
+        (lambda c: c.replace('\n', '\\n').replace('\r', '\\r'), "escape newlines"),
+        # 修复4: 修复制表符
+        (lambda c: c.replace('\t', '\\t'), "escape tabs"),
+        # 修复5: 修复无效的转义序列
+        (lambda c: re.sub(r'\\([^"\\/bfnrtu])', r'\1', c), "fix invalid escapes"),
+        # 修复6: 修复单引号（JSON 标准要求双引号）
+        (lambda c: c.replace("'", '"'), "replace single quotes"),
+        # 修复7: 修复可能的 Unicode 转义问题
+        (lambda c: re.sub(r'\\u([0-9a-fA-F]{0,3})(?![0-9a-fA-F])', r'\\u0000', c), "fix unicode escapes"),
+    ]
+    
+    for fix_func, fix_name in fixes:
+        try:
+            fixed_content = fix_func(content)
+            result = json.loads(fixed_content, strict=False)
+            print(f"[JSON Parse] Fixed with: {fix_name}")
+            return result
+        except json.JSONDecodeError:
+            continue
+    
+    # 尝试组合修复
     try:
-        # 移除可能的尾部逗号
-        fixed_content = re.sub(r',(\s*[}\]])', r'\1', content)
+        fixed_content = content
+        # 先处理换行符
+        fixed_content = fixed_content.replace('\n', '\\n').replace('\r', '\\r')
+        # 再处理制表符
+        fixed_content = fixed_content.replace('\t', '\\t')
+        # 移除尾部逗号
+        fixed_content = re.sub(r',(\s*[}\]])', r'\1', fixed_content)
+        # 修复无效转义
+        fixed_content = re.sub(r'\\([^"\\/bfnrtu])', r'\1', fixed_content)
         return json.loads(fixed_content, strict=False)
     except json.JSONDecodeError:
         pass
 
-    # 尝试修复反引号转义问题 (LLM 有时会返回 \` 而不是 `)
-    try:
-        fixed_content = content.replace(r'\`', '`')
-        return json.loads(fixed_content, strict=False)
-    except json.JSONDecodeError:
-        pass
-
-    # 尝试修复其他常见的无效转义序列
-    try:
-        # 将无效的转义序列替换为未转义的字符
-        fixed_content = re.sub(r'\\([^"\\/bfnrtu])', r'\1', content)
-        return json.loads(fixed_content, strict=False)
-    except json.JSONDecodeError:
-        pass
-
-    raise ValueError(f"Could not parse JSON from content (length={len(content)}): {content[:500]}...")
+    # 如果所有修复都失败，记录详细的错误信息
+    print(f"[JSON Parse Error] Could not parse JSON (length={len(content)})")
+    print(f"[JSON Parse Error] First error: {first_error}")
+    print(f"[JSON Parse Error] Content preview: {content[:200]}...")
+    print(f"[JSON Parse Error] Content end: ...{content[-200:]}")
+    
+    raise ValueError(f"Could not parse JSON from content (length={len(content)}, first_error={first_error[:100]}): {content[:200]}...")
