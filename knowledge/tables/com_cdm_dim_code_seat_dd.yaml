@@ -1,0 +1,334 @@
+基本信息:
+  表名: com_cdm.dim_code_seat_dd
+  业务名称: ''
+  数据粒度: ''
+  更新频率: 未知
+  保留周期: 未知
+  项目: com_cdm
+  列数: 43
+  分区数: 1
+分区信息:
+  分区字段: dt
+  分区类型: STRING
+  分区说明: 日期/小时分区
+核心字段详解:
+  id:
+    字段名: id
+    数据类型: STRING
+    业务含义: 代码位ID
+    示例值:
+    - '11326'
+    使用注意: ''
+  sid:
+    字段名: sid
+    数据类型: STRING
+    业务含义: 平台代码位id，32位随机字符串
+    示例值:
+    - 230414DWCLOOE5
+    使用注意: ''
+  title:
+    字段名: title
+    数据类型: STRING
+    业务含义: 代码位名称
+    示例值:
+    - Boxing_Boy_H0005438_AppOpenAds
+    使用注意: ''
+  type_id:
+    字段名: type_id
+    数据类型: STRING
+    业务含义: 代码位类型ID
+    示例值:
+    - '4'
+    使用注意: ''
+  type:
+    字段名: type
+    数据类型: INT
+    业务含义: 代码位类型
+    示例值:
+    - '4'
+    使用注意: ''
+  type_cn:
+    字段名: type_cn
+    数据类型: STRING
+    业务含义: 代码位类型(中文)
+    示例值:
+    - 开屏
+    使用注意: ''
+  app_id:
+    字段名: app_id
+    数据类型: STRING
+    业务含义: 应用ID
+    示例值:
+    - '3472'
+    使用注意: ''
+  app_name:
+    字段名: app_name
+    数据类型: STRING
+    业务含义: 应用名称
+    示例值:
+    - Boxing_Boy_H0005438
+    使用注意: ''
+  media_id:
+    字段名: media_id
+    数据类型: STRING
+    业务含义: 媒体主ID
+    示例值:
+    - '250'
+    使用注意: ''
+  media_company_name:
+    字段名: media_company_name
+    数据类型: STRING
+    业务含义: 媒体主公司名称
+    示例值:
+    - 移动互联-MI-H5游戏
+    使用注意: ''
+  commission_ratio:
+    字段名: commission_ratio
+    数据类型: BIGINT
+    业务含义: 代码位分成比例
+    示例值:
+    - None
+    使用注意: ''
+  status:
+    字段名: status
+    数据类型: INT
+    业务含义: 状态
+    示例值:
+    - '1'
+    使用注意: ''
+  status_cn:
+    字段名: status_cn
+    数据类型: STRING
+    业务含义: 状态(中文)
+    示例值:
+    - 运行中
+    使用注意: ''
+  is_deleted:
+    字段名: is_deleted
+    数据类型: INT
+    业务含义: 是否删除
+    示例值:
+    - '0'
+    使用注意: ''
+  creator:
+    字段名: creator
+    数据类型: STRING
+    业务含义: 创建者
+    示例值:
+    - '60'
+    使用注意: ''
+  gmt_create:
+    字段名: gmt_create
+    数据类型: DATETIME
+    业务含义: 创建时间
+    示例值:
+    - '2023-04-14 14:28:15'
+    使用注意: ''
+  modifier:
+    字段名: modifier
+    数据类型: STRING
+    业务含义: 最近一次修改者
+    示例值:
+    - '60'
+    使用注意: ''
+  gmt_modified:
+    字段名: gmt_modified
+    数据类型: DATETIME
+    业务含义: 最近一次修改时间
+    示例值:
+    - '2024-08-21 10:29:50'
+    使用注意: ''
+  network_source_id:
+    字段名: network_source_id
+    数据类型: BIGINT
+    业务含义: 广告源network_source表id,1:Facebook,2:AdMob,3:Hisavana
+    示例值:
+    - None
+    使用注意: ''
+  media_app_id:
+    字段名: media_app_id
+    数据类型: STRING
+    业务含义: 平台应用ID
+    示例值:
+    - 230413KiXVe0iI
+    使用注意: ''
+  parent_id:
+    字段名: parent_id
+    数据类型: BIGINT
+    业务含义: 父代码位ID，取自code_seat.ID，0表示无
+    示例值:
+    - '0'
+    使用注意: ''
+  code_material_ids:
+    字段名: code_material_ids
+    数据类型: STRING
+    业务含义: 素材ids，英文逗号分隔，取自code_material id
+    示例值:
+    - 8,9,10,22,30,31
+    使用注意: ''
+  opened:
+    字段名: opened
+    数据类型: BIGINT
+    业务含义: 广告下发开关，关 0，即不下发；默认为 1开启
+    示例值:
+    - '1'
+    使用注意: ''
+  source_open:
+    字段名: source_open
+    数据类型: STRING
+    业务含义: 广告源的广告是否下发开关json
+    示例值: []
+    使用注意: ''
+  app_sid:
+    字段名: app_sid
+    数据类型: STRING
+    业务含义: 长应用ID
+    示例值:
+    - 230413KiXVe0iI
+    使用注意: ''
+  code_seat_mid:
+    字段名: code_seat_mid
+    数据类型: STRING
+    业务含义: 媒体聚合广告位随机ID
+    示例值: []
+    使用注意: ''
+  link_type:
+    字段名: link_type
+    数据类型: BIGINT
+    业务含义: 接入类型，默认1 聚合SDK，2 hisavana SDK，3 H5，4 API，5 小程序
+    示例值:
+    - '3'
+    使用注意: ''
+  flow_segment_id:
+    字段名: flow_segment_id
+    数据类型: BIGINT
+    业务含义: lab_flow_segment id
+    示例值:
+    - None
+    使用注意: ''
+  lab_ab_id:
+    字段名: lab_ab_id
+    数据类型: BIGINT
+    业务含义: 实验ID，取lab_ab.ID，0 表示无
+    示例值:
+    - None
+    使用注意: ''
+  flow_segment_mid:
+    字段名: flow_segment_mid
+    数据类型: STRING
+    业务含义: 流量分组ID
+    示例值:
+    - None
+    使用注意: ''
+  lab_ab_mid:
+    字段名: lab_ab_mid
+    数据类型: STRING
+    业务含义: 实验分组ID
+    示例值:
+    - None
+    使用注意: ''
+  main_sid:
+    字段名: main_sid
+    数据类型: STRING
+    业务含义: 总代码位ID
+    示例值: []
+    使用注意: ''
+  business_line_nm:
+    字段名: business_line_nm
+    数据类型: STRING
+    业务含义: 业务线名称
+    示例值:
+    - 联运H5游戏
+    使用注意: ''
+  page_level:
+    字段名: page_level
+    数据类型: STRING
+    业务含义: 页面层级，0 开屏/锁屏，1 应用主界面，2 主界面下一步，3 2的下一步
+    示例值:
+    - '0'
+    使用注意: ''
+  min_price:
+    字段名: min_price
+    数据类型: BIGINT
+    业务含义: 底价价格，单位美分，默认0
+    示例值:
+    - '0'
+    使用注意: ''
+  ad_scales:
+    字段名: ad_scales
+    数据类型: STRING
+    业务含义: 自定义广告尺寸，例如 1*1,9*16
+    示例值: []
+    使用注意: ''
+  material_type:
+    字段名: material_type
+    数据类型: BIGINT
+    业务含义: 素材类型，1 图片+视频、2仅图片、3仅视频
+    示例值:
+    - '2'
+    使用注意: ''
+  package_name:
+    字段名: package_name
+    数据类型: STRING
+    业务含义: 媒体主应用包名
+    示例值: []
+    使用注意: ''
+  pull_newest_live:
+    字段名: pull_newest_live
+    数据类型: STRING
+    业务含义: 1:不限（代表拉新和拉活） 2:拉新 3:拉活 4：h5游戏
+    示例值:
+    - '1'
+    使用注意: ''
+  material_types:
+    字段名: material_types
+    数据类型: STRING
+    业务含义: 素材类型、2图片、3视频、4-互动广告
+    示例值:
+    - '[2]'
+    使用注意: ''
+  launch_app_type:
+    字段名: launch_app_type
+    数据类型: STRING
+    业务含义: ''
+    示例值: []
+    使用注意: ''
+  media_account_name:
+    字段名: media_account_name
+    数据类型: STRING
+    业务含义: 26.3.16增加，媒体的账户名称
+    示例值:
+    - 移动互联-MI
+    使用注意: ''
+  media_type:
+    字段名: media_type
+    数据类型: INT
+    业务含义: 26.3.16增加，媒体类型
+    示例值:
+    - '3'
+    使用注意: ''
+常用查询场景:
+  示例查询:
+    场景名称: 示例查询
+    SQL模板: SELECT * FROM com_cdm.dim_code_seat_dd WHERE dh = '{{dh}}' LIMIT 100
+    参数:
+      dh: 分区值
+数据质量规则:
+  异常值识别: {}
+业务备注:
+  ID字段:
+  - id
+  - type_id
+  - app_id
+  - media_id
+  - network_source_id
+  - media_app_id
+  - parent_id
+  - code_material_ids
+  - flow_segment_id
+  - lab_ab_id
+  标签字段: []
+  计费字段:
+  - min_price
+  时间字段: []
+生成时间: '2026-03-27 11:42:18'

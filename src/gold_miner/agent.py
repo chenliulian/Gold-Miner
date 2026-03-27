@@ -71,6 +71,9 @@ class AgentState:
         if len(self.executed_sqls) > self.MAX_EXECUTED_SQLS:
             self.executed_sqls = self.executed_sqls[-self.MAX_EXECUTED_SQLS:]
 
+    # self_improvement skill 的冷却时间（秒）
+    SELF_IMPROVEMENT_COOLDOWN = 60
+
     def is_skill_recently_called(self, skill_name: str, skill_args: Dict[str, Any], window: int = 3) -> bool:
         """检查skill是否在最近window次调用中已经调用过（基于内容相似度）"""
         if not self.recent_skills:
@@ -81,14 +84,21 @@ class AgentState:
 
         for call in recent:
             if call.get("skill") == skill_name:
-                # 对于self_improvement，比较summary或content
+                # 对于self_improvement，检查冷却时间和内容相似度
                 if skill_name == "self_improvement":
+                    call_time = call.get("timestamp", 0)
+                    elapsed = time.time() - call_time
+
+                    # 如果在冷却时间内，认为是重复调用
+                    if elapsed < self.SELF_IMPROVEMENT_COOLDOWN:
+                        return True
+
                     existing_summary = call.get("args", {}).get("summary", "")
                     new_summary = skill_args.get("summary", "")
                     existing_content = call.get("args", {}).get("content", "")
                     new_content = skill_args.get("content", "")
 
-                    # 如果summary或content相似，认为是重复调用
+                    # 如果summary或content完全相同，认为是重复调用
                     if existing_summary and new_summary and existing_summary == new_summary:
                         return True
                     if existing_content and new_content and existing_content == new_content:
