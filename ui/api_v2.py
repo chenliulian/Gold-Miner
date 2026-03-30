@@ -604,3 +604,322 @@ def metrics():
         return '\n'.join(lines), 200, {'Content-Type': 'text/plain'}
     except Exception as e:
         return f"# Error: {e}", 500
+
+
+# =============================================================================
+# Report Generation & Download
+# =============================================================================
+
+@api_v2.route("/reports/formats", methods=["GET"])
+@require_auth
+@handle_errors
+def list_report_formats():
+    """获取支持的报告格式列表.
+    
+    Returns:
+        支持的格式列表
+    """
+    formats = [
+        {"id": "md", "name": "Markdown", "description": "Markdown 格式，适合查看和编辑"},
+        {"id": "pdf", "name": "PDF", "description": "PDF 文档（即将支持）"},
+        {"id": "xlsx", "name": "Excel", "description": "Excel 表格（即将支持）"},
+    ]
+    return jsonify({"success": True, "data": formats})
+
+
+@api_v2.route("/reports/generate", methods=["POST"])
+@require_auth
+@handle_errors
+def generate_report():
+    """生成分析报告.
+    
+    Request Body:
+        {
+            "session_id": "会话ID",
+            "format": "md",  // 格式：md, pdf, xlsx
+            "title": "报告标题（可选）"
+        }
+    
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "file_id": "文件ID",
+                "filename": "报告文件名",
+                "download_url": "下载链接",
+                "size": 文件大小,
+                "expire_at": "过期时间"
+            }
+        }
+    """
+    from gold_miner.report_generator import (
+        ReportFormat,
+        generate_report_from_session,
+    )
+    from gold_miner.file_storage import create_user_storage_service
+    
+    data = request.json or {}
+    session_id = data.get("session_id")
+    format_str = data.get("format", "md")
+    title = data.get("title")
+    
+    if not session_id:
+        return jsonify({
+            "success": False,
+            "error": "missing_session_id",
+            "message": "Session ID is required",
+        }), 400
+    
+    # 获取当前用户
+    user = g.current_user
+    
+    # 1. 加载会话数据
+    sessions_dir = _get_user_sessions_dir(user.id)
+    session_path = os.path.join(sessions_dir, f"{session_id}.json")
+    
+    if not os.path.exists(session_path):
+        return jsonify({
+            "success": False,
+            "error": "session_not_found",
+            "message": f"Session {session_id} not found",
+        }), 404
+    
+    session_data = _load_session_file(session_path)
+    if not session_data:
+        return jsonify({
+            "success": False,
+            "error": "session_load_failed",
+            "message": "Failed to load session data",
+        }), 500
+    
+    # 验证用户权限
+    session_user_id = session_data.get("user_id", "")
+    if session_user_id and session_user_id != user.id:
+        return jsonify({
+            "success": False,
+            "error": "access_denied",
+            "message": "You don't have permission to access this session",
+        }), 403
+    
+    # 2. 确定报告格式
+    try:
+        report_format = ReportFormat(format_str)
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "error": "invalid_format",
+            "message": f"Unsupported format: {format_str}. Supported: md",
+        }), 400
+    
+    # 3. 获取用户报告目录
+    from gold_miner.user_data import get_user_data_manager
+    user_data_manager = get_user_data_manager()
+    user_paths = user_data_manager.get_user_paths(user.id)
+    reports_dir = user_paths.reports_dir
+    
+    # 确保目录存在
+    os.makedirs(reports_dir, exist_ok=True)
+    
+    # 4. 生成报告文件
+    # 尝试获取 LLM 客户端进行智能总结
+    llm_client = None
+    try:
+        from gold_miner.llm_provider import get_provider_manager
+        llm_manager = get_provider_manager()
+        if llm_manager:
+            # 创建一个简单的包装器，适配 LLM 接口
+            class LLMClientWrapper:
+                def __init__(self, manager):
+                    self.manager = manager
+                
+                def chat(self, prompt: str) -> str:
+                    messages = [{"role": "user", "content": prompt}]
+                    return self.manager.chat(messages, temperature=0.3)
+            
+            llm_client = LLMClientWrapper(llm_manager)
+            print(f"[APIv2] LLM client initialized successfully")
+    except Exception as e:
+        print(f"[APIv2] LLM client not available for report generation: {e}")
+    
+    try:
+        report_path = generate_report_from_session(
+            session_data=session_data,
+            output_dir=reports_dir,
+            title=title,
+            fmt=report_format,
+            llm_client=llm_client,
+        )
+    except NotImplementedError as e:
+        return jsonify({
+            "success": False,
+            "error": "format_not_implemented",
+            "message": str(e),
+        }), 400
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": "generate_failed",
+            "message": f"Failed to generate report: {str(e)}",
+        }), 500
+    
+    # 5. 存储到文件服务
+    storage_service = create_user_storage_service(
+        user_reports_dir=reports_dir,
+        base_url=f"/api/v2/reports/download",
+        expire_hours=24,
+    )
+    
+    file_info = storage_service.store_file(
+        local_path=report_path,
+        original_filename=os.path.basename(report_path),
+        expire_hours=24,
+        use_original_name=True,  # 使用原始文件名作为 file_id
+    )
+    
+    return jsonify({
+        "success": True,
+        "data": {
+            "file_id": file_info.file_id,
+            "filename": file_info.filename,
+            "download_url": file_info.download_url,
+            "size": file_info.size,
+            "expire_at": file_info.expire_at.isoformat(),
+        },
+    })
+
+
+@api_v2.route("/reports/download/<file_id>", methods=["GET"])
+@require_auth
+@handle_errors
+def download_report(file_id: str):
+    """下载报告文件.
+    
+    Args:
+        file_id: 文件ID
+    
+    Query Params:
+        download: 是否作为附件下载（1=下载，0=预览）
+    
+    Returns:
+        文件内容
+    """
+    from gold_miner.file_storage import create_user_storage_service
+    from flask import send_file
+    
+    # 获取当前用户
+    user = g.current_user
+    
+    # 获取用户报告目录
+    from gold_miner.user_data import get_user_data_manager
+    user_data_manager = get_user_data_manager()
+    user_paths = user_data_manager.get_user_paths(user.id)
+    reports_dir = user_paths.reports_dir
+    
+    # 创建存储服务
+    storage_service = create_user_storage_service(
+        user_reports_dir=reports_dir,
+        base_url=f"/api/v2/reports/download",
+    )
+    
+    # 获取文件信息
+    file_info = storage_service.get_file_info(file_id)
+    if not file_info:
+        # 如果不在内存中，尝试直接从文件系统查找
+        # 对于使用原始文件名的报告，file_id 就是文件名（不含扩展名）
+        file_path = None
+        
+        # 尝试直接查找 file_id.md
+        direct_path = os.path.join(reports_dir, f"{file_id}.md")
+        if os.path.exists(direct_path):
+            file_path = direct_path
+        
+        # 如果没找到，尝试遍历目录查找匹配的文件
+        if not file_path and os.path.exists(reports_dir):
+            for filename in os.listdir(reports_dir):
+                # 检查文件名是否以 file_id 开头（原始文件名格式: {title}_{timestamp}.md）
+                if filename.startswith(file_id) or filename.replace('.md', '') == file_id:
+                    file_path = os.path.join(reports_dir, filename)
+                    break
+        
+        if not file_path:
+            return jsonify({
+                "success": False,
+                "error": "file_not_found",
+                "message": "File not found or expired",
+            }), 404
+        
+        # 重新创建文件信息，使用原始文件名
+        actual_filename = os.path.basename(file_path)
+        file_info = storage_service.store_file(
+            local_path=file_path,
+            original_filename=actual_filename,
+            use_original_name=True,
+        )
+    
+    # 检查文件是否存在
+    if not os.path.exists(file_info.file_path):
+        return jsonify({
+            "success": False,
+            "error": "file_not_found",
+            "message": "File not found on server",
+        }), 404
+    
+    # 设置响应头
+    as_attachment = request.args.get("download", "0") == "1"
+    
+    return send_file(
+        file_info.file_path,
+        mimetype=file_info.content_type,
+        as_attachment=as_attachment,
+        download_name=file_info.filename,
+    )
+
+
+@api_v2.route("/reports/list", methods=["GET"])
+@require_auth
+@handle_errors
+def list_user_reports():
+    """列出用户的报告文件.
+    
+    Returns:
+        报告文件列表
+    """
+    from gold_miner.file_storage import create_user_storage_service
+    
+    # 获取当前用户
+    user = g.current_user
+    
+    # 获取用户报告目录
+    from gold_miner.user_data import get_user_data_manager
+    user_data_manager = get_user_data_manager()
+    user_paths = user_data_manager.get_user_paths(user.id)
+    reports_dir = user_paths.reports_dir
+    
+    # 扫描目录中的报告文件
+    reports = []
+    if os.path.exists(reports_dir):
+        for filename in sorted(os.listdir(reports_dir), reverse=True):
+            if filename.endswith(".md"):
+                file_path = os.path.join(reports_dir, filename)
+                stat = os.stat(file_path)
+                
+                # 从文件名提取信息
+                # 格式: {title}_{timestamp}.md
+                name_parts = filename.rsplit("_", 1)
+                title = name_parts[0] if len(name_parts) > 1 else filename
+                
+                reports.append({
+                    "filename": filename,
+                    "title": title,
+                    "size": stat.st_size,
+                    "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
+                    "download_url": f"/api/v2/reports/download/{filename[:-3]}",
+                })
+    
+    return jsonify({
+        "success": True,
+        "data": {
+            "reports": reports,
+            "total": len(reports),
+        },
+    })

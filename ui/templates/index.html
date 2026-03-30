@@ -675,6 +675,106 @@
             margin-top: 4px;
         }
 
+        /* Message Actions */
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .report-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: var(--accent-light);
+            color: var(--accent-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .report-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .report-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Report Download Card */
+        .report-download-card {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 1px solid #bae6fd;
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .report-download-card .report-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .report-download-card .report-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .report-download-card .report-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .report-download-card .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .report-download-card .download-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .report-download-card .preview-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .report-download-card .preview-btn:hover {
+            background: var(--bg-hover);
+        }
+
         /* Input Area */
         .input-area {
             padding: 20px 24px;
@@ -1789,10 +1889,20 @@
                 processedText = escapeHtml(text).replace(/\n/g, '<br>');
             }
 
+            // 为助手消息添加报告生成按钮
+            const reportButtonHtml = (sender === 'assistant' && currentSessionId)
+                ? `<div class="message-actions">
+                    <button class="report-btn" onclick="generateReportForSession('${currentSessionId}')" title="生成分析报告">
+                        📊 生成报告
+                    </button>
+                   </div>`
+                : '';
+
             messageDiv.innerHTML = `
                 <div class="message-avatar ${sender}">${sender === 'user' ? '👤' : '◈'}</div>
                 <div class="message-content ${sender}">
                     <div class="message-text">${processedText}</div>
+                    ${reportButtonHtml}
                     <div class="message-time">${time}</div>
                 </div>
             `;
@@ -2752,6 +2862,103 @@
         // 附件功能
         function attachFile() {
             alert('附件功能开发中...');
+        }
+
+        // ========== 报告生成功能 ==========
+
+        // 生成报告
+        async function generateReportForSession(sessionId) {
+            if (!sessionId) {
+                alert('请先选择一个会话');
+                return;
+            }
+
+            // 获取按钮元素
+            const btn = event.target.closest('.report-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ 生成中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/v2/reports/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        format: 'md',
+                        title: '数据分析报告'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 显示下载卡片
+                    showReportDownloadCard(result.data);
+                } else {
+                    alert('生成报告失败: ' + (result.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('生成报告失败:', error);
+                alert('生成报告失败: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // 显示报告下载卡片
+        function showReportDownloadCard(reportData) {
+            const container = document.getElementById('chat-messages');
+
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'message';
+
+            const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            const expireTime = new Date(reportData.expire_at).toLocaleString('zh-CN');
+            const sizeKB = (reportData.size / 1024).toFixed(1);
+
+            cardDiv.innerHTML = `
+                <div class="message-avatar assistant">📊</div>
+                <div class="message-content assistant">
+                    <div class="report-download-card">
+                        <div class="report-title">✅ 报告已生成</div>
+                        <div class="report-info">
+                            <div>文件名: ${escapeHtml(reportData.filename)}</div>
+                            <div>大小: ${sizeKB} KB</div>
+                            <div>过期时间: ${expireTime}</div>
+                        </div>
+                        <div class="report-actions">
+                            <a href="${reportData.download_url}?download=1" class="download-btn" download="${reportData.filename}">
+                                ⬇️ 下载报告
+                            </a>
+                            <a href="${reportData.download_url}" target="_blank" class="preview-btn">
+                                👁️ 在线预览
+                            </a>
+                        </div>
+                    </div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+
+            container.appendChild(cardDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 获取支持的报告格式
+        async function loadReportFormats() {
+            try {
+                const response = await fetch('/api/v2/reports/formats');
+                const result = await response.json();
+                if (result.success) {
+                    return result.data;
+                }
+            } catch (error) {
+                console.error('加载报告格式失败:', error);
+            }
+            return [];
         }
 
         // 页面加载完成后初始化
