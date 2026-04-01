@@ -155,9 +155,7 @@ class LLMProviderManager:
                 timeout=timeout,
                 connect_timeout=min(10, timeout // 3),  # Connection timeout: 10s or 1/3 of total
                 read_timeout=timeout,
-                is_anthropic="anthropic" in primary_url.lower() or 
-                            "claude" in (get_env("LLM_MODEL") or get_env("ANTHROPIC_MODEL", "")).lower() or
-                            "/messages" in primary_url.lower()
+                is_anthropic=False  # 默认使用 OpenAI 格式
             ))
         
         # Backup 1 - try LLM_BASE_URL_backup1 first, then OPENAI
@@ -173,8 +171,7 @@ class LLMProviderManager:
                 timeout=timeout,
                 connect_timeout=min(10, timeout // 3),
                 read_timeout=timeout,
-                is_anthropic="anthropic" in backup1_url.lower() or
-                            "claude" in (get_env("LLM_MODEL_backup1") or get_env("OPENAI_MODEL", "")).lower()
+                is_anthropic=False  # 默认使用 OpenAI 格式
             ))
         
         # Backup 2 - try LLM_BASE_URL_backup2 first, then DASHSCOPE
@@ -190,8 +187,7 @@ class LLMProviderManager:
                 timeout=timeout,
                 connect_timeout=min(10, timeout // 3),
                 read_timeout=timeout,
-                is_anthropic="anthropic" in backup2_url.lower() or
-                            "claude" in (get_env("LLM_MODEL_backup2") or get_env("DASHSCOPE_MODEL", "")).lower()
+                is_anthropic=False  # 默认使用 OpenAI 格式
             ))
         
         # Sort by priority
