@@ -97,7 +97,8 @@ Available skills:
 - analyze_cvr_pcoc: Analyze CVR model prediction bias (PCOC), supports cpi/ocpc/ocpi conv types
 - calc_model_mae: Calculate model prediction MAE (requires running analyze_ctr_pcoc and analyze_cvr_pcoc first)
 - explore_table: Explore table structure, field types, partitions, and sample data. Can automatically generate Skill files for future reference
-- self_improvement: Log learnings, errors, corrections to .learnings/ for continuous improvement
+- update_memory: Update structured memory (table schemas, metric definitions, business background) when user says "记住/保存"
+- self_improvement: Log code learnings, errors, corrections to .learnings/ for continuous improvement
 - basic_stats: Summarize the latest query result
 - tavily_search: Search web for documentation
 
@@ -108,7 +109,8 @@ Rules:
   - Skill execution results are INVISIBLE context (won't appear in subsequent conversation)
   - Only final reports and critical decisions should be marked as VISIBLE context
   - Use "visible_context": true in your response to include results in conversation history
-- When you encounter errors, corrections, or learn something new, use self_improvement skill to log it.
+- When user says "记住/保存" table schemas, metric definitions, or business background, use update_memory skill.
+- When you encounter code errors, corrections, or learn something new about code behavior, use self_improvement skill to log it.
 - After completing significant tasks, review learnings to identify patterns.
 - Always include partitions in WHERE when possible.
 - Keep SQL concise and safe for large tables.

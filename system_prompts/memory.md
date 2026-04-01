@@ -13,12 +13,26 @@ GoldMiner maintains different types of memory for context awareness.
 - Table schemas: Known table structures
 - Metric definitions: Business metric definitions
 - Business background: Domain knowledge
+- **How to update**: Use `update_memory` skill when user says "记住/保存"
 
 ### 3. Learning Memory
 - Stored in `.learnings/LEARNINGS.md`
-- Records successful patterns
-- Stored in `.learnings/ERRORS.md`
-- Records errors and corrections
+- Records successful patterns, code corrections, errors
+- **How to update**: Use `self_improvement` skill for code/behavior learnings
+
+## Skill Usage Guide
+
+### When to use `update_memory` skill:
+- User says: "记住这个表结构" → `update_memory` with `memory_type="table_schema"`
+- User says: "保存这个指标定义" → `update_memory` with `memory_type="metric_definition"`
+- User says: "记住这个业务背景" → `update_memory` with `memory_type="business_background"`
+- User says: "记下来" (关于表/指标/业务) → `update_memory`
+
+### When to use `self_improvement` skill:
+- Code corrections or bug fixes
+- Errors encountered during execution
+- New patterns or best practices discovered
+- Knowledge gaps identified
 
 ## Memory Management
 
@@ -29,6 +43,7 @@ GoldMiner maintains different types of memory for context awareness.
 
 ## Best Practices
 
-- Use `self_improvement` skill to record learnings
+- Use `update_memory` skill when user explicitly asks to remember table/metric/business info
+- Use `self_improvement` skill to record code learnings and errors
 - Review learnings periodically
 - Keep memory organized and concise
