@@ -25,25 +25,44 @@ class MemoryState:
 class MemoryStore:
     """
     长期记忆存储 - 只在用户明确要求"记住"时才更新
-    
+
     使用方式：
     1. 用户说"记住这个表结构" -> 保存表结构
     2. 用户说"保存这个指标定义" -> 保存指标定义
     3. 用户说"记下来" -> 保存当前对话要点
     """
-    
+
     # 触发记忆保存的关键词
     REMEMBER_KEYWORDS = [
         r"记住", r"保存", r"记下来", r"存储", r"记住这个",
         r"请记住", r"帮我记住", r"记住.+表", r"记住.+指标",
         r"保存.+定义", r"保存.+口径"
     ]
-    
-    def __init__(self, path: str, summary_path: str | None = None):
-        self.path = path
-        self.summary_path = summary_path or os.path.join(os.path.dirname(path), "memory.md")
+
+    def __init__(self, path: str, summary_path: str | None = None, user_id: str = ""):
+        self._base_path = path
+        self._base_summary_path = summary_path
+        self.user_id = user_id
         self.state = MemoryState()
         self._load()
+
+    @property
+    def path(self) -> str:
+        """动态获取记忆文件路径，如果设置了user_id则使用用户特定目录"""
+        if self.user_id:
+            from .user_data import get_user_data_manager
+            user_data_manager = get_user_data_manager()
+            return user_data_manager.get_user_memory_path(self.user_id)
+        return self._base_path
+
+    @property
+    def summary_path(self) -> str:
+        """动态获取记忆摘要文件路径，如果设置了user_id则使用用户特定目录"""
+        if self.user_id:
+            from .user_data import get_user_data_manager
+            user_data_manager = get_user_data_manager()
+            return user_data_manager.get_user_memory_summary_path(self.user_id)
+        return self._base_summary_path or os.path.join(os.path.dirname(self.path), "memory.md")
 
     def _load(self) -> None:
         """从文件加载长期记忆"""

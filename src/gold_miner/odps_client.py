@@ -227,27 +227,41 @@ class OdpsClient:
         
         def execute_with_timeout():
             return self.odps.execute_sql(sql, priority=priority, hints=hints)
-        
+
+        # 提交超时设置：300秒，每60秒打印一次等待提示
+        SUBMISSION_TIMEOUT = 300  # 总超时时间300秒
+        WAITING_MESSAGE_INTERVAL = 60  # 每60秒打印一次提示
+
         try:
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(execute_with_timeout)
                 instance = None
-                for _ in range(60):
+                elapsed_seconds = 0
+
+                for _ in range(SUBMISSION_TIMEOUT):
                     if cancel_event is not None and cancel_event.is_set():
                         future.cancel()
                         raise InterruptedError("Task cancelled by user during submission")
+
+                    # 每60秒打印一次等待提示
+                    if elapsed_seconds > 0 and elapsed_seconds % WAITING_MESSAGE_INTERVAL == 0:
+                        if enable_log:
+                            self._log("当前算力资源紧张，任务提交等待中.......")
+
                     try:
                         instance = future.result(timeout=1)
                         break
                     except TimeoutError:
+                        elapsed_seconds += 1
                         continue
+
                 if instance is None:
                     future.cancel()
-                    raise TimeoutError("SQL submission timeout after 60 seconds")
+                    raise TimeoutError(f"SQL submission timeout after {SUBMISSION_TIMEOUT} seconds")
         except TimeoutError:
             if enable_log:
-                self._log("提交超时 (60秒)，请检查网络连接或ODPS服务状态")
-            raise TimeoutError("SQL submission timeout after 60 seconds")
+                self._log(f"提交超时 ({SUBMISSION_TIMEOUT}秒)，请检查网络连接或ODPS服务状态")
+            raise TimeoutError(f"SQL submission timeout after {SUBMISSION_TIMEOUT} seconds")
         
         instance_id = instance.id
         

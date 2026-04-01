@@ -74,6 +74,47 @@ def _is_duplicate(file_path: Path, fingerprint: str) -> bool:
         return False
 
 
+def _get_learnings_paths(user_id: str = "") -> Dict[str, Path]:
+    """获取学习记录文件路径，支持用户隔离"""
+    if user_id:
+        # 使用用户特定目录
+        from pathlib import Path
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+        from gold_miner.user_data import get_user_data_manager
+
+        user_data_manager = get_user_data_manager()
+        paths = user_data_manager.get_user_paths(user_id)
+        learnings_dir = Path(paths.learnings_dir)
+        learnings_dir.mkdir(parents=True, exist_ok=True)
+
+        return {
+            "learnings_file": learnings_dir / "LEARNINGS.md",
+            "errors_file": learnings_dir / "ERRORS.md",
+            "feature_requests_file": learnings_dir / "FEATURE_REQUESTS.md",
+        }
+    else:
+        # 使用默认目录（向后兼容）
+        return {
+            "learnings_file": LEARNINGS_FILE,
+            "errors_file": ERRORS_FILE,
+            "feature_requests_file": FEATURE_REQUESTS_FILE,
+        }
+
+
+def _ensure_user_learnings_dir(paths: Dict[str, Path]) -> None:
+    """确保用户学习记录目录和文件存在"""
+    for file_path in paths.values():
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        if not file_path.exists():
+            if "ERRORS" in file_path.name:
+                _create_file(file_path, _ERRORS_TEMPLATE)
+            elif "FEATURE" in file_path.name:
+                _create_file(file_path, _FEATURE_REQUESTS_TEMPLATE)
+            else:
+                _create_file(file_path, _LEARNINGS_TEMPLATE)
+
+
 def run(
     category: str = "insight",
     summary: str = "",
@@ -85,6 +126,7 @@ def run(
     tags: Optional[List[str]] = None,
     priority: str = "medium",
     entry_type: str = "learning",
+    user_id: str = "",
 ) -> Dict[str, Any]:
     """
     记录学习内容、错误和修正，实现持续改进
@@ -100,8 +142,11 @@ def run(
         tags: 标签列表
         priority: 优先级 - low | medium | high | critical
         entry_type: 条目类型 - learning | error | feature_request
+        user_id: 用户ID，用于数据隔离
     """
-    _ensure_learnings_dir()
+    # 获取学习记录路径（支持用户隔离）
+    paths = _get_learnings_paths(user_id)
+    _ensure_user_learnings_dir(paths)
 
     # 生成内容指纹用于去重
     fingerprint = _generate_content_fingerprint(summary, details)
@@ -109,15 +154,16 @@ def run(
     timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
     entry_id = _generate_entry_id(entry_type)
 
+    # 根据 entry_type 选择对应的文件路径
     if entry_type == "error":
         content = _build_error_entry(entry_id, timestamp, summary, details, suggested_action, area, priority, source, related_files, fingerprint)
-        file_path = ERRORS_FILE
+        file_path = paths["errors_file"]
     elif entry_type == "feature_request":
         content = _build_feature_entry(entry_id, timestamp, summary, details, suggested_action, area, priority)
-        file_path = FEATURE_REQUESTS_FILE
+        file_path = paths["feature_requests_file"]
     else:
         content = _build_learning_entry(entry_id, timestamp, category, summary, details, suggested_action, area, priority, source, related_files, tags, fingerprint)
-        file_path = LEARNINGS_FILE
+        file_path = paths["learnings_file"]
 
     # 检查是否重复
     if _is_duplicate(file_path, fingerprint):
@@ -300,4 +346,5 @@ SKILL = {
     },
     "run": run,
     "review": review,
+    "invisible_context": False,
 }

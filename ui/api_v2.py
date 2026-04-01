@@ -475,9 +475,11 @@ def get_session(session_id: str):
         "session_id": raw.get("session_id", session_id),
         "title": raw.get("title", "未命名对话"),
         "steps": steps,
-        "step_count": len(steps)
+        "step_count": len(steps),
+        "final_result": raw.get("final_result"),  # 最终结果（用于会话切换后恢复）
+        "result_status": raw.get("result_status", "pending"),  # 结果状态
     }
-    
+
     return jsonify({
         "success": True,
         "data": {"session": context},
@@ -610,6 +612,132 @@ def metrics():
 # Report Generation & Download
 # =============================================================================
 
+@api_v2.route("/sessions/<session_id>/dialogs", methods=["GET"])
+@require_auth
+@handle_errors
+def get_session_dialogs(session_id: str):
+    """获取会话中的对话列表（用户问题和助手回答，不包含任务日志）.
+    
+    Args:
+        session_id: 会话ID
+    
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "dialogs": [
+                    {
+                        "id": "对话ID",
+                        "index": 0,
+                        "user_message": "用户问题",
+                        "assistant_message": "助手回答",
+                        "timestamp": "时间戳"
+                    }
+                ]
+            }
+        }
+    """
+    from flask import g
+    user = g.current_user
+    
+    # 加载会话数据
+    sessions_dir = _get_user_sessions_dir(user.id)
+    session_path = os.path.join(sessions_dir, f"{session_id}.json")
+    
+    if not os.path.exists(session_path):
+        return jsonify({
+            "success": False,
+            "error": "session_not_found",
+            "message": f"Session {session_id} not found",
+        }), 404
+    
+    session_data = _load_session_file(session_path)
+    if not session_data:
+        return jsonify({
+            "success": False,
+            "error": "session_load_failed",
+            "message": "Failed to load session data",
+        }), 500
+    
+    # 验证用户权限
+    session_user_id = session_data.get("user_id", "")
+    if session_user_id and session_user_id != user.id:
+        return jsonify({
+            "success": False,
+            "error": "access_denied",
+            "message": "You don't have permission to access this session",
+        }), 403
+    
+    # 提取对话列表（只包含 user 和 assistant，不包含 tool）
+    steps = session_data.get("steps", [])
+    dialogs = []
+    current_dialog = None
+    
+    for i, step in enumerate(steps):
+        role = step.get("role", "")
+        content = step.get("content", "")
+        timestamp = step.get("timestamp", "")
+        
+        if role == "user":
+            # 保存上一个对话（如果存在）
+            if current_dialog and current_dialog.get("user_message"):
+                dialogs.append(current_dialog)
+            # 开始新对话
+            current_dialog = {
+                "id": f"dialog_{len(dialogs)}",
+                "index": len(dialogs),
+                "user_message": content,
+                "assistant_message": None,
+                "timestamp": timestamp
+            }
+        elif role == "assistant" and current_dialog:
+            # 提取助手回答（处理 JSON 格式）
+            assistant_content = content
+            if isinstance(content, str) and content.strip().startswith("{"):
+                try:
+                    parsed = json.loads(content)
+                    if "report_markdown" in parsed:
+                        assistant_content = parsed["report_markdown"]
+                    elif "answer" in parsed:
+                        assistant_content = parsed["answer"]
+                    elif "content" in parsed:
+                        assistant_content = parsed["content"]
+                except json.JSONDecodeError:
+                    pass
+            current_dialog["assistant_message"] = assistant_content
+    
+    # 添加最后一个对话
+    if current_dialog and current_dialog.get("user_message"):
+        dialogs.append(current_dialog)
+    
+    # 如果存在最终结果但对话框中没有（可能是会话切换导致的），添加到最后一个对话框
+    final_result = session_data.get("final_result")
+    result_status = session_data.get("result_status", "pending")
+
+    if final_result and dialogs and not dialogs[-1].get("assistant_message"):
+        dialogs[-1]["assistant_message"] = final_result
+    elif final_result and result_status == "completed" and not dialogs:
+        # 如果没有对话框但有最终结果，创建一个完整的对话框
+        dialogs.append({
+            "id": "dialog_0",
+            "index": 0,
+            "user_message": session_data.get("title", "用户问题"),
+            "assistant_message": final_result,
+            "timestamp": session_data.get("start_time", "")
+        })
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "dialogs": dialogs,
+            "session_id": session_id,
+            "title": session_data.get("title", "未命名对话"),
+            "final_result": final_result,  # 最终结果
+            "result_status": result_status,  # 结果状态
+        },
+    })
+
+
 @api_v2.route("/reports/formats", methods=["GET"])
 @require_auth
 @handle_errors
@@ -637,7 +765,8 @@ def generate_report():
         {
             "session_id": "会话ID",
             "format": "md",  // 格式：md, pdf, xlsx
-            "title": "报告标题（可选）"
+            "title": "报告标题（可选）",
+            "selected_dialogs": [0, 1, 2]  // 选中的对话索引列表（可选，默认全部）
         }
     
     Returns:
@@ -655,6 +784,7 @@ def generate_report():
     from gold_miner.report_generator import (
         ReportFormat,
         generate_report_from_session,
+        generate_report_from_selected_dialogs,
     )
     from gold_miner.file_storage import create_user_storage_service
     
@@ -662,6 +792,7 @@ def generate_report():
     session_id = data.get("session_id")
     format_str = data.get("format", "md")
     title = data.get("title")
+    selected_dialogs = data.get("selected_dialogs")  # 选中的对话索引列表
     
     if not session_id:
         return jsonify({
@@ -742,13 +873,25 @@ def generate_report():
         print(f"[APIv2] LLM client not available for report generation: {e}")
     
     try:
-        report_path = generate_report_from_session(
-            session_data=session_data,
-            output_dir=reports_dir,
-            title=title,
-            fmt=report_format,
-            llm_client=llm_client,
-        )
+        # 如果指定了选中的对话，使用新的生成方法
+        if selected_dialogs is not None and isinstance(selected_dialogs, list):
+            report_path = generate_report_from_selected_dialogs(
+                session_data=session_data,
+                selected_indices=selected_dialogs,
+                output_dir=reports_dir,
+                title=title,
+                fmt=report_format,
+                llm_client=llm_client,
+            )
+        else:
+            # 否则使用原来的方法（生成全部对话的报告）
+            report_path = generate_report_from_session(
+                session_data=session_data,
+                output_dir=reports_dir,
+                title=title,
+                fmt=report_format,
+                llm_client=llm_client,
+            )
     except NotImplementedError as e:
         return jsonify({
             "success": False,

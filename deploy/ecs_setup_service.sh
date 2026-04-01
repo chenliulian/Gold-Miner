@@ -13,7 +13,7 @@ echo "🔧 配置 GoldMiner 服务..."
 
 # 1. 创建 Supervisor 配置
 echo "📋 配置 Supervisor..."
-cat > /etc/supervisor/conf.d/goldminer.conf << EOF
+cat > /etc/supervisor/conf.d/goldminer.ini << EOF
 [program:goldminer]
 directory=$APP_DIR
 command=$APP_DIR/venv/bin/python ui/app.py

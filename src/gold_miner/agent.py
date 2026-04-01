@@ -4,7 +4,8 @@ import json
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from tabulate import tabulate
@@ -28,12 +29,69 @@ from .session import SessionStore
 from .skills import SkillRegistry
 
 
+# 上下文长度管理常量
+# Claude 3.5 Sonnet 上下文窗口约 200K tokens
+# 按 1 token ≈ 4 字符估算，约 800K 字符
+MAX_CONTEXT_CHARS = 200000 * 4  # 800K 字符
+# 为输出预留空间
+OUTPUT_RESERVE_CHARS = 4096 * 4  # 约 16K 字符
+# 可用于输入的最大字符数
+MAX_INPUT_CHARS = MAX_CONTEXT_CHARS - OUTPUT_RESERVE_CHARS  # 约 784K 字符
+
+
+def estimate_tokens(text: str) -> int:
+    """估算文本的token数量
+    
+    使用粗略估算：1 token ≈ 4 个字符（适用于中英文混合）
+    """
+    return len(text) // 4
+
+
+def truncate_steps_by_chars(steps: List[Dict], max_chars: int) -> List[Dict]:
+    """根据字符数限制截断步骤列表，保留最近的步骤
+    
+    Args:
+        steps: 步骤列表
+        max_chars: 最大允许的字符数
+        
+    Returns:
+        截断后的步骤列表
+    """
+    if not steps:
+        return []
+    
+    # 从最近的步骤开始累加，直到达到字符限制
+    selected_steps = []
+    current_chars = 0
+    
+    # 反向遍历，优先保留最近的步骤
+    for step in reversed(steps):
+        step_text = json.dumps(step, ensure_ascii=False)
+        step_chars = len(step_text)
+        
+        if current_chars + step_chars > max_chars and selected_steps:
+            # 如果添加这个步骤会超出限制，且已经有选中步骤，则停止
+            break
+        
+        selected_steps.insert(0, step)
+        current_chars += step_chars
+    
+    return selected_steps
+
+
 @dataclass
 class QueryResult:
     sql: str
     preview: str
     rows: int
     columns: List[str]
+
+
+# 类变量：跨会话跟踪 self_improvement 调用，防止重复记录
+# 注意：这些变量在 dataclass 外部定义，作为真正的类变量
+_recent_self_improvements: List[Dict[str, Any]] = []
+_SELF_IMPROVEMENT_COOLDOWN: int = 300  # 5分钟冷却时间
+_MAX_RECENT_SELF_IMPROVEMENTS: int = 20
 
 
 @dataclass
@@ -44,13 +102,11 @@ class AgentState:
     last_sql: Optional[str] = None
     last_error: Optional[str] = None
     executed_sqls: List[Dict[str, Any]] = field(default_factory=list)  # 记录所有执行的SQL
-    recent_skills: List[Dict[str, Any]] = field(default_factory=list)  # 记录最近调用的skills，防止重复
 
     # Memory limits
     MAX_RESULTS: int = field(default=100, repr=False)
     MAX_NOTES: int = field(default=500, repr=False)
     MAX_EXECUTED_SQLS: int = field(default=50, repr=False)
-    MAX_RECENT_SKILLS: int = field(default=10, repr=False)
 
     def add_result(self, result: QueryResult) -> None:
         """Add a result with size limit."""
@@ -71,54 +127,95 @@ class AgentState:
         if len(self.executed_sqls) > self.MAX_EXECUTED_SQLS:
             self.executed_sqls = self.executed_sqls[-self.MAX_EXECUTED_SQLS:]
 
-    # self_improvement skill 的冷却时间（秒）
-    SELF_IMPROVEMENT_COOLDOWN = 60
-
-    def is_skill_recently_called(self, skill_name: str, skill_args: Dict[str, Any], window: int = 3) -> bool:
-        """检查skill是否在最近window次调用中已经调用过（基于内容相似度）"""
-        if not self.recent_skills:
+    def is_self_improvement_recently_called(self, skill_args: Dict[str, Any]) -> bool:
+        """检查 self_improvement 是否最近已经调用过（基于内容相似度）
+        
+        使用全局变量 _recent_self_improvements 来跨会话跟踪调用记录，
+        防止每次用户发送消息都重复记录相同的反馈。
+        """
+        global _recent_self_improvements, _SELF_IMPROVEMENT_COOLDOWN
+        
+        if not _recent_self_improvements:
             return False
 
-        # 获取最近window次调用
-        recent = self.recent_skills[-window:]
+        new_summary = skill_args.get("summary", "")
+        new_details = skill_args.get("details", "")
+        
+        for call in _recent_self_improvements:
+            call_time = call.get("timestamp", 0)
+            elapsed = time.time() - call_time
 
-        for call in recent:
-            if call.get("skill") == skill_name:
-                # 对于self_improvement，检查冷却时间和内容相似度
-                if skill_name == "self_improvement":
-                    call_time = call.get("timestamp", 0)
-                    elapsed = time.time() - call_time
+            # 如果在冷却时间内，认为是重复调用
+            if elapsed < _SELF_IMPROVEMENT_COOLDOWN:
+                existing_summary = call.get("args", {}).get("summary", "")
+                existing_details = call.get("args", {}).get("details", "")
 
-                    # 如果在冷却时间内，认为是重复调用
-                    if elapsed < self.SELF_IMPROVEMENT_COOLDOWN:
+                # 如果summary或details内容相似，认为是重复调用
+                if existing_summary and new_summary:
+                    # 检查summary是否包含相同的关键词（简化匹配）
+                    if self._is_similar_content(existing_summary, new_summary):
                         return True
-
-                    existing_summary = call.get("args", {}).get("summary", "")
-                    new_summary = skill_args.get("summary", "")
-                    existing_content = call.get("args", {}).get("content", "")
-                    new_content = skill_args.get("content", "")
-
-                    # 如果summary或content完全相同，认为是重复调用
-                    if existing_summary and new_summary and existing_summary == new_summary:
-                        return True
-                    if existing_content and new_content and existing_content == new_content:
-                        return True
-                else:
-                    # 其他skill直接比较args
-                    if call.get("args") == skill_args:
+                if existing_details and new_details:
+                    if self._is_similar_content(existing_details, new_details):
                         return True
 
         return False
 
-    def record_skill_call(self, skill_name: str, skill_args: Dict[str, Any]) -> None:
-        """记录skill调用"""
-        self.recent_skills.append({
-            "skill": skill_name,
+    def _is_similar_content(self, content1: str, content2: str) -> bool:
+        """检查两段内容是否相似（改进版 - 基于核心关键词）"""
+        import re
+
+        def extract_keywords(s: str) -> set:
+            """提取中文和英文关键词"""
+            # 转换为小写
+            s = s.lower()
+            # 提取中文词汇（2-10个字符）
+            chinese_words = set(re.findall(r'[\u4e00-\u9fa5]{2,10}', s))
+            # 提取英文单词（3个字符以上）
+            english_words = set(re.findall(r'[a-z]{3,}', s))
+            # 提取数字（可能是ID或关键数值）
+            numbers = set(re.findall(r'\d+', s))
+            return chinese_words | english_words | numbers
+
+        keywords1 = extract_keywords(content1)
+        keywords2 = extract_keywords(content2)
+
+        if not keywords1 or not keywords2:
+            return False
+
+        # 计算关键词交集比例
+        intersection = keywords1 & keywords2
+        union = keywords1 | keywords2
+
+        if not union:
+            return False
+
+        similarity = len(intersection) / len(union)
+
+        # 如果相似度超过60%，认为是相似内容
+        # 或者如果核心关键词（表名、字段名等）完全匹配
+        return similarity > 0.6 or len(intersection) >= 3
+
+    def record_self_improvement_call(self, skill_args: Dict[str, Any]) -> None:
+        """记录 self_improvement 调用到全局变量"""
+        global _recent_self_improvements, _MAX_RECENT_SELF_IMPROVEMENTS
+        
+        _recent_self_improvements.append({
             "args": skill_args,
             "timestamp": time.time()
         })
-        if len(self.recent_skills) > self.MAX_RECENT_SKILLS:
-            self.recent_skills = self.recent_skills[-self.MAX_RECENT_SKILLS:]
+        # 限制历史记录数量
+        if len(_recent_self_improvements) > _MAX_RECENT_SELF_IMPROVEMENTS:
+            _recent_self_improvements[:] = _recent_self_improvements[-_MAX_RECENT_SELF_IMPROVEMENTS:]
+
+    def is_skill_recently_called(self, skill_name: str, skill_args: Dict[str, Any], window: int = 3) -> bool:
+        """检查skill是否在最近window次调用中已经调用过（基于内容相似度）"""
+        # 对于 self_improvement，使用专门的跨会话跟踪
+        if skill_name == "self_improvement":
+            return self.is_self_improvement_recently_called(skill_args)
+        
+        # 其他skill不使用此机制（因为没有recent_skills实例变量了）
+        return False
 
 
 class SqlAgent:
@@ -142,8 +239,8 @@ class SqlAgent:
                 endpoint=config.odps_endpoint,
             )
         )
-        # 长期记忆 - 只保存用户明确要求记住的内容
-        self.memory = MemoryStore(config.memory_path)
+        # 长期记忆 - 只保存用户明确要求记住的内容（按用户隔离）
+        self.memory = MemoryStore(config.memory_path, user_id=user_id)
         # 会话历史 - 保存每次对话的完整记录
         sessions_dir = sessions_dir or os.path.join(os.path.dirname(config.memory_path), "../sessions")
         self.session = SessionStore(sessions_dir, user_id=user_id)  # 传递用户ID
@@ -182,11 +279,14 @@ class SqlAgent:
         max_steps = max_steps or self.config.agent_max_steps
         if status_cb:
             status_cb("starting")
-        
+
         # Reset agent state for new run
         self.state = AgentState()
         self._cancel_event = cancel_event
-        
+
+        # 设置会话状态为运行中
+        self.session.set_result_status("running")
+
         # 检查用户是否要求记住什么
         should_remember = self.memory.should_remember(question)
         
@@ -221,11 +321,15 @@ class SqlAgent:
                     if status_cb:
                         status_cb("finalizing")
                     report = self._generate_report_from_results(question)
+                    # 保存最终结果到会话
+                    self.session.set_final_result(report, status="completed")
                     report_path = self._finalize(report, output_path, question)
                     if status_cb:
                         status_cb("done")
                     return report_path
                 else:
+                    # 没有结果，记录错误状态
+                    self.session.set_final_result(f"Error: {error_msg}", status="failed")
                     # 没有结果，返回错误
                     raise
             note = action.get("notes")
@@ -272,10 +376,71 @@ class SqlAgent:
                 self._handle_search_skills(keywords)
                 if status_cb:
                     status_cb({"type": "skill_result", "content": f"技能搜索完成"})
+            elif action["action"] == "summary":
+                if status_cb:
+                    status_cb({"type": "action", "content": "生成分析报告..."})
+                report_markdown = action.get("report_markdown", "")
+                if report_markdown:
+                    # Store the draft report in state for review
+                    self.state.draft_report = report_markdown
+                    print(f"\n[Agent] Summary report generated, awaiting review")
+                    self.session.add_step("assistant", f"Draft report generated:\n{report_markdown}", visible=True)
+                    if status_cb:
+                        status_cb({"type": "summary", "content": "分析报告已生成，等待审核"})
+                else:
+                    error_msg = "Summary action missing report_markdown field"
+                    print(f"\n[Agent Error] {error_msg}")
+                    self.state.last_error = error_msg
+                    self.session.add_step("tool", f"Error: {error_msg}", visible=True)
+                    if status_cb:
+                        status_cb({"type": "error", "content": error_msg})
+            elif action["action"] == "review":
+                if status_cb:
+                    status_cb({"type": "action", "content": "审核报告..."})
+                review_passed = action.get("review_passed", False)
+                review_issues = action.get("review_issues", [])
+                if review_passed:
+                    print(f"\n[Agent] Review passed, proceeding to final")
+                    self.session.add_step("assistant", "Review passed: Report is accurate and well-formatted", visible=True)
+                    if status_cb:
+                        status_cb({"type": "review", "content": "审核通过"})
+                    # Continue to next iteration which should trigger final action
+                else:
+                    print(f"\n[Agent] Review found issues: {review_issues}")
+                    self.session.add_step("assistant", f"Review issues found: {review_issues}", visible=True)
+                    self.state.last_error = f"Review issues: {review_issues}"
+                    if status_cb:
+                        status_cb({"type": "review", "content": f"审核发现问题: {review_issues}"})
+                    # Continue to next iteration which should fix issues via run_sql/use_skill
             elif action["action"] == "final":
                 if status_cb:
                     status_cb("finalizing")
-                report_path = self._finalize(action["report_markdown"], output_path, question)
+
+                # 检查是否有简单消息响应（不需要生成完整报告的场景）
+                simple_message = action.get("simple_message", "")
+                report_markdown = action.get("report_markdown", "")
+
+                if simple_message:
+                    # 使用简单消息（如记录规则完成、简单确认等）
+                    report = simple_message
+                elif report_markdown:
+                    # 使用 LLM 提供的报告内容
+                    report = report_markdown
+                elif getattr(self.state, 'draft_report', None):
+                    # 使用 review 通过的 draft report
+                    report = self.state.draft_report
+                elif self.state.results:
+                    # 有数据结果，生成完整报告
+                    report = self._final_report_via_llm(question)
+                else:
+                    # 没有数据结果，使用 notes 或默认消息
+                    report = action.get("notes", "任务已完成。")
+
+                # 添加最终报告到会话步骤，使其能在前端显示
+                self.session.add_step("assistant", report, visible=True)
+                # 保存最终结果到会话，支持会话切换后恢复
+                self.session.set_final_result(report, status="completed")
+                report_path = self._finalize(report, output_path, question)
                 # 只在用户要求时才更新长期记忆
                 if should_remember:
                     self._update_structured_memory(question, tables)
@@ -284,7 +449,7 @@ class SqlAgent:
                 return report_path
             else:
                 # Invalid action, log error and continue
-                error_msg = f"Invalid action received: {action.get('action', 'None')}. Expected one of: run_sql, use_skill, search_skills, final"
+                error_msg = f"Invalid action received: {action.get('action', 'None')}. Expected one of: run_sql, use_skill, search_skills, summary, review, final"
                 print(f"\n[Agent Error] {error_msg}")
                 self.state.last_error = error_msg
                 self.session.add_step("tool", f"Error: {error_msg}", visible=True)
@@ -293,6 +458,10 @@ class SqlAgent:
                 continue
 
         report = self._final_report_via_llm(question)
+        # 添加最终报告到会话步骤，使其能在前端显示
+        self.session.add_step("assistant", report, visible=True)
+        # 保存最终结果到会话，支持会话切换后恢复
+        self.session.set_final_result(report, status="completed")
         report_path = self._finalize(report, output_path, question)
         # 只在用户要求时才更新长期记忆
         if should_remember:
@@ -301,28 +470,85 @@ class SqlAgent:
             status_cb("done")
         return report_path
 
-    def _next_action(self, question: str, tables: Optional[str]) -> Dict[str, Any]:
-        # 获取会话上下文（最近对话历史）
-        session_context = self.session.get_context()
+    def _load_learnings_summary(self) -> str:
+        """加载用户learnings总结"""
+        try:
+            from .user_data import UserDataManager
+            user_data_mgr = UserDataManager()
+            learnings_path = user_data_mgr.get_user_learnings_path(self.user_id)
+            if os.path.exists(learnings_path):
+                with open(learnings_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    # 如果内容太长，只返回前5000字符
+                    if len(content) > 5000:
+                        return content[:5000] + "\n... (内容已截断)"
+                    return content
+        except Exception as e:
+            print(f"[Warning] 加载learnings失败: {e}")
+        return ""
+
+    def _build_context_with_budget(self, question: str, tables: Optional[str]) -> Tuple[str, List[Dict], Dict]:
+        """根据字符预算构建上下文
+        
+        策略：
+        1. L0: 系统提示词 + 知识库rules + 相关tables + learnings + memory (必须保留，不截断)
+        2. L1 = MAX_INPUT_CHARS - L0: 对话上下文可用预算
+        3. 对话上下文按最近L1个字符截断
+        
+        Returns:
+            (enhanced_system_prompt, truncated_steps, memory_context)
+        """
         # 获取长期记忆上下文
         memory_context = self.memory.get_context()
         
-        results_summary = self._results_summary()
-        skill_list = self.skills.list()
-        
-        # 获取业务知识上下文
+        # 获取业务知识上下文 (包含rules和tables)
         business_context = self.knowledge.build_context(question)
         business_knowledge_str = self.knowledge.format_context_for_prompt(business_context)
         
-        visible_steps = [s for s in session_context["steps"] if s.get("visible", True)]
-        # 限制可见步骤数量，避免上下文过大导致LLM超时
-        if len(visible_steps) > 20:
-            visible_steps = visible_steps[-20:]
+        # 获取learnings总结
+        learnings_summary = self._load_learnings_summary()
         
-        # 构建增强的 system prompt
+        # 构建L0: 系统提示词 + 知识库 + learnings
         enhanced_system_prompt = SYSTEM_PROMPT
         if business_knowledge_str:
             enhanced_system_prompt += f"\n\n{business_knowledge_str}"
+        if learnings_summary:
+            enhanced_system_prompt += f"\n\n## 历史学习记录\n{learnings_summary}"
+        
+        # 计算L0长度
+        l0_chars = len(enhanced_system_prompt)
+        
+        # 计算L1: 对话上下文可用预算
+        # 预留空间给user message的其他字段（question, tables, memory等）
+        other_fields_estimate = 5000  # 估算其他字段的字符数
+        l1_budget = MAX_INPUT_CHARS - l0_chars - other_fields_estimate
+        
+        # 获取会话上下文
+        session_context = self.session.get_context()
+        visible_steps = [s for s in session_context["steps"] if s.get("visible", True)]
+        
+        # 根据L1预算截断对话上下文
+        if l1_budget < 1000:
+            # 如果预算不足，只保留最少量的上下文
+            print(f"[Warning] 上下文预算不足 (L1={l1_budget} chars)，只保留最近1步")
+            truncated_steps = visible_steps[-1:] if visible_steps else []
+        else:
+            truncated_steps = truncate_steps_by_chars(visible_steps, int(l1_budget))
+        
+        # 打印上下文统计信息
+        steps_chars = sum(len(json.dumps(s, ensure_ascii=False)) for s in truncated_steps)
+        print(f"[Context] L0(系统+知识库+learnings): {l0_chars} chars (~{estimate_tokens(enhanced_system_prompt)} tokens)")
+        print(f"[Context] L1(对话上下文预算): {l1_budget} chars, 实际使用: {steps_chars} chars (~{estimate_tokens(str(truncated_steps))} tokens)")
+        print(f"[Context] 保留对话步骤: {len(truncated_steps)}/{len(visible_steps)}")
+        
+        return enhanced_system_prompt, truncated_steps, memory_context
+
+    def _next_action(self, question: str, tables: Optional[str]) -> Dict[str, Any]:
+        # 使用新的上下文预算管理方法构建上下文
+        enhanced_system_prompt, truncated_steps, memory_context = self._build_context_with_budget(question, tables)
+        
+        results_summary = self._results_summary()
+        skill_list = self.skills.list()
         
         messages = [
             {"role": "system", "content": enhanced_system_prompt},
@@ -335,7 +561,7 @@ class SqlAgent:
                         "memory_summary": memory_context.get("summary", ""),
                         "table_schemas": memory_context.get("table_schemas", {}),
                         "metric_definitions": memory_context.get("metric_definitions", {}),
-                        "recent_steps": visible_steps,
+                        "recent_steps": truncated_steps,
                         "results_summary": results_summary,
                         "last_sql": self.state.last_sql,
                         "last_error": self.state.last_error,
@@ -355,7 +581,7 @@ class SqlAgent:
         elif "action" not in action:
             print(f"[Warning] Action missing 'action' field: {action}")
             action = {"action": "final", "report_markdown": f"Error: Missing action field", "notes": "Missing action field"}
-        elif action["action"] not in ("run_sql", "use_skill", "search_skills", "final"):
+        elif action["action"] not in ("run_sql", "use_skill", "search_skills", "summary", "review", "final"):
             print(f"[Warning] Invalid action value: {action['action']}")
             # Try to recover by treating as final
             action = {"action": "final", "report_markdown": f"Error: Invalid action '{action.get('action')}'", "notes": f"Invalid action: {action.get('action')}"}
@@ -424,8 +650,9 @@ class SqlAgent:
             self.session.add_step("tool", f"Skipped duplicate skill call: {skill}", visible=False)
             return
 
-        # 记录本次skill调用
-        self.state.record_skill_call(skill, skill_args)
+        # 对于 self_improvement，使用专门的记录方法（跨会话跟踪）
+        if skill == "self_improvement":
+            self.state.record_self_improvement_call(skill_args)
 
         try:
             skill_def = self.skills.get(skill)
@@ -437,13 +664,21 @@ class SqlAgent:
 
         is_invisible = skill_def.invisible_context if skill_def else True
 
+        # 准备 skill 参数
+        skill_args = dict(skill_args)
+
         # 只有需要 dataframe 的 skill 才添加 dataframe 参数
         skills_needing_dataframe = {"chart", "export", "analyze", "transform"}  # 明确需要 dataframe 的 skills
-        if (self.state.last_df is not None and 
-            "dataframe" not in skill_args and 
+        if (self.state.last_df is not None and
+            "dataframe" not in skill_args and
             skill in skills_needing_dataframe):
-            skill_args = dict(skill_args)
             skill_args["dataframe"] = self.state.last_df
+
+        # 对于需要用户隔离的 skill，传入 user_id
+        skills_needing_user_id = {"self_improvement", "update_memory"}  # 需要 user_id 的 skills
+        if skill in skills_needing_user_id and self.user_id:
+            skill_args["user_id"] = self.user_id
+
         try:
             result = self.skills.call(skill, **skill_args)
             self.state.add_note(f"Skill {skill} result: {result}")
@@ -493,18 +728,105 @@ class SqlAgent:
         self.session.add_step("tool", f"Skill search: {result_text}", visible=True)
 
     def _final_report_via_llm(self, question: str) -> str:
-        results_summary = self._results_summary()
+        """基于会话历史生成最终报告。
+
+        流程：
+        1. 从会话历史中提取所有可见的对话内容（用户问题和助手回复）
+        2. 将这些内容拼接成原始报告（包含实际数据）
+        3. 让 LLM 对原始报告进行润色和格式化
+        """
+        # 获取会话历史
+        context = self.session.get_context()
+        steps = context.get("steps", [])
+
+        # 构建原始报告内容（从会话历史中提取）
+        raw_report_lines = []
+        raw_report_lines.append(f"# 数据分析报告\n")
+        raw_report_lines.append(f"**分析主题**: {question}\n")
+        raw_report_lines.append(f"**生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        raw_report_lines.append("---\n")
+
+        # 提取用户问题和助手回复中的分析内容
+        for step in steps:
+            role = step.get("role", "")
+            content = step.get("content", "")
+            visible = step.get("visible", True)
+
+            # 只处理可见的内容
+            if not visible:
+                continue
+
+            if role == "user":
+                # 用户问题
+                raw_report_lines.append(f"\n## 用户问题\n")
+                raw_report_lines.append(f"{content}\n")
+            elif role == "assistant":
+                # 助手回复 - 尝试解析 JSON 格式的 action
+                assistant_content = self._extract_assistant_content(content)
+                if assistant_content:
+                    raw_report_lines.append(f"\n## 分析结果\n")
+                    raw_report_lines.append(f"{assistant_content}\n")
+            elif role == "tool":
+                # 工具执行结果（SQL 结果等）
+                if "SQL executed" in content or "Rows=" in content:
+                    raw_report_lines.append(f"\n### 数据查询结果\n")
+                    raw_report_lines.append(f"```\n{content}\n```\n")
+
+        # 添加实际查询结果数据（关键：包含实际数据表格）
+        if self.state.results:
+            raw_report_lines.append("\n## 实际查询结果数据\n")
+            for i, result in enumerate(self.state.results, 1):
+                raw_report_lines.append(f"\n### 查询 {i} 结果\n")
+                raw_report_lines.append(f"**SQL**: `{result.sql}`\n")
+                raw_report_lines.append(f"**返回行数**: {result.rows}\n")
+                raw_report_lines.append(f"**数据预览**:\n")
+                raw_report_lines.append(f"{result.preview}\n")
+
+        # 添加执行的所有 SQL
+        if self.state.executed_sqls:
+            raw_report_lines.append("\n## 执行的SQL查询\n")
+            for i, sql_info in enumerate(self.state.executed_sqls, 1):
+                raw_report_lines.append(f"\n### 查询 {i}\n")
+                raw_report_lines.append(f"```sql\n{sql_info['sql']}\n```\n")
+                raw_report_lines.append(f"返回行数: {sql_info['rows']}\n")
+
+        raw_report = "\n".join(raw_report_lines)
+
+        # 让 LLM 润色原始报告
         messages = [
             {"role": "system", "content": FINAL_REPORT_PROMPT},
             {
                 "role": "user",
-                "content": json.dumps(
-                    {"question": question, "results_summary": results_summary},
-                    ensure_ascii=False,
-                ),
+                "content": f"请对以下原始数据分析报告进行润色和格式化，使其更加专业、易读。\n\n原始报告内容：\n\n{raw_report}",
             },
         ]
         return self.llm_provider.chat(messages, temperature=0.3)
+
+    def _extract_assistant_content(self, content: str) -> str:
+        """从助手回复中提取有用的内容"""
+        if not isinstance(content, str):
+            return ""
+
+        content = content.strip()
+
+        # 尝试解析 JSON 格式的 action
+        if content.startswith("{"):
+            try:
+                parsed = json.loads(content)
+                # 优先提取 report_markdown
+                if "report_markdown" in parsed:
+                    return parsed["report_markdown"]
+                # 提取 notes
+                if "notes" in parsed:
+                    return parsed["notes"]
+                # 提取 answer
+                if "answer" in parsed:
+                    return parsed["answer"]
+            except json.JSONDecodeError:
+                pass
+
+        # 如果不是 JSON 或解析失败，返回原始内容
+        return content
 
     def _generate_report_from_results(self, question: str) -> str:
         """基于已获取的结果生成报告（当LLM不可用时使用）"""

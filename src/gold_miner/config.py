@@ -81,8 +81,8 @@ class Config:
             # Circuit breaker settings
             circuit_breaker_failure_threshold=int(os.getenv("CIRCUIT_BREAKER_FAILURE_THRESHOLD", "5")),
             circuit_breaker_recovery_timeout=float(os.getenv("CIRCUIT_BREAKER_RECOVERY_TIMEOUT", "30.0")),
-            # Scheduler settings
-            scheduler_auto_start=os.getenv("SCHEDULER_AUTO_START", "false").lower() == "true",
+            # Scheduler settings - 禁用自动启动，避免自动更新memory.md
+            scheduler_auto_start=False,  # 强制禁用，忽略环境变量
             scheduler_review_interval_hours=int(os.getenv("SCHEDULER_REVIEW_INTERVAL_HOURS", "24")),
             scheduler_session_review_hours=int(os.getenv("SCHEDULER_SESSION_REVIEW_HOURS", "1")),
             # Authentication settings

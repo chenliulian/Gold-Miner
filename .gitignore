@@ -28,3 +28,7 @@ user_*/
 *.lock
 *.pid
 
+#tables 
+tables/
+
+

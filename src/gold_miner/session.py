@@ -19,6 +19,8 @@ class SessionState:
     steps: List[Dict[str, str]] = field(default_factory=list)
     metadata: Dict[str, any] = field(default_factory=dict)
     user_id: str = ""  # 所属用户ID，用于数据隔离
+    final_result: Optional[str] = None  # 最终分析结果（用于会话切换后恢复）
+    result_status: str = "pending"  # pending/running/completed/failed
 
 
 class SessionStore:
@@ -118,7 +120,42 @@ class SessionStore:
         if self.current_session:
             self.current_session.title = title
             self._save()
-    
+
+    def set_final_result(self, result: str, status: str = "completed") -> None:
+        """保存最终分析结果到会话
+
+        Args:
+            result: 最终分析结果内容
+            status: 结果状态 (completed/failed)
+        """
+        if self.current_session:
+            self.current_session.final_result = result
+            self.current_session.result_status = status
+            self._save()
+
+    def get_final_result(self) -> Optional[Dict]:
+        """获取当前会话的最终结果
+
+        Returns:
+            {"result": str, "status": str} 或 None
+        """
+        if self.current_session is None:
+            return None
+        return {
+            "result": self.current_session.final_result,
+            "status": self.current_session.result_status
+        }
+
+    def set_result_status(self, status: str) -> None:
+        """设置结果状态
+
+        Args:
+            status: pending/running/completed/failed
+        """
+        if self.current_session:
+            self.current_session.result_status = status
+            self._save()
+
     def _save(self) -> None:
         """保存当前会话到文件"""
         if self.current_session is None:
@@ -134,6 +171,8 @@ class SessionStore:
                 "steps": self.current_session.steps,
                 "metadata": self.current_session.metadata,
                 "user_id": self.current_session.user_id,  # 保存用户ID
+                "final_result": self.current_session.final_result,  # 最终结果
+                "result_status": self.current_session.result_status,  # 结果状态
             }, f, ensure_ascii=False, indent=2)
     
     def get_context(self, max_steps: int = 50) -> Dict:

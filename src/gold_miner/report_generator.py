@@ -484,7 +484,7 @@ def generate_report_filename_with_llm(
 
 要求:
 1. 文件名应该简洁明了，反映报告主题
-2. 不要包含特殊字符（如 / \ : * ? " < > |）
+2. 不要包含特殊字符（如 / \\ : * ? " < > |）
 3. 长度控制在 30 个字符以内
 4. 不要包含日期（系统会自动添加）
 5. 不要包含文件扩展名
@@ -554,5 +554,242 @@ def generate_report_from_session(
     )
 
     # 生成报告
+    generator = ReportGenerator(output_dir)
+    return generator.generate(report_data, fmt)
+
+
+def extract_dialogs_from_session(session_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """从会话数据中提取对话列表（用户问题和助手回答，不包含任务日志）.
+    
+    Args:
+        session_data: 会话数据
+        
+    Returns:
+        对话列表，每个对话包含 user_message 和 assistant_message
+    """
+    steps = session_data.get("steps", [])
+    dialogs = []
+    current_dialog = None
+    
+    for step in steps:
+        role = step.get("role", "")
+        content = step.get("content", "")
+        timestamp = step.get("timestamp", "")
+        
+        if role == "user":
+            # 保存上一个对话（如果存在）
+            if current_dialog and current_dialog.get("user_message"):
+                dialogs.append(current_dialog)
+            # 开始新对话
+            current_dialog = {
+                "index": len(dialogs),
+                "user_message": content,
+                "assistant_message": None,
+                "timestamp": timestamp
+            }
+        elif role == "assistant" and current_dialog:
+            # 提取助手回答（处理 JSON 格式）
+            assistant_content = content
+            if isinstance(content, str) and content.strip().startswith("{"):
+                try:
+                    parsed = json.loads(content)
+                    if "report_markdown" in parsed:
+                        assistant_content = parsed["report_markdown"]
+                    elif "answer" in parsed:
+                        assistant_content = parsed["answer"]
+                    elif "content" in parsed:
+                        assistant_content = parsed["content"]
+                except json.JSONDecodeError:
+                    pass
+            current_dialog["assistant_message"] = assistant_content
+    
+    # 添加最后一个对话
+    if current_dialog and current_dialog.get("user_message"):
+        dialogs.append(current_dialog)
+    
+    return dialogs
+
+
+def generate_raw_report_from_dialogs(dialogs: List[Dict[str, Any]]) -> str:
+    """将选中的对话拼接成原始报告.
+    
+    Args:
+        dialogs: 选中的对话列表
+        
+    Returns:
+        拼接后的原始报告文本
+    """
+    parts = []
+    
+    for i, dialog in enumerate(dialogs, 1):
+        parts.append(f"## 问题 {i}")
+        parts.append("")
+        parts.append(f"**用户提问：**")
+        parts.append(dialog.get("user_message", ""))
+        parts.append("")
+        
+        assistant_msg = dialog.get("assistant_message", "")
+        if assistant_msg:
+            parts.append(f"**分析结果：**")
+            parts.append(assistant_msg)
+        else:
+            parts.append("*（暂无回答）*")
+        
+        parts.append("")
+        parts.append("---")
+        parts.append("")
+    
+    return "\n".join(parts)
+
+
+def polish_report_with_llm(
+    raw_report: str,
+    session_title: str,
+    llm_client: Optional[Any] = None,
+) -> str:
+    """使用 LLM 润色和整理报告格式.
+    
+    Args:
+        raw_report: 原始报告文本
+        session_title: 会话标题
+        llm_client: LLM 客户端（可选）
+        
+    Returns:
+        润色后的报告内容
+    """
+    if not llm_client:
+        # 如果没有 LLM，直接返回原始报告
+        return raw_report
+    
+    prompt = f"""请根据以下原始数据分析报告内容，生成一份专业、结构化的数据分析报告。
+
+会话标题: {session_title}
+
+原始报告内容:
+{raw_report[:6000]}
+
+请按照以下要求生成报告：
+
+# 数据分析报告
+
+---
+**生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**会话标题**: {session_title}
+**查询次数**: {raw_report.count('问题 ')}
+---
+
+## 一、分析概述
+简要说明本次分析的背景、目的和分析范围。
+
+## 二、关键发现
+列出本次分析的主要发现和核心洞察（3-5条）。
+
+## 三、详细分析
+根据原始报告中的各个问题，整理详细的数据分析内容：
+- 按问题分类整理分析结果
+- 保留重要的数据表格
+- 提取关键指标和趋势
+
+## 四、建议与结论
+基于分析结果，给出可执行的建议和总结。
+
+格式要求：
+1. 使用 Markdown 格式
+2. 包含适当的标题层级（# ## ###）
+3. 保留原始报告中的数据表格，确保格式正确
+4. 语言专业、简洁
+5. 不要包含 SQL 代码块
+6. 不要包含执行日志或技术细节
+
+请直接输出报告内容，不要包含任何解释性文字。"""
+
+    try:
+        response = llm_client.chat(prompt)
+        # 清理响应内容
+        response = _clean_report_content(response)
+        return response
+    except Exception as e:
+        print(f"[ReportGenerator] LLM 润色失败: {e}")
+        # 降级到返回原始报告
+        return raw_report
+
+
+def generate_report_from_selected_dialogs(
+    session_data: Dict[str, Any],
+    selected_indices: List[int],
+    output_dir: str,
+    title: Optional[str] = None,
+    fmt: ReportFormat = ReportFormat.MARKDOWN,
+    llm_client: Optional[Any] = None,
+) -> str:
+    """从选中的对话生成报告.
+    
+    流程：
+    1. 提取会话中的所有对话
+    2. 根据选中的索引筛选对话
+    3. 将选中的对话拼接成原始报告
+    4. 调用 LLM 润色整理格式
+    5. 生成最终报告文件
+    
+    Args:
+        session_data: 会话数据
+        selected_indices: 选中的对话索引列表
+        output_dir: 输出目录
+        title: 报告标题（可选）
+        fmt: 报告格式
+        llm_client: LLM 客户端（可选）
+        
+    Returns:
+        生成的文件路径
+    """
+    session_id = session_data.get("session_id", "unknown")
+    session_title = session_data.get("title", "数据分析报告")
+    
+    print(f"[ReportGenerator] 从选中对话生成报告，选中索引: {selected_indices}")
+    
+    # 1. 提取所有对话
+    all_dialogs = extract_dialogs_from_session(session_data)
+    print(f"[ReportGenerator] 总会话数: {len(all_dialogs)}")
+    
+    # 2. 筛选选中的对话
+    selected_dialogs = []
+    for idx in selected_indices:
+        if 0 <= idx < len(all_dialogs):
+            selected_dialogs.append(all_dialogs[idx])
+    
+    if not selected_dialogs:
+        print("[ReportGenerator] 没有选中的有效对话，使用全部对话")
+        selected_dialogs = all_dialogs
+    
+    print(f"[ReportGenerator] 选中对话数: {len(selected_dialogs)}")
+    
+    # 3. 生成原始报告
+    raw_report = generate_raw_report_from_dialogs(selected_dialogs)
+    print(f"[ReportGenerator] 原始报告长度: {len(raw_report)}")
+    
+    # 4. 使用 LLM 润色报告
+    report_content = polish_report_with_llm(raw_report, session_title, llm_client)
+    print(f"[ReportGenerator] 润色后报告长度: {len(report_content)}")
+    
+    # 5. 生成报告标题
+    report_title = title
+    if not report_title:
+        report_title = generate_report_filename_with_llm(session_data, llm_client)
+    
+    # 6. 构建报告数据
+    report_data = ReportData(
+        title=report_title,
+        content=report_content,
+        tables=[],
+        session_id=session_id,
+        metadata={
+            "created_at": session_data.get("created_at") or session_data.get("start_time"),
+            "updated_at": session_data.get("updated_at") or session_data.get("end_time"),
+            "query_count": len(selected_dialogs),
+            "selected_dialogs": selected_indices,
+        },
+    )
+    
+    # 7. 生成报告文件
     generator = ReportGenerator(output_dir)
     return generator.generate(report_data, fmt)
