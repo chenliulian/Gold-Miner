@@ -82,7 +82,7 @@ def _set_auth_cookie(response, token: str, expires_hours: int = 8):
         token,
         max_age=max_age,
         httponly=True,
-        secure=request.is_secure,  # Only HTTPS in production
+        secure=True,  # 强制 HTTPS，因为 ALB 做 SSL 终止后 Flask 收到的是 HTTP
         samesite='Lax',
     )
     return response
