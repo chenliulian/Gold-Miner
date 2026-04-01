@@ -748,6 +748,7 @@ def list_report_formats():
         支持的格式列表
     """
     formats = [
+        {"id": "html", "name": "HTML", "description": "网页格式，美观易读，推荐"},
         {"id": "md", "name": "Markdown", "description": "Markdown 格式，适合查看和编辑"},
         {"id": "pdf", "name": "PDF", "description": "PDF 文档（即将支持）"},
         {"id": "xlsx", "name": "Excel", "description": "Excel 表格（即将支持）"},
@@ -839,7 +840,7 @@ def generate_report():
         return jsonify({
             "success": False,
             "error": "invalid_format",
-            "message": f"Unsupported format: {format_str}. Supported: md",
+            "message": f"Unsupported format: {format_str}. Supported: html, md",
         }), 400
     
     # 3. 获取用户报告目录

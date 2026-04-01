@@ -384,7 +384,8 @@ class SqlAgent:
                     # Store the draft report in state for review
                     self.state.draft_report = report_markdown
                     print(f"\n[Agent] Summary report generated, awaiting review")
-                    self.session.add_step("assistant", f"Draft report generated:\n{report_markdown}", visible=True)
+                    # 不将草稿报告添加到会话步骤，避免前端显示
+                    # 只通过 status_cb 通知前端报告已生成
                     if status_cb:
                         status_cb({"type": "summary", "content": "分析报告已生成，等待审核"})
                 else:

@@ -76,6 +76,31 @@ SUMMARY ACTION GUIDELINES:
 - Include all relevant SQL results and metrics in the report
 - Store the generated report in report_markdown field
 
+REPORT FORMATTING BEST PRACTICES (for beautiful output):
+1. Structure with sections and emojis:
+   - Use clear section headers with numbering (1️⃣ 2️⃣ 3️⃣) and emojis for visual hierarchy
+   - Example: "1️⃣ 口径与范围", "2️⃣ 核心结果", "3️⃣ 关键观察", "4️⃣ 建议"
+
+2. Convert prose to tables:
+   - Replace long text descriptions with aligned Markdown tables
+   - Use right-alignment for numeric columns
+   - Split wide tables into smaller, focused tables by category
+
+3. Highlight key data:
+   - **Bold** important numbers and metrics
+   - Use ↑ ↓ arrows to indicate trends (增长/下降)
+   - Add ⭐ to mark primary/most significant items
+   - Use ✅ ⚠️ 🔄 symbols to quickly convey status/direction
+
+4. Table formatting:
+   - Use proper Markdown table syntax with aligned columns
+   - Add separator lines between logical groups
+   - Keep tables narrow and focused (avoid overly wide tables)
+
+5. Summary tables:
+   - Create comparison tables for key observations instead of bullet points
+   - Group related metrics together for easy comparison
+
 REVIEW ACTION GUIDELINES:
 - Always review the summary report before finalizing
 - Check for: data accuracy (numbers match SQL results), logical consistency, completeness of analysis, formatting quality
@@ -141,11 +166,29 @@ Rules:
 
 FINAL_REPORT_PROMPT = """
 You are writing the final analysis report in Markdown.
-Include:
-- Summary (3-5 bullets)
-- Key SQL findings (with short tables if needed)
-- Anomalies or notable patterns
-- Next steps or follow-up questions
+
+REPORT STRUCTURE & FORMATTING:
+1. Use numbered sections with emojis for clear visual hierarchy:
+   - 1️⃣ 口径与范围 / 数据来源
+   - 2️⃣ 核心结果 / 整体汇总
+   - 3️⃣ 分维度对比 (if applicable)
+   - 4️⃣ 关键观察 / 洞察
+   - 5️⃣ 建议 / 下一步
+
+2. Formatting guidelines:
+   - Convert text descriptions to Markdown tables
+   - Right-align numeric columns
+   - **Bold** key numbers and important findings
+   - Use ↑ ↓ arrows for trends
+   - Add ⭐ to mark primary items
+   - Use ✅ ⚠️ 🔄 for quick status indication
+   - Split wide tables into multiple focused tables
+
+3. Content sections:
+   - Executive summary (3-5 key points)
+   - Key SQL findings (with formatted tables)
+   - Anomalies or notable patterns
+   - Next steps or follow-up questions
 """
 
 MEMORY_SUMMARY_PROMPT = """

@@ -20,6 +20,7 @@ class ReportFormat(Enum):
     """支持的报告格式."""
 
     MARKDOWN = "md"
+    HTML = "html"
     PDF = "pdf"
     EXCEL = "xlsx"
     WORD = "docx"
@@ -79,6 +80,8 @@ class ReportGenerator:
 
         if fmt == ReportFormat.MARKDOWN:
             return self._generate_markdown(report_data, output_path)
+        elif fmt == ReportFormat.HTML:
+            return self._generate_html(report_data, output_path)
         elif fmt == ReportFormat.PDF:
             return self._generate_pdf(report_data, output_path)
         elif fmt == ReportFormat.EXCEL:
@@ -239,6 +242,369 @@ class ReportGenerator:
         """生成 Excel 报告（待实现）."""
         raise NotImplementedError("Excel 格式将在后续版本支持")
 
+    def _generate_html(self, data: ReportData, path: str) -> str:
+        """生成 HTML 报告.
+
+        Args:
+            data: 报告数据
+            path: 输出路径
+
+        Returns:
+            生成的文件路径
+        """
+        import re
+
+        # 转换 Markdown 内容为 HTML
+        content = data.content
+
+        # 处理标题
+        content = re.sub(r'^### (.*?)$', r'<h3>\1</h3>', content, flags=re.MULTILINE)
+        content = re.sub(r'^## (.*?)$', r'<h2>\1</h2>', content, flags=re.MULTILINE)
+        content = re.sub(r'^# (.*?)$', r'<h1>\1</h1>', content, flags=re.MULTILINE)
+
+        # 处理粗体
+        content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
+
+        # 处理表格
+        content = self._markdown_tables_to_html(content)
+
+        # 处理代码块
+        content = re.sub(r'`(.*?)`', r'<code>\1</code>', content)
+
+        # 处理列表
+        content = self._markdown_lists_to_html(content)
+
+        # 处理段落（简单的换行转换）
+        paragraphs = content.split('\n\n')
+        processed_paragraphs = []
+        for p in paragraphs:
+            p = p.strip()
+            if p and not p.startswith('<') and not p.startswith('---'):
+                processed_paragraphs.append(f'<p>{p}</p>')
+            else:
+                processed_paragraphs.append(p)
+        content = '\n\n'.join(processed_paragraphs)
+
+        # 处理分隔线
+        content = content.replace('---', '<hr>')
+
+        # 生成时间
+        generated_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        html_template = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{data.title}</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }}
+
+        .container {{
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 40px;
+        }}
+
+        .header {{
+            border-bottom: 2px solid #e8e8e8;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }}
+
+        .header h1 {{
+            font-size: 28px;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }}
+
+        .meta {{
+            color: #666;
+            font-size: 14px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }}
+
+        .meta-item {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+
+        .meta-label {{
+            color: #999;
+        }}
+
+        h1 {{
+            font-size: 24px;
+            color: #1a1a1a;
+            margin: 30px 0 16px 0;
+            font-weight: 600;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }}
+
+        h2 {{
+            font-size: 20px;
+            color: #262626;
+            margin: 24px 0 12px 0;
+            font-weight: 600;
+        }}
+
+        h3 {{
+            font-size: 16px;
+            color: #333;
+            margin: 20px 0 10px 0;
+            font-weight: 600;
+        }}
+
+        p {{
+            margin: 12px 0;
+            color: #444;
+            line-height: 1.8;
+        }}
+
+        table {{
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 16px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }}
+
+        th {{
+            background: #f8f9fa;
+            color: #333;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid #e8e8e8;
+            font-size: 14px;
+        }}
+
+        td {{
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            color: #444;
+        }}
+
+        tr:last-child td {{
+            border-bottom: none;
+        }}
+
+        tr:hover {{
+            background: #fafafa;
+        }}
+
+        code {{
+            background: #f4f4f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+            font-size: 13px;
+            color: #d73a49;
+        }}
+
+        strong {{
+            color: #1a1a1a;
+            font-weight: 600;
+        }}
+
+        ul, ol {{
+            margin: 12px 0;
+            padding-left: 24px;
+        }}
+
+        li {{
+            margin: 6px 0;
+            color: #444;
+        }}
+
+        ul li::marker {{
+            color: #1890ff;
+        }}
+
+        hr {{
+            border: none;
+            border-top: 1px solid #e8e8e8;
+            margin: 24px 0;
+        }}
+
+        .section {{
+            margin: 24px 0;
+        }}
+
+        @media print {{
+            body {{
+                background: white;
+                padding: 0;
+            }}
+            .container {{
+                box-shadow: none;
+                max-width: 100%;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{data.title}</h1>
+            <div class="meta">
+                <div class="meta-item">
+                    <span class="meta-label">生成时间:</span>
+                    <span>{generated_time}</span>
+                </div>
+                {f'<div class="meta-item"><span class="meta-label">会话ID:</span><span>{data.session_id}</span></div>' if data.session_id else ''}
+                {f'<div class="meta-item"><span class="meta-label">查询次数:</span><span>{data.metadata["query_count"]}</span></div>' if data.metadata.get("query_count") else ''}
+            </div>
+        </div>
+
+        <div class="content">
+            {content}
+        </div>
+    </div>
+</body>
+</html>'''
+
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html_template)
+
+        return path
+
+    def _markdown_tables_to_html(self, content: str) -> str:
+        """将 Markdown 表格转换为 HTML 表格."""
+        import re
+
+        lines = content.split('\n')
+        result = []
+        table_lines = []
+        in_table = False
+
+        for line in lines:
+            if line.strip().startswith('|') and line.strip().endswith('|'):
+                if not in_table:
+                    in_table = True
+                    table_lines = []
+                table_lines.append(line)
+            else:
+                if in_table:
+                    # 转换表格
+                    html_table = self._convert_table_to_html(table_lines)
+                    result.append(html_table)
+                    in_table = False
+                    table_lines = []
+                result.append(line)
+
+        if in_table and table_lines:
+            html_table = self._convert_table_to_html(table_lines)
+            result.append(html_table)
+
+        return '\n'.join(result)
+
+    def _convert_table_to_html(self, table_lines: list) -> str:
+        """将 Markdown 表格行转换为 HTML 表格."""
+        if len(table_lines) < 2:
+            return '\n'.join(table_lines)
+
+        rows = []
+        for line in table_lines:
+            cells = [cell.strip() for cell in line.strip()[1:-1].split('|')]
+            rows.append(cells)
+
+        if not rows:
+            return '\n'.join(table_lines)
+
+        # 第一行是表头
+        header = rows[0]
+        # 第二行是分隔线，跳过
+        data_rows = rows[2:] if len(rows) > 2 else []
+
+        html = ['<table>']
+
+        # 表头
+        html.append('  <thead>')
+        html.append('    <tr>')
+        for cell in header:
+            html.append(f'      <th>{cell}</th>')
+        html.append('    </tr>')
+        html.append('  </thead>')
+
+        # 数据行
+        if data_rows:
+            html.append('  <tbody>')
+            for row in data_rows:
+                html.append('    <tr>')
+                for cell in row:
+                    html.append(f'      <td>{cell}</td>')
+                html.append('    </tr>')
+            html.append('  </tbody>')
+
+        html.append('</table>')
+        return '\n'.join(html)
+
+    def _markdown_lists_to_html(self, content: str) -> str:
+        """将 Markdown 列表转换为 HTML 列表."""
+        import re
+
+        lines = content.split('\n')
+        result = []
+        in_ul = False
+        in_ol = False
+
+        for line in lines:
+            # 无序列表
+            ul_match = re.match(r'^(\s*)[-*] (.*)$', line)
+            # 有序列表
+            ol_match = re.match(r'^(\s*)\d+\. (.*)$', line)
+
+            if ul_match:
+                if not in_ul:
+                    result.append('<ul>')
+                    in_ul = True
+                result.append(f'  <li>{ul_match.group(2)}</li>')
+            elif ol_match:
+                if not in_ol:
+                    result.append('<ol>')
+                    in_ol = True
+                result.append(f'  <li>{ol_match.group(2)}</li>')
+            else:
+                if in_ul:
+                    result.append('</ul>')
+                    in_ul = False
+                if in_ol:
+                    result.append('</ol>')
+                    in_ol = False
+                result.append(line)
+
+        # 关闭未闭合的列表
+        if in_ul:
+            result.append('</ul>')
+        if in_ol:
+            result.append('</ol>')
+
+        return '\n'.join(result)
+
     def _generate_word(self, data: ReportData, path: str) -> str:
         """生成 Word 报告（待实现）."""
         raise NotImplementedError("Word 格式将在后续版本支持")
@@ -383,11 +749,11 @@ def generate_summary_with_llm(
 
 请生成一份专业的数据分析报告，要求如下:
 
-1. **内容要求**:
-   - 分析概述 - 简要说明分析目的和背景
-   - 关键发现 - 列出主要的数据洞察
-   - 详细分析 - 对数据进行深入解读
-   - 建议与结论 - 基于数据给出 actionable 的建议
+1. **内容结构** (使用编号和emoji分层):
+   - 1️⃣ 分析概述 - 简要说明分析目的和背景
+   - 2️⃣ 关键发现 - 列出主要的数据洞察
+   - 3️⃣ 详细分析 - 对数据进行深入解读
+   - 4️⃣ 建议与结论 - 基于数据给出 actionable 的建议
 
 2. **格式要求**:
    - 使用 Markdown 格式
@@ -396,10 +762,18 @@ def generate_summary_with_llm(
    - 不要包含 SQL 代码块
    - 不要包含原始数据详情
 
-3. **表格格式要求**:
-   - 使用 | 分隔列
-   - 表头后使用 |---|---| 分隔线
-   - 确保表格在视觉上对齐美观
+3. **表格美化要求**:
+   - 使用 | 分隔列，表头后使用 |---|---| 分隔线
+   - 数字列使用右对齐，确保视觉上对齐美观
+   - 将大段文字描述转换为表格形式展示
+   - 宽表格按维度拆分为多个小表格，每个表格聚焦一个主题
+
+4. **视觉增强**:
+   - **加粗** 重要的数字、指标和关键发现
+   - 使用 ↑ ↓ 箭头表示增长/下降趋势
+   - 使用 ⭐ 标注主要/最重要的项目
+   - 使用 ✅ ⚠️ 🔄 等符号快速传达状态
+   - 创建对比表格替代散点文字，便于快速理解
 
 请直接输出报告内容，不要包含任何解释性文字。"""
 

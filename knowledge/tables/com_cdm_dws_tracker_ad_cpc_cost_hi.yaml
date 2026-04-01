@@ -12,105 +12,6 @@
   - 黄金眼底表
   - 业务口径表
   - 投放侧表
-建表语句: "CREATE TABLE IF NOT EXISTS dws_tracker_ad_cpc_cost_hi\n(\n    advertiser_id\
-  \             STRING COMMENT '广告主ID'\n    ,account_name             STRING COMMENT\
-  \ '广告主名称'\n    ,first_industry           STRING COMMENT '广告主一级行业'\n    ,second_industry\
-  \          STRING COMMENT '广告主二级行业'\n    ,third_industry           STRING COMMENT\
-  \ '广告主三级行业'\n    ,ad_plan_id               STRING COMMENT '广告计划ID'\n    ,ad_plan_title\
-  \            STRING COMMENT '广告计划名称'\n    ,purpose_type             INT COMMENT\
-  \ '推广目的，1-品牌营销，2-应用推广，3-卡券推广'\n    ,purpose_type_cn          STRING COMMENT '推广目的(中文)'\n\
-  \    ,ad_group_id              STRING COMMENT '广告组ID'\n    ,ad_group_title     \
-  \      STRING COMMENT '广告组名称'\n    ,creativity_id            STRING COMMENT '广告创意ID'\n\
-  \    ,creativity_title         STRING COMMENT '广告创意名称'\n    ,media_id          \
-  \       STRING COMMENT '媒体主ID'\n    ,media_company_name       STRING COMMENT '媒体主公司名称'\n\
-  \    ,app_id                   STRING COMMENT '应用ID'\n    ,app_name            \
-  \     STRING COMMENT '应用名称'\n    ,code_seat_id             STRING COMMENT '代码位ID'\n\
-  \    ,code_seat_title          STRING COMMENT '代码位名称'\n    ,code_seat_type     \
-  \      INT COMMENT '代码位类型，1 native/原生，2 banner/横幅，3插屏， 4 开屏'\n    ,code_seat_type_cn\
-  \        STRING COMMENT '代码位类型(中文)'\n    ,is_default_ad            INT COMMENT '是否打底广告'\n\
-  \    ,mcc                      STRING COMMENT '国家mcc码'\n    ,country           \
-  \       STRING COMMENT '国家名称'\n    ,country_zh               STRING COMMENT '国家中文名'\n\
-  \    ,continent                STRING COMMENT '洲名'\n    ,model_version         \
-  \   STRING COMMENT '模型版本'\n    ,adv_seat_type            STRING COMMENT '广告位类型'\n\
-  \    ,os_type                  STRING COMMENT '操作系统'\n    ,server_version      \
-  \     STRING COMMENT '广告引擎版本号'\n    ,cost_type                STRING COMMENT '广告结算方式'\n\
-  \    ,req_num                  BIGINT COMMENT '请求数'\n    ,res_num              \
-  \    BIGINT COMMENT '有广告返回的请求数'\n    ,res_cnt                  BIGINT COMMENT '广告返回数'\n\
-  \    ,show_num                 BIGINT COMMENT '有广告展现的请求数'\n    ,show_cnt       \
-  \          BIGINT COMMENT '广告展现数(去重)'\n    ,click_num                BIGINT COMMENT\
-  \ '有广告点击的请求数'\n    ,click_cnt                BIGINT COMMENT '广告点击数(去重)'\n    ,cpm_cost\
-  \                 DOUBLE COMMENT '广告主CPM花费(单位:美元)'\n    ,cpc_cost              \
-  \   DOUBLE COMMENT '广告主CPC花费(单位:美元)'\n    ,cpm_income               DOUBLE COMMENT\
-  \ '媒体主CPM收益(单位:美元)'\n    ,cpc_income               DOUBLE COMMENT '媒体主CPC收益(单位:美元)'\n\
-  \    ,correct_show_num         BIGINT COMMENT '有广告展现的补偿请求数'\n    ,correct_show_cnt\
-  \         BIGINT COMMENT '广告展现补偿数(去重)'\n    ,correct_cpm_cost         DOUBLE COMMENT\
-  \ '广告主CPM补偿花费(单位:美元)'\n    ,correct_cpm_income       DOUBLE COMMENT '媒体主CPM补偿收益(单位:美元)'\n\
-  \    ,pre_ctr                  DOUBLE COMMENT '预估ctr(单位:美元)'\n    ,pre_cost    \
-  \             DOUBLE COMMENT '预估CPM(单位:美元)'\n    ,correct_click_num        BIGINT\
-  \ COMMENT '有广告展现的补偿请求数'\n    ,correct_click_cnt        BIGINT COMMENT '广告补偿展现数(去重)'\n\
-  \    ,correct_cpc_cost         DOUBLE COMMENT '广告主CPC补偿花费(单位:美元)'\n    ,correct_cpc_income\
-  \       DOUBLE COMMENT '媒体主CPC补偿收益(单位:美元)'\n    ,style_type               STRING\
-  \ COMMENT '样式类型'\n    ,ad_type                  INT COMMENT '流量类型，0 未知流量 1 api流量（媒体）2\
-  \ sdk流量 3 h5流量'\n    ,sdk_version              STRING COMMENT 'sdk版本号'\n    ,pre_cost_sum\
-  \             DOUBLE COMMENT '预估消耗(单位:美元)'\n    ,national_id              STRING\
-  \ COMMENT '国家ID'\n    ,agent_id                 INT COMMENT '代理商id'\n    ,agent_name\
-  \               STRING COMMENT '代理商名称'\n    ,utc_show_timestamp       TIMESTAMP\
-  \ COMMENT '零时区曝光时间，冗余，以后可任意扩展时区'\n    ,advertiser_dh            STRING COMMENT '广告主要求统计数据的时区，默认为零时区，格式yyyyMMddHH'\n\
-  \    ,advertiser_utc_set       INT COMMENT '冗余，以后扩展时区时使用，默认为0'\n    ,pre_click_cnt\
-  \            DOUBLE COMMENT '预估广告点击数'\n    ,is_offline_ad            BIGINT COMMENT\
-  \ '是否离线广告：0.在线广告1.离线广告'\n    ,ad_trigger_status        BIGINT COMMENT '广告触发状态，0-正常，1-没网异常，2-没有云控异常'\n\
-  \    ,brand                    STRING COMMENT '手机品牌'\n    ,business_line_nm    \
-  \     STRING COMMENT '业务线名称'\n    ,bill_should_cost         DOUBLE COMMENT '计费系统记录的应扣'\n\
-  \    ,pool_should_cost         DOUBLE COMMENT '资金池记录的实扣'\n    ,cashdeductamount\
-  \         DOUBLE COMMENT '现金消耗'\n    ,creditdeductamount       DOUBLE COMMENT '信用消耗'\n\
-  \    ,rebatedeductamount       DOUBLE COMMENT '返货消耗'\n    ,pre_active_pv       \
-  \     DOUBLE COMMENT '预估激活量,2023.1.3增加'\n    ,start_dld_cnt            BIGINT COMMENT\
-  \ '开始下载'\n    ,dld_finished_cnt         BIGINT COMMENT '下载完成'\n    ,install_finish_cnt\
-  \       BIGINT COMMENT '安装完成'\n    ,queue_dld_cnt            BIGINT COMMENT '加入下载队列数量'\n\
-  \    ,cpd_cost                 DOUBLE COMMENT 'cpd消耗'\n    ,sdk_version_int    \
-  \      BIGINT COMMENT 'SDK版本号'\n    ,correct_cpd_cost         DOUBLE COMMENT '广告主cpd补偿后计费(单位:美元)'\n\
-  \    ,correct_cpd_income       DOUBLE COMMENT '媒体主cpd补偿后收益(单位:美元)'\n    ,package_name\
-  \             STRING COMMENT '物料包名'\n    ,app_package_name         STRING COMMENT\
-  \ '媒体应用的GP包名'\n    ,model                    STRING COMMENT '客户端手机型号'\n    ,req_cnt\
-  \                  BIGINT COMMENT '请求广告数'\n    ,event_type               STRING\
-  \ COMMENT '事件类型。1-安装，2-激活，3-注册，4-付费'\n    ,pv                       BIGINT COMMENT\
-  \ '转化数'\n    ,conv_src                 STRING COMMENT '用于区分转化来源 1-三方、2-联运、3-表单、4-ps归因'\n\
-  \    ,channel                  STRING COMMENT '转化渠道'\n    ,pre_download_cnt    \
-  \     DOUBLE COMMENT '预估广告下载数'\n    ,video_play_stage         STRING COMMENT '视频播放进度\
-  \ error、start、firstQuartile、midpoint、thirdQuartile、complete'\n    ,video_play_pv\
-  \            BIGINT COMMENT '视频播放数'\n    ,ssp_id                   STRING COMMENT\
-  \ 'SSP ID'\n    ,cpi_cost                 DOUBLE COMMENT 'cpi消耗'\n    ,click_active_cnt\
-  \         BIGINT COMMENT '点击时间激活数'\n    ,ssp_price                DOUBLE COMMENT\
-  \ '外部SSP收益'\n    ,correct_ssp_price        DOUBLE COMMENT '外部SSP补偿收益'\n    ,res_price\
-  \                DOUBLE COMMENT '响应广告ecpm出价（千次美元）'\n    ,click_cpi_cost        \
-  \   DOUBLE COMMENT '点击时间cpi消耗'\n    ,correct_bill_should_cost DOUBLE COMMENT '反作弊后\
-  \ 计费系统记录的应扣 - 注意！不含correct_cpm_cost'\n    ,cpi_click_pred_cost      DOUBLE COMMENT\
-  \ 'cpi点击预估消耗'\n    ,budget                   BIGINT COMMENT '日预算'\n    ,bill   \
-  \                  DOUBLE COMMENT '出价(元)'\n    ,cpi_download_pred_cost   DOUBLE\
-  \ COMMENT 'cpi下载预估消耗'\n    ,click_conv_pv            BIGINT COMMENT '点击时间转化数'\n\
-  \    ,ascribe_channel          STRING COMMENT '归因渠道'\n    ,half_screen_type    \
-  \     STRING COMMENT '半屏样式,默认样式0'\n    ,scale                    STRING COMMENT\
-  \ '尺寸'\n    ,status_v2                STRING COMMENT '投放状态'\n    ,material_type_cn\
-  \         STRING COMMENT '素材类型'\n    ,material_sub_type_cn     STRING COMMENT '素材细分类型'\n\
-  \    ,material_format          STRING COMMENT '素材格式'\n    ,cate1_gp            \
-  \     STRING COMMENT '投放客户所属行业'\n    ,is_direct                STRING COMMENT '0/false\
-  \ 表示直投 1/true表示通投'\n    ,ori_creative_id          STRING COMMENT '原始创意id'\n    ,extend_status_cn\
-  \         STRING COMMENT '通投状态不派生；待派生广告；派生中 ；通投中；已删除'\n    ,generate_type_cn   \
-  \      STRING COMMENT '创意生成类型：普通创意;原始创意；派生创意'\n    ,transform_target_cn      STRING\
-  \ COMMENT '转化目标'\n    ,game_name                STRING COMMENT '游戏名称'\n    ,material_generate_type_cn\
-  \ STRING COMMENT '物料生成类型'\n    ,is_natural               STRING COMMENT '1 自然量洗量'\n\
-  \    ,is_inapp_ad              STRING COMMENT '是否内置 0/否 1/是'\n    ,sale_type_cn\
-  \             STRING COMMENT '竞价 合约'\n    ,ps_app_id                STRING COMMENT\
-  \ '投放应用ps_app_id'\n    ,income                   DOUBLE COMMENT '变现收入'\n    ,attri_dh\
-  \                 STRING COMMENT '归因日期，仅转化数据有，便于求点击时间指标'\n    ,target_cost     \
-  \         DOUBLE COMMENT '客户预期花费'\n    ,data_source              STRING COMMENT\
-  \ '数据来源'\n    ,app_link_type            STRING COMMENT '投放应用市场'\n    ,is_preferred_traffic_ad\
-  \  STRING COMMENT '是否优选广告'\n    ,media_source             STRING COMMENT '媒体来源，仅优选广告独有'\n\
-  \    ,second_code_seat_id      STRING COMMENT '二次分配代码位id'\n    ,active_attr_delta_dt\
-  \     BIGINT COMMENT '点击到激活间隔天数'\n    ,popularize_app_install_status  STRING COMMENT\
-  \ '26.3.4增加 -1:异常情况取不到是否安装 1.非下载类广告 2.已安装目标下载应用 3.未安装目标下载应用'\n)\nCOMMENT '程序化广告请求/响应/展现点击/计费结果小时dws汇总表,代码位+广告创意粒度'\n\
-  PARTITIONED BY \n(\n    dh                        STRING COMMENT '业务发生小时,GMT+8时区,格式yyyyMMddHH'\n\
-  )\nLIFECYCLE 36500;\n"
 分区信息:
   分区字段: dh
   分区类型: STRING
@@ -566,7 +467,7 @@
     业务含义: 计费系统记录的应扣金额
     示例值:
     - '0.0'
-    使用注意: ''
+    使用注意: '统计消耗可直接使用该字段'
   pool_should_cost:
     字段名: pool_should_cost
     数据类型: DOUBLE
@@ -681,7 +582,7 @@
     数据类型: BIGINT
     业务含义: 转化数
     示例值: []
-    使用注意: ''
+    使用注意: 不建议使用该字段统计转化数
   conv_src:
     字段名: conv_src
     数据类型: STRING
@@ -1157,4 +1058,4 @@ ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/com_cdm_dws_trac
   - attri_dh
   - active_attr_delta_dt
 生成时间: '2026-03-18 17:42:40'
-更新时间: '2026-03-31 23:56:35'
+更新时间: '2026-03-26 17:41:52'
