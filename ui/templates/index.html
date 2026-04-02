@@ -3935,7 +3935,120 @@
 
             // 定期刷新历史列表（每30秒）
             setInterval(loadHistoryList, 30000);
+
+            // 检查是否需要显示 LLM 配置对话框
+            checkAndShowLLMConfigModal();
         });
+
+        // ==================== LLM Config Modal Functions ====================
+
+        function checkAndShowLLMConfigModal() {
+            // 检查 URL 参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const needLLMConfig = urlParams.get('need_llm_config');
+
+            if (needLLMConfig === 'true') {
+                showLLMConfigModal();
+                // 清除 URL 参数
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function showLLMConfigModal() {
+            const modal = document.getElementById('llm-config-modal');
+            modal.classList.add('active');
+
+            // 清空之前的输入和消息
+            document.getElementById('llm-api-key').value = '';
+            document.getElementById('llm-base-url').value = '';
+            document.getElementById('llm-model').value = '';
+            hideLLMConfigMessages();
+        }
+
+        function hideLLMConfigModal() {
+            const modal = document.getElementById('llm-config-modal');
+            modal.classList.remove('active');
+        }
+
+        function hideLLMConfigMessages() {
+            document.getElementById('llm-config-error').style.display = 'none';
+            document.getElementById('llm-config-success').style.display = 'none';
+        }
+
+        function showLLMConfigError(message) {
+            const errorDiv = document.getElementById('llm-config-error');
+            errorDiv.querySelector('p').textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('llm-config-success').style.display = 'none';
+        }
+
+        function showLLMConfigSuccess(message) {
+            const successDiv = document.getElementById('llm-config-success');
+            successDiv.querySelector('p').textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('llm-config-error').style.display = 'none';
+        }
+
+        function setLLMConfigLoading(loading) {
+            const btn = document.getElementById('save-llm-config-btn');
+            btn.disabled = loading;
+            btn.textContent = loading ? '测试中...' : '测试并保存';
+        }
+
+        async function saveLLMConfig() {
+            const apiKey = document.getElementById('llm-api-key').value.trim();
+            const baseUrl = document.getElementById('llm-base-url').value.trim();
+            const model = document.getElementById('llm-model').value.trim();
+
+            // 验证输入
+            if (!apiKey) {
+                showLLMConfigError('请输入 API Key');
+                return;
+            }
+
+            if (!baseUrl) {
+                showLLMConfigError('请输入 Base URL');
+                return;
+            }
+
+            hideLLMConfigMessages();
+            setLLMConfigLoading(true);
+
+            try {
+                const response = await fetch('/api/v2/user/llm-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        base_url: baseUrl,
+                        model: model,
+                        provider: 'anthropic'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showLLMConfigSuccess('配置验证成功并已保存！即将进入对话界面...');
+                    setTimeout(() => {
+                        hideLLMConfigModal();
+                    }, 1500);
+                } else {
+                    showLLMConfigError(data.message || '配置保存失败');
+                }
+            } catch (error) {
+                showLLMConfigError('网络错误，请稍后重试');
+                console.error('Save LLM config error:', error);
+            } finally {
+                setLLMConfigLoading(false);
+            }
+        }
+
+        function skipLLMConfig() {
+            hideLLMConfigModal();
+        }
     </script>
 
     <!-- Dialog Selection Modal -->
@@ -3963,6 +4076,63 @@
                     <button class="dialog-modal-btn cancel" onclick="closeDialogModal()">取消</button>
                     <button class="dialog-modal-btn confirm" id="generate-report-btn" onclick="confirmGenerateReport()">
                         生成报告
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LLM Config Modal -->
+    <div id="llm-config-modal" class="dialog-modal-overlay">
+        <div class="dialog-modal" style="max-width: 500px;">
+            <div class="dialog-modal-header">
+                <div class="dialog-modal-title">⚙️ 配置您的 LLM API</div>
+            </div>
+            <div class="dialog-modal-body">
+                <div style="margin-bottom: 20px; padding: 12px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                    <p style="margin: 0; font-size: 14px; color: #0369a1;">
+                        欢迎使用 GoldMiner！为了开始使用 Agent 对话功能，请配置您的 LLM API 信息。（必须配置）
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                        API Key <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="password" id="llm-api-key" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--text-muted);">您的 API Key 将被加密存储，仅用于您的对话请求</p>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                        Base URL <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" id="llm-base-url" placeholder="https://api.modelverse.cn/v1"
+                        style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                        模型名称
+                    </label>
+                    <input type="text" id="llm-model" placeholder="claude-opus-4-6"
+                        style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--text-muted);">可选，留空使用默认模型</p>
+                </div>
+
+                <div id="llm-config-error" style="display: none; margin-top: 16px; padding: 12px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #ef4444;">
+                    <p style="margin: 0; font-size: 13px; color: #dc2626;"></p>
+                </div>
+
+                <div id="llm-config-success" style="display: none; margin-top: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e;">
+                    <p style="margin: 0; font-size: 13px; color: #16a34a;"></p>
+                </div>
+            </div>
+            <div class="dialog-modal-footer" style="justify-content: flex-end;">
+                <div class="dialog-modal-actions">
+                    <button class="dialog-modal-btn confirm" id="save-llm-config-btn" onclick="saveLLMConfig()">
+                        测试并保存
                     </button>
                 </div>
             </div>

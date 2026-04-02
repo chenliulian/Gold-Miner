@@ -1067,3 +1067,237 @@ def list_user_reports():
             "total": len(reports),
         },
     })
+
+
+# =============================================================================
+# User LLM Configuration Endpoints
+# =============================================================================
+
+@api_v2.route("/user/llm-config", methods=["GET"])
+@require_auth
+@handle_errors
+def get_user_llm_config():
+    """获取当前用户的 LLM 配置（脱敏）.
+    
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "has_custom_config": true,
+                "base_url": "https://api.xxx.com",
+                "model": "claude-3-5-sonnet",
+                "provider": "anthropic",
+                "api_key_masked": "sk-****xx12",
+                "updated_at": "2024-01-15T10:30:00"
+            }
+        }
+    """
+    from flask import g
+    from gold_miner.auth.llm_config_service import get_llm_config_service
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    
+    # 获取 LLM 配置服务
+    user_store = UserStore()
+    llm_config_service = get_llm_config_service(user_store)
+    
+    config = llm_config_service.get_user_llm_config_masked(user.id)
+    
+    if not config:
+        return jsonify({
+            "success": True,
+            "data": {
+                "has_custom_config": False,
+            },
+        })
+    
+    return jsonify({
+        "success": True,
+        "data": config,
+    })
+
+
+@api_v2.route("/user/llm-config", methods=["POST"])
+@require_auth
+@handle_errors
+def save_user_llm_config():
+    """保存用户的 LLM 配置（包含验证和测试）.
+    
+    Request Body:
+        {
+            "api_key": "sk-xxxxx",
+            "base_url": "https://api.xxx.com",
+            "model": "claude-3-5-sonnet",  // 可选
+            "provider": "anthropic"       // 可选，默认 anthropic
+        }
+    
+    Returns:
+        {
+            "success": true,
+            "message": "配置验证成功并已保存",
+            "data": {
+                "base_url": "https://api.xxx.com",
+                "model": "claude-3-5-sonnet",
+                "api_key_masked": "sk-****xx12"
+            }
+        }
+    """
+    from flask import g
+    from gold_miner.auth.llm_config_service import get_llm_config_service, LLMConfigInput
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    data = request.json or {}
+    
+    # 验证必填字段
+    api_key = data.get("api_key", "").strip()
+    base_url = data.get("base_url", "").strip()
+    
+    if not api_key or not base_url:
+        return jsonify({
+            "success": False,
+            "error": "missing_fields",
+            "message": "API Key 和 Base URL 不能为空",
+        }), 400
+    
+    # 创建配置输入
+    config_input = LLMConfigInput(
+        api_key=api_key,
+        base_url=base_url,
+        model=data.get("model", "").strip(),
+        provider=data.get("provider", "anthropic").strip(),
+    )
+    
+    # 获取 LLM 配置服务
+    user_store = UserStore()
+    llm_config_service = get_llm_config_service(user_store)
+    
+    # 保存配置（包含验证和测试）
+    result = llm_config_service.save_config(user.id, config_input)
+    
+    if result.success:
+        return jsonify({
+            "success": True,
+            "message": result.message,
+            "data": result.config,
+        })
+    else:
+        status_code = 400 if result.error_type == "validation_error" else 422
+        return jsonify({
+            "success": False,
+            "error": result.error_type,
+            "message": result.message,
+        }), status_code
+
+
+@api_v2.route("/user/llm-config", methods=["DELETE"])
+@require_auth
+@handle_errors
+def delete_user_llm_config():
+    """删除用户的 LLM 配置（恢复使用全局配置）.
+    
+    Returns:
+        {
+            "success": true,
+            "message": "配置已删除"
+        }
+    """
+    from flask import g
+    from gold_miner.auth.llm_config_service import get_llm_config_service
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    
+    # 获取 LLM 配置服务
+    user_store = UserStore()
+    llm_config_service = get_llm_config_service(user_store)
+    
+    success = llm_config_service.delete_config(user.id)
+    
+    if success:
+        return jsonify({
+            "success": True,
+            "message": "配置已删除，将使用系统默认配置",
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": "delete_failed",
+            "message": "删除配置失败",
+        }), 500
+
+
+@api_v2.route("/user/llm-config/test", methods=["POST"])
+@require_auth
+@handle_errors
+def test_user_llm_config():
+    """测试 LLM 配置（不保存）.
+    
+    Request Body:
+        {
+            "api_key": "sk-xxxxx",
+            "base_url": "https://api.xxx.com",
+            "model": "claude-3-5-sonnet",
+            "provider": "anthropic"
+        }
+    
+    Returns:
+        {
+            "success": true,
+            "message": "连接成功"
+        }
+    """
+    from flask import g
+    from gold_miner.auth.llm_config_service import get_llm_config_service, LLMConfigInput
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    data = request.json or {}
+    
+    # 验证必填字段
+    api_key = data.get("api_key", "").strip()
+    base_url = data.get("base_url", "").strip()
+    
+    if not api_key or not base_url:
+        return jsonify({
+            "success": False,
+            "error": "missing_fields",
+            "message": "API Key 和 Base URL 不能为空",
+        }), 400
+    
+    # 创建配置输入
+    config_input = LLMConfigInput(
+        api_key=api_key,
+        base_url=base_url,
+        model=data.get("model", "").strip(),
+        provider=data.get("provider", "anthropic").strip(),
+    )
+    
+    # 获取 LLM 配置服务
+    user_store = UserStore()
+    llm_config_service = get_llm_config_service(user_store)
+    
+    # 验证格式
+    valid, error_msg = llm_config_service.validate_config(config_input)
+    if not valid:
+        return jsonify({
+            "success": False,
+            "error": "validation_error",
+            "message": error_msg,
+        }), 400
+    
+    # 测试连接
+    success, error_type, message = llm_config_service.test_config(config_input)
+    
+    if success:
+        return jsonify({
+            "success": True,
+            "message": message,
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": error_type,
+            "message": message,
+        }), 422

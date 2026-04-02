@@ -60,6 +60,42 @@ ROLE_PERMISSIONS = {
 
 
 @dataclass
+class UserLLMConfig:
+    """用户级 LLM 配置"""
+    api_key_encrypted: str = ""  # 加密的 API Key
+    base_url: str = ""           # LLM Base URL
+    model: str = ""              # 模型名称
+    provider: str = "anthropic"  # 提供商: anthropic / openai / openai_compatible
+    created_at: str = ""
+    updated_at: str = ""
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "api_key_encrypted": self.api_key_encrypted,
+            "base_url": self.base_url,
+            "model": self.model,
+            "provider": self.provider,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UserLLMConfig":
+        return cls(
+            api_key_encrypted=data.get("api_key_encrypted", ""),
+            base_url=data.get("base_url", ""),
+            model=data.get("model", ""),
+            provider=data.get("provider", "anthropic"),
+            created_at=data.get("created_at", ""),
+            updated_at=data.get("updated_at", ""),
+        )
+    
+    def is_configured(self) -> bool:
+        """检查是否已配置"""
+        return bool(self.api_key_encrypted and self.base_url)
+
+
+@dataclass
 class User:
     """用户模型"""
     
@@ -92,6 +128,9 @@ class User:
     is_active: bool = True  # 是否启用
     permissions: List[str] = field(default_factory=list)  # 权限列表
     
+    # LLM 配置（用户级）
+    llm_config: UserLLMConfig = field(default_factory=UserLLMConfig)
+    
     # 时间戳
     created_at: str = ""  # 首次注册时间
     updated_at: str = ""  # 信息更新时间
@@ -117,6 +156,7 @@ class User:
             "role": self.role,
             "is_active": self.is_active,
             "permissions": self.permissions,
+            "llm_config": self.llm_config.to_dict(),
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "last_login_at": self.last_login_at,
@@ -125,6 +165,7 @@ class User:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "User":
         """从字典创建"""
+        llm_config_data = data.get("llm_config", {})
         return cls(
             id=data.get("id", ""),
             feishu_open_id=data.get("feishu_open_id", ""),
@@ -143,6 +184,7 @@ class User:
             role=data.get("role", "analyst"),
             is_active=data.get("is_active", True),
             permissions=data.get("permissions", []),
+            llm_config=UserLLMConfig.from_dict(llm_config_data) if llm_config_data else UserLLMConfig(),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
             last_login_at=data.get("last_login_at", ""),

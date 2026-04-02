@@ -467,7 +467,7 @@
     业务含义: 计费系统记录的应扣金额
     示例值:
     - '0.0'
-    使用注意: '统计消耗可直接使用该字段'
+    使用注意: 统计消耗可直接使用该字段
   pool_should_cost:
     字段名: pool_should_cost
     数据类型: DOUBLE
@@ -1058,4 +1058,4 @@ ETL代码路径: /Users/shmichenliulian/GoldMiner/knowledge/etl/com_cdm_dws_trac
   - attri_dh
   - active_attr_delta_dt
 生成时间: '2026-03-18 17:42:40'
-更新时间: '2026-03-26 17:41:52'
+更新时间: '2026-04-02 20:15:44'

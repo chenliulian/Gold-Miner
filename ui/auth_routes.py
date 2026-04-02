@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request, render_template, redirect, url_fo
 
 from gold_miner.auth import AuthService, UserStore, require_auth, get_current_user
 from gold_miner.auth.feishu_auth import FeishuAuth
+from gold_miner.auth.llm_config_service import get_llm_config_service
 from gold_miner.user_data import get_user_data_manager
 
 
@@ -213,8 +214,14 @@ def feishu_callback():
     user_data_manager = get_user_data_manager()
     user_data_manager.create_user_directories(user.id)
     
+    # Check if user needs LLM config
+    llm_config_service = get_llm_config_service(_user_store)
+    need_llm_config = llm_config_service.need_llm_config(user.id)
+    
     # Redirect to home with token in cookie
-    response = make_response(redirect('/'))
+    # If need_llm_config, add query parameter to trigger config dialog
+    redirect_url = '/?need_llm_config=true' if need_llm_config else '/'
+    response = make_response(redirect(redirect_url))
     _set_auth_cookie(response, token)
     return response
 
@@ -362,6 +369,10 @@ def login_password():
     user_data_manager = get_user_data_manager()
     user_data_manager.create_user_directories(user.id)
 
+    # 检查用户是否需要配置 LLM
+    llm_config_service = get_llm_config_service(_user_store)
+    need_llm_config = llm_config_service.need_llm_config(user.id)
+
     response = jsonify({
         "success": True,
         "data": {
@@ -370,6 +381,7 @@ def login_password():
                 "name": user.name,
                 "role": user.role,
             },
+            "need_llm_config": need_llm_config,
         },
     })
 
