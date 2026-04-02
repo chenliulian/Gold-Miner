@@ -369,7 +369,7 @@
             flex: 1;
             background: var(--bg-secondary);
             border-radius: var(--radius-md);
-            padding: 8px 12px;
+            padding: 12px 16px;
             box-shadow: var(--shadow-sm);
         }
 
@@ -2125,43 +2125,24 @@
                 
                 let displayContent = step.content || '';
                 let sqlContent = '';
-                let stepType = '';
                 
-                // 根据 role 和 content 解析步骤类型
+                // 解析日志内容，如果是JSON格式则美化显示（与实时流式保持一致）
                 if (step.role === 'assistant') {
-                    // 尝试解析 action JSON
                     try {
                         const jsonMatch = displayContent.match(/\{[\s\S]*\}/);
                         if (jsonMatch) {
                             const jsonData = JSON.parse(jsonMatch[0]);
                             if (jsonData.action === 'run_sql' && jsonData.sql) {
-                                stepType = '📊 SQL 查询';
                                 displayContent = jsonData.notes || '执行 SQL 查询';
                                 sqlContent = jsonData.sql;
                             } else if (jsonData.action === 'use_skill' && jsonData.skill) {
-                                stepType = `🔧 调用技能: ${jsonData.skill}`;
                                 displayContent = jsonData.notes || `调用 ${jsonData.skill}`;
                             } else if (jsonData.action === 'search_skills') {
-                                stepType = '🔍 搜索技能';
                                 displayContent = jsonData.search_keywords || '搜索技能';
-                            } else {
-                                stepType = '💭 思考';
                             }
-                        } else {
-                            stepType = '💭 思考';
                         }
                     } catch (e) {
-                        stepType = '💭 思考';
-                    }
-                } else if (step.role === 'tool') {
-                    stepType = '⚙️ 执行结果';
-                    // 尝试解析 tool 内容
-                    if (displayContent.includes('SQL executed')) {
-                        stepType = '✅ SQL 完成';
-                    } else if (displayContent.includes('Skill') && displayContent.includes('result')) {
-                        stepType = '✅ 技能完成';
-                    } else if (displayContent.includes('error') || displayContent.includes('Error')) {
-                        stepType = '❌ 错误';
+                        // 不是JSON格式，保持原样
                     }
                 }
                 
@@ -2170,7 +2151,7 @@
                 stepsHtml += `
                     <div class="thinking-step">
                         <div class="thinking-step-header">
-                            <span>${stepType}</span>
+                            <span>步骤 ${stepCount}</span>
                             ${time ? `<span class="thinking-step-time">${time}</span>` : ''}
                         </div>
                         <div class="thinking-step-content">${escapeHtml(displayContent)}</div>
@@ -3682,9 +3663,9 @@
                 const preview = dialog.user_message.substring(0, 100) + 
                     (dialog.user_message.length > 100 ? '...' : '');
                 return `
-                    <div class="dialog-item selected" data-index="${index}" onclick="toggleDialogSelection(${index})">
+                    <div class="dialog-item selected" data-index="${index}" onclick="toggleDialogSelection(${index}, event)">
                         <input type="checkbox" class="dialog-item-checkbox" 
-                            checked onchange="event.stopPropagation(); toggleDialogSelection(${index})"
+                            checked onclick="event.stopPropagation(); handleCheckboxClick(${index}, event)"
                             id="dialog-checkbox-${index}">
                         <div class="dialog-item-content">
                             <div class="dialog-item-header">
@@ -3699,8 +3680,31 @@
             updateGenerateButton();
         }
 
-        // 切换单个对话的选择状态
-        function toggleDialogSelection(index) {
+        // 处理复选框点击事件
+        function handleCheckboxClick(index, event) {
+            const checkbox = document.getElementById(`dialog-checkbox-${index}`);
+            const item = document.querySelector(`.dialog-item[data-index="${index}"]`);
+            
+            if (item && checkbox) {
+                // 复选框点击时，根据复选框的新状态更新样式
+                if (checkbox.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            }
+            
+            updateSelectAllCheckbox();
+            updateGenerateButton();
+        }
+
+        // 切换单个对话的选择状态（点击整个对话框时）
+        function toggleDialogSelection(index, event) {
+            // 如果点击的是复选框本身，不处理（由 handleCheckboxClick 处理）
+            if (event && event.target.classList.contains('dialog-item-checkbox')) {
+                return;
+            }
+            
             const item = document.querySelector(`.dialog-item[data-index="${index}"]`);
             const checkbox = document.getElementById(`dialog-checkbox-${index}`);
             
