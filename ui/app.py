@@ -11,8 +11,8 @@ load_dotenv()
 
 app = Flask(
     __name__,
-    template_folder="templates",
-    static_folder="static"
+    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
+    static_folder=os.path.join(os.path.dirname(__file__), "static")
 )
 
 # 启用 CORS，允许所有来源访问
