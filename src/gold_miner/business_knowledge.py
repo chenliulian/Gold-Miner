@@ -221,13 +221,25 @@ class BusinessKnowledgeManager:
                 
                 # 5. 检查核心字段名是否出现在问题中
                 if '核心字段详解' in data:
-                    for field_name, field_data in data['核心字段详解'].items():
-                        if field_name.lower() in question_lower:
-                            score += 10
-                        # 检查字段业务含义
-                        business_meaning = field_data.get('业务含义', '')
-                        if business_meaning and business_meaning.lower() in question_lower:
-                            score += 15
+                    core_fields_data = data['核心字段详解']
+                    if isinstance(core_fields_data, dict):
+                        for field_name, field_data in core_fields_data.items():
+                            if field_name.lower() in question_lower:
+                                score += 10
+                            # 检查字段业务含义
+                            business_meaning = field_data.get('业务含义', '')
+                            if business_meaning and business_meaning.lower() in question_lower:
+                                score += 15
+                    elif isinstance(core_fields_data, list):
+                        for field_data in core_fields_data:
+                            if isinstance(field_data, dict):
+                                field_name = field_data.get('字段名', '')
+                                if field_name and field_name.lower() in question_lower:
+                                    score += 10
+                                # 检查字段业务含义
+                                business_meaning = field_data.get('业务含义', '')
+                                if business_meaning and business_meaning.lower() in question_lower:
+                                    score += 15
                 
                 if score > 0:
                     matches.append({
@@ -274,37 +286,75 @@ class BusinessKnowledgeManager:
             # 解析核心字段
             core_fields = {}
             if '核心字段详解' in data:
-                for field_name, field_data in data['核心字段详解'].items():
-                    field = TableField(
-                        name=field_data.get('字段名', field_name),
-                        data_type=field_data.get('数据类型', 'UNKNOWN'),
-                        business_meaning=field_data.get('业务含义', ''),
-                        examples=field_data.get('示例值', []),
-                        notes=field_data.get('使用注意', '')
-                    )
-                    core_fields[field_name] = field
+                core_fields_data = data['核心字段详解']
+                # 支持字典或列表格式
+                if isinstance(core_fields_data, dict):
+                    for field_name, field_data in core_fields_data.items():
+                        field = TableField(
+                            name=field_data.get('字段名', field_name),
+                            data_type=field_data.get('数据类型', 'UNKNOWN'),
+                            business_meaning=field_data.get('业务含义', ''),
+                            examples=field_data.get('示例值', []),
+                            notes=field_data.get('使用注意', '')
+                        )
+                        core_fields[field_name] = field
+                elif isinstance(core_fields_data, list):
+                    for field_data in core_fields_data:
+                        if isinstance(field_data, dict):
+                            field_name = field_data.get('字段名', '')
+                            if field_name:
+                                field = TableField(
+                                    name=field_name,
+                                    data_type=field_data.get('数据类型', 'UNKNOWN'),
+                                    business_meaning=field_data.get('业务含义', ''),
+                                    examples=field_data.get('示例值', []),
+                                    notes=field_data.get('使用注意', '')
+                                )
+                                core_fields[field_name] = field
             
             # 解析常用场景
             common_scenarios = []
             if '常用查询场景' in data:
-                for scenario_name, scenario_data in data['常用查询场景'].items():
-                    common_scenarios.append({
-                        'name': scenario_name,
-                        'description': scenario_data.get('场景名称', ''),
-                        'sql_template': scenario_data.get('SQL模板', ''),
-                        'params': scenario_data.get('参数', {})
-                    })
+                scenarios_data = data['常用查询场景']
+                if isinstance(scenarios_data, dict):
+                    for scenario_name, scenario_data in scenarios_data.items():
+                        common_scenarios.append({
+                            'name': scenario_name,
+                            'description': scenario_data.get('场景名称', ''),
+                            'sql_template': scenario_data.get('SQL模板', ''),
+                            'params': scenario_data.get('参数', {})
+                        })
+                elif isinstance(scenarios_data, list):
+                    for scenario_data in scenarios_data:
+                        if isinstance(scenario_data, dict):
+                            common_scenarios.append({
+                                'name': scenario_data.get('场景名称', ''),
+                                'description': scenario_data.get('场景名称', ''),
+                                'sql_template': scenario_data.get('SQL模板', ''),
+                                'params': scenario_data.get('参数', {})
+                            })
             
             # 解析质量规则
             quality_rules = []
             if '数据质量规则' in data and '异常值识别' in data['数据质量规则']:
-                for rule_name, rule_data in data['数据质量规则']['异常值识别'].items():
-                    quality_rules.append({
-                        'name': rule_name,
-                        'condition': rule_data.get('条件', ''),
-                        'reason': rule_data.get('可能原因', ''),
-                        'suggestion': rule_data.get('建议', '')
-                    })
+                rules_data = data['数据质量规则']['异常值识别']
+                if isinstance(rules_data, dict):
+                    for rule_name, rule_data in rules_data.items():
+                        quality_rules.append({
+                            'name': rule_name,
+                            'condition': rule_data.get('条件', ''),
+                            'reason': rule_data.get('可能原因', ''),
+                            'suggestion': rule_data.get('建议', '')
+                        })
+                elif isinstance(rules_data, list):
+                    for rule_data in rules_data:
+                        if isinstance(rule_data, dict):
+                            quality_rules.append({
+                                'name': rule_data.get('规则名', ''),
+                                'condition': rule_data.get('条件', ''),
+                                'reason': rule_data.get('可能原因', ''),
+                                'suggestion': rule_data.get('建议', '')
+                            })
             
             # 创建表知识对象
             basic_info = data.get('基本信息', {})
