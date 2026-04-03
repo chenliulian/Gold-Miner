@@ -182,7 +182,7 @@ class UserConfigService:
     
     def validate_config(self, config: UserConfigInput, user: User = None) -> Tuple[bool, str]:
         """验证配置格式
-        
+
         Args:
             config: 配置输入
             user: 当前用户（用于检查是否已有LLM配置）
@@ -196,22 +196,32 @@ class UserConfigService:
             return False, "ODPS Project 不能为空"
         if not config.odps_endpoint:
             return False, "ODPS Endpoint 不能为空"
-        
+
         if not config.odps_endpoint.startswith(("http://", "https://")):
             return False, "ODPS Endpoint 格式不正确，应以 http:// 或 https:// 开头"
-        
-        # 验证 LLM 配置（仅当用户提供了新配置时才验证）
-        # 如果用户已有LLM配置且没有提供新配置，则保留原有配置
-        if config.llm_api_key or config.llm_base_url:
+
+        # 验证 LLM 配置
+        # 场景1: 用户提供了新的 LLM 配置 -> 验证新配置
+        # 场景2: 用户没有提供 LLM 配置，但已有配置 -> 保留原有配置，无需验证
+        # 场景3: 用户没有提供 LLM 配置，也没有已有配置 -> 报错
+        has_existing_llm = user and user.llm_config and user.llm_config.is_configured()
+        has_new_llm_config = config.llm_api_key or config.llm_base_url
+
+        if has_new_llm_config:
+            # 用户提供了新的 LLM 配置，验证新配置
             if not config.llm_api_key:
                 return False, "LLM API Key 不能为空"
             if not config.llm_base_url:
                 return False, "LLM Base URL 不能为空"
             if not config.llm_base_url.startswith(("http://", "https://")):
                 return False, "LLM Base URL 格式不正确，应以 http:// 或 https:// 开头"
-        
+        elif not has_existing_llm:
+            # 用户没有提供新配置，也没有已有配置
+            return False, "LLM API Key 不能为空"
+        # else: 用户没有提供新配置，但有已有配置 -> 允许通过
+
         # Tavily 配置是可选的，不需要验证
-        
+
         return True, ""
     
     def update_user_config(self, user_id: str, config: UserConfigInput) -> UserConfigResult:
