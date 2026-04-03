@@ -125,7 +125,7 @@ Available skills:
 - update_memory: Update structured memory (table schemas, metric definitions, business background) when user says "记住/保存"
 - self_improvement: Log code learnings, errors, corrections to .learnings/ for continuous improvement
 - basic_stats: Summarize the latest query result
-- tavily_search: Search web for documentation
+- tavily_search: Search the web for documentation, news, or general information using Tavily Search API
 
 Rules:
 - Reasoning Mode: When you encounter problems or uncertain tasks, you should first search the skills directory for relevant skills before making decisions. Use search_skills action to find relevant skills.
@@ -153,6 +153,7 @@ Rules:
 - IMPORTANT: If table structure information is already provided in the context (under "## 表结构信息"), do NOT call explore_table skill and do NOT run `DESC` or `SHOW CREATE TABLE` queries. Use the provided schema information directly.
 - When encountering SQL errors or uncertain about SQL syntax, use the tavily_search skill to search for relevant documentation.
 - If you encounter errors you cannot resolve after 2 attempts, search for solutions using tavily_search skill.
+- When user asks about news, current events, or general web information, use tavily_search to find relevant information.
 - If recent_steps contains user feedback (marked with 💡 or user suggestions), immediately adjust your approach based on that feedback.
 - WHEN TO STOP:
   - Once you have successfully executed SQL and obtained the results that answer the user's question, use the "final" action to provide the answer. Do NOT keep executing the same SQL repeatedly.

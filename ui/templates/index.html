@@ -3461,12 +3461,17 @@
                                                 renderRoundStepsAsThinkingBox(currentRoundSteps);
                                                 currentRoundSteps = [];
                                             }
-                                            // 显示最终报告
-                                            if (jsonData.report_markdown) {
-                                                addMessage(jsonData.report_markdown, 'assistant');
+                                            // 显示最终报告（优先使用 simple_message，然后是 report_markdown）
+                                            let finalContent = '';
+                                            if (jsonData.simple_message) {
+                                                finalContent = jsonData.simple_message;
+                                            } else if (jsonData.report_markdown) {
+                                                finalContent = jsonData.report_markdown;
                                             } else {
-                                                addMessage(step.content, 'assistant');
+                                                // 尝试从原始 JSON 字符串中提取
+                                                finalContent = step.content;
                                             }
+                                            addMessage(finalContent, 'assistant');
                                             finalReportShown = true;
                                         } else {
                                             // 其他 action（run_sql, use_skill 等），收集到 round steps
