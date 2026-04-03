@@ -97,9 +97,13 @@ cp .env.example .env
 
 **关键配置项说明**：
 
+> 📋 **配置方式说明**
+> - **Web UI 模式**：以下 LLM 和 ODPS 配置为可选，用户登录后在界面配置个人 API 密钥
+> - **CLI 模式**：以下配置为必填，通过 `.env` 文件配置全局 API 密钥
+
 ```bash
 # =============================================================================
-# 安全相关配置（必须配置，否则无法启动）
+# 安全相关配置（必须配置，否则无法启动 - 适用于所有模式）
 # =============================================================================
 # JWT 密钥 - 用于签名认证令牌，至少 32 字符
 # 生成示例: openssl rand -hex 32
@@ -112,7 +116,7 @@ SESSION_SECRET=your-secure-random-session-secret-min-32-chars-long
 USER_API_KEY_ENCRYPTION_KEY=your-encryption-key
 
 # =============================================================================
-# LLM API 配置（支持多 Provider 故障转移）
+# LLM API 配置（CLI 模式必填；Web UI 模式可选，用户可在界面配置）
 # =============================================================================
 # 主用 LLM
 LLM_BASE_URL=https://your-llm-api-endpoint.com/v1
@@ -125,7 +129,7 @@ LLM_API_KEY_backup1=your-backup-api-key
 LLM_MODEL_backup1=gpt-4o-mini
 
 # =============================================================================
-# MaxCompute / ODPS 配置
+# MaxCompute / ODPS 配置（CLI 模式必填；Web UI 模式可选，用户可在界面配置）
 # =============================================================================
 ODPS_ACCESS_ID=your-access-id
 ODPS_ACCESS_KEY=your-access-key
@@ -142,7 +146,7 @@ FEISHU_REDIRECT_URI=http://localhost:5000/auth/feishu/callback
 
 ### 3. 启动服务
 
-**Web UI 模式（推荐）**：
+#### Web UI 模式（推荐）
 
 ```bash
 cd ui && python app.py
@@ -150,11 +154,25 @@ cd ui && python app.py
 
 然后打开浏览器访问 `http://localhost:5000`
 
-**CLI 模式**：
+**⚠️ 重要提示：首次登录后需要配置 API 密钥**
+
+Web UI 模式采用**多用户隔离架构**，每个用户需要独立配置自己的 API 密钥：
+
+1. **注册/登录账号** - 使用本地账号或飞书 SSO 登录
+2. **配置 LLM API** - 在「设置」页面填写您的 LLM API Key 和 Base URL
+3. **配置 ODPS API** - 在「设置」页面填写您的 MaxCompute Access ID/Key 和 Project
+
+> 💡 **为什么需要独立配置？** 每个用户的 API 密钥独立存储和加密，确保数据隔离和安全性。管理员无需在服务器上配置全局 API 密钥。
+
+---
+
+#### CLI 模式
 
 ```bash
 gold-miner chat
 ```
+
+CLI 模式采用**单用户模式**，可以直接通过 `.env` 文件配置 API 密钥（见上方配置说明），适合个人本地使用。
 
 ---
 
