@@ -376,6 +376,60 @@
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .gold-coin-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 40px rgba(255, 215, 0, 0.3),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            font-size: 28px;
+            animation: coinShine 2s ease-in-out infinite;
+            position: relative;
+        }
+
+        .gold-coin-icon::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 15%;
+            width: 25%;
+            height: 15%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%);
+            border-radius: 50%;
+            transform: rotate(-45deg);
+        }
+
+        @keyframes coinShine {
+            0%, 100% {
+                box-shadow: 
+                    0 0 20px rgba(255, 215, 0, 0.6),
+                    0 0 40px rgba(255, 215, 0, 0.3),
+                    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 
+                    0 0 30px rgba(255, 215, 0, 0.9),
+                    0 0 60px rgba(255, 215, 0, 0.5),
+                    0 0 90px rgba(255, 215, 0, 0.2),
+                    inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.3);
+                transform: scale(1.05);
+            }
         }
 
         .welcome-subtitle {
@@ -1860,7 +1914,7 @@
                 <div id="page-chat" class="page active">
                     <div class="chat-container" id="chat-messages">
                         <div class="welcome-section">
-                            <h2 class="welcome-title">💐 你好，我是 GoldMiner</h2>
+                            <h2 class="welcome-title"><span class="gold-coin-icon">👑</span>你好，我是 GoldMiner</h2>
                             <p class="welcome-subtitle">你的数据智能助手，可以帮助你分析数据、执行 SQL 查询、管理技能等</p>
                             <div class="quick-actions">
                                 <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
