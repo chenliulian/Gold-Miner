@@ -103,6 +103,9 @@ class AgentPool:
                     # 设置 agent 和 session 的 user_id
                     pooled_agent.agent.user_id = user_id
                     pooled_agent.agent.session.user_id = user_id
+                    # 更新 memory 的 user_id 并重新加载记忆（确保使用正确的用户记忆）
+                    pooled_agent.agent.memory.user_id = user_id
+                    pooled_agent.agent.memory._load()
                     return pooled_agent
 
             # Create new agent if under max size
