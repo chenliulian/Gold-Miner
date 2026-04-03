@@ -649,15 +649,24 @@ class SqlAgent:
         self.session.add_step("tool", f"SQL executed. Rows={len(df)}\n{preview}")
 
     def _handle_skill(self, skill: str, skill_args: Dict[str, Any]) -> None:
+        # 对于 self_improvement，先记录调用（无论是否重复，都要记录以更新冷却时间）
+        if skill == "self_improvement":
+            self.state.record_self_improvement_call(skill_args)
+
         # 检查是否最近已经调用过相同的skill（防止重复调用）
         if self.state.is_skill_recently_called(skill, skill_args):
             print(f"\n[Agent] Skipping duplicate skill call: {skill}")
-            self.session.add_step("tool", f"Skipped duplicate skill call: {skill}", visible=False)
+            # 添加一个明确的反馈到 state，让 LLM 知道已经记录过了
+            feedback_msg = f"Skill '{skill}' was already called recently with similar content. Skipping duplicate execution."
+            self.state.add_note(feedback_msg)
+            # 返回一个模拟的 skill 结果给 LLM，让它知道操作已完成
+            # 使用与提示词中一致的格式，让 LLM 能识别
+            skip_result = {"status": "skipped", "message": "Duplicate entry skipped (same content fingerprint)", "skill": skill}
+            # 设置为 visible=True，确保 LLM 能看到这个结果
+            self.session.add_step("tool", f"Skill {skill} result: {skip_result}", visible=True)
+            # 设置 last_error 来提供反馈给 LLM，避免它再次生成相同的 action
+            self.state.last_error = f"Duplicate {skill} call prevented - content already recorded in recent steps. Use 'final' action with 'simple_message' to confirm completion."
             return
-
-        # 对于 self_improvement，使用专门的记录方法（跨会话跟踪）
-        if skill == "self_improvement":
-            self.state.record_self_improvement_call(skill_args)
 
         try:
             skill_def = self.skills.get(skill)
