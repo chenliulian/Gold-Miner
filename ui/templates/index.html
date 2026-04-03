@@ -1996,7 +1996,10 @@
                     startTime: null,
                     abortController: null,
                     isGeneratingReport: false,
-                    generatedReport: null
+                    generatedReport: null,
+                    isRecovering: false,  // 是否处于恢复模式
+                    recoveryInterval: null,  // 恢复轮询定时器
+                    lastUserMessage: null  // 最后发送的用户消息（用于恢复）
                 });
             }
             return sessionStates.get(sessionId);
@@ -2018,6 +2021,137 @@
             // 如果当前正在查看该会话，更新UI
             if (sessionId === currentSessionId) {
                 updateSendButton();
+            }
+        }
+
+        // 设置会话恢复状态
+        function setSessionRecovery(sessionId, isRecovering) {
+            if (!sessionId) return;
+            const state = getSessionState(sessionId);
+            state.isRecovering = isRecovering;
+
+            // 如果当前正在查看该会话，更新UI
+            if (sessionId === currentSessionId) {
+                updateSendButton();
+            }
+        }
+
+        // 清除会话恢复定时器
+        function clearRecoveryInterval(sessionId) {
+            if (!sessionId) return;
+            const state = getSessionState(sessionId);
+            if (state.recoveryInterval) {
+                clearInterval(state.recoveryInterval);
+                state.recoveryInterval = null;
+            }
+        }
+
+        // 开始会话状态轮询（用于网络恢复）
+        function startSessionPolling(sessionId, logContainer) {
+            if (!sessionId) return;
+
+            const state = getSessionState(sessionId);
+            clearRecoveryInterval(sessionId);
+
+            // 显示恢复中提示
+            showRecoveryMessage(sessionId, logContainer);
+
+            let pollCount = 0;
+            const maxPolls = 180; // 最多轮询180次（15分钟，每5秒一次）
+
+            state.recoveryInterval = setInterval(async () => {
+                pollCount++;
+
+                if (pollCount > maxPolls) {
+                    clearRecoveryInterval(sessionId);
+                    finalizeLog(logContainer, false, sessionId);
+                    addMessage('恢复超时，请手动刷新页面查看最新状态', 'assistant', sessionId);
+                    setSessionRecovery(sessionId, false);
+                    setSessionProcessing(sessionId, false);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/sessions/${sessionId}`);
+                    if (response.status === 401) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+
+                    const data = await response.json();
+                    if (!data.success || !data.session) return;
+
+                    const session = data.session;
+
+                    // 检查是否有最终结果
+                    if (session.final_result || session.result_status === 'completed') {
+                        // 服务器已完成处理
+                        clearRecoveryInterval(sessionId);
+
+                        // 重新加载会话以显示完整结果
+                        await loadSession(sessionId);
+
+                        // 添加恢复成功提示
+                        addMessage('✅ 已自动恢复连接并同步结果', 'assistant', sessionId);
+
+                        setSessionRecovery(sessionId, false);
+                        setSessionProcessing(sessionId, false);
+                    } else if (session.result_status === 'error') {
+                        // 服务器处理出错
+                        clearRecoveryInterval(sessionId);
+                        finalizeLog(logContainer, false, sessionId);
+                        addMessage('❌ 处理失败: ' + (session.error_message || '未知错误'), 'assistant', sessionId);
+                        setSessionRecovery(sessionId, false);
+                        setSessionProcessing(sessionId, false);
+                    }
+                    // 否则继续轮询
+
+                } catch (error) {
+                    // 轮询请求失败，继续尝试
+                    console.log('恢复轮询失败，继续尝试...', error);
+                }
+            }, 5000); // 每5秒轮询一次
+        }
+
+        // 显示恢复中消息
+        function showRecoveryMessage(sessionId, logContainer) {
+            const container = document.getElementById('chat-messages');
+            const recoveryDiv = document.createElement('div');
+            recoveryDiv.className = 'message recovery-message';
+            recoveryDiv.id = `recovery-${sessionId}`;
+            recoveryDiv.innerHTML = `
+                <div class="message-avatar assistant">🔄</div>
+                <div class="message-content assistant">
+                    <div class="message-text">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="loading-spinner"></span>
+                            <span>网络中断，正在自动恢复并同步结果...</span>
+                        </div>
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            `;
+
+            // 如果当前正在查看该会话，添加到聊天容器
+            if (sessionId === currentSessionId) {
+                container.appendChild(recoveryDiv);
+                scrollToBottom();
+            }
+
+            // 更新日志状态
+            if (logContainer) {
+                const statusEl = logContainer.querySelector('.thinking-status');
+                if (statusEl) {
+                    statusEl.textContent = '网络中断，正在恢复...';
+                }
+            }
+        }
+
+        // 移除恢复中消息
+        function removeRecoveryMessage(sessionId) {
+            const recoveryDiv = document.getElementById(`recovery-${sessionId}`);
+            if (recoveryDiv) {
+                recoveryDiv.remove();
             }
         }
 
@@ -2179,16 +2313,17 @@
                 }
                 
             } catch (error) {
-                // 完成日志记录（标记为失败）
-                finalizeLog(logContainer, false, lockedSessionId);
                 if (error.name === 'AbortError') {
+                    // 用户主动取消
+                    finalizeLog(logContainer, false, lockedSessionId);
                     addMessage('已取消', 'assistant', lockedSessionId);
+                    setSessionProcessing(lockedSessionId, false);
                 } else {
-                    addMessage('网络错误，请稍后重试: ' + error.message, 'assistant', lockedSessionId);
+                    // 网络错误，进入恢复模式
+                    console.log('网络错误，启动恢复模式:', error);
+                    setSessionRecovery(lockedSessionId, true);
+                    startSessionPolling(lockedSessionId, logContainer);
                 }
-            } finally {
-                // 重置当前会话的处理状态
-                setSessionProcessing(lockedSessionId, false);
             }
         }
         
@@ -3025,16 +3160,35 @@
         function updateSendButton() {
             const sendBtn = document.getElementById('send-btn');
             const cancelBtn = document.getElementById('cancel-btn');
+            const input = document.getElementById('user-input');
 
             // 按当前会话判断处理状态
-            const processing = isCurrentSessionProcessing();
+            const state = currentSessionId ? getSessionState(currentSessionId) : null;
+            const processing = state ? state.isProcessing : false;
+            const recovering = state ? state.isRecovering : false;
 
-            if (processing) {
+            if (recovering) {
+                // 恢复模式下，禁用输入和发送按钮，显示恢复状态
+                sendBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                if (input) {
+                    input.placeholder = '⏳ 网络恢复中，请稍候...';
+                    input.disabled = true;
+                }
+            } else if (processing) {
                 sendBtn.style.display = 'none';
                 cancelBtn.style.display = 'flex';
+                if (input) {
+                    input.placeholder = '输入你的问题...';
+                    input.disabled = false;
+                }
             } else {
                 sendBtn.style.display = 'flex';
                 cancelBtn.style.display = 'none';
+                if (input) {
+                    input.placeholder = '输入你的问题...';
+                    input.disabled = false;
+                }
             }
         }
 
@@ -3250,6 +3404,16 @@
 
                 currentSessionId = sessionId;
                 const session = data.session;
+
+                // 检查会话状态，如果服务器正在处理但前端未标记，则启动恢复模式
+                const state = getSessionState(sessionId);
+                if (session.result_status === 'running' && !state.isProcessing && !state.isRecovering) {
+                    // 服务器正在处理，但前端没有标记，可能是页面刷新后加载
+                    setSessionProcessing(sessionId, true);
+                    setSessionRecovery(sessionId, true);
+                    // 启动轮询以同步结果
+                    startSessionPolling(sessionId, null);
+                }
 
                 // 更新发送按钮状态（根据当前会话的处理状态）
                 updateSendButton();
