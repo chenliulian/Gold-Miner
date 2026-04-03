@@ -165,6 +165,33 @@ class UserLLMConfigService:
         except Exception as e:
             return False, "unknown", f"测试失败: {str(e)}"
     
+    def test_llm_connection(self, user_id: str) -> Tuple[bool, str]:
+        """测试用户的 LLM 连接
+        
+        Returns:
+            (success, message)
+        """
+        user = self.user_store.get_user_by_id(user_id)
+        if not user or not user.llm_config.is_configured():
+            return False, "LLM 配置不完整"
+        
+        try:
+            config = LLMConfigInput(
+                api_key=self._decrypt(user.llm_config.api_key_encrypted),
+                base_url=user.llm_config.base_url,
+                model=user.llm_config.model,
+                provider=user.llm_config.provider,
+            )
+            
+            success, error_type, message = self.test_config(config)
+            
+            if success:
+                return True, "LLM 连接成功"
+            else:
+                return False, message
+        except Exception as e:
+            return False, f"LLM 连接测试失败: {str(e)}"
+    
     def _test_anthropic(self, config: LLMConfigInput) -> Tuple[bool, str, str]:
         """测试 Anthropic API"""
         import requests

@@ -237,6 +237,7 @@ class SqlAgent:
                 access_key=config.odps_access_key,
                 project=config.odps_project,
                 endpoint=config.odps_endpoint,
+                quota=config.odps_quota,
             )
         )
         # 长期记忆 - 只保存用户明确要求记住的内容（按用户隔离）
@@ -473,6 +474,9 @@ class SqlAgent:
 
     def _load_learnings_summary(self) -> str:
         """加载用户learnings总结"""
+        # 如果没有 user_id，不加载 learnings
+        if not self.user_id:
+            return ""
         try:
             from .user_data import UserDataManager
             user_data_mgr = UserDataManager()

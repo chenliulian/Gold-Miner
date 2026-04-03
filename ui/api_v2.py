@@ -27,6 +27,20 @@ def init_config(config: Config) -> None:
     _config = config
 
 
+def get_data_dir() -> str:
+    """获取数据目录路径"""
+    # 优先使用环境变量
+    data_dir = os.environ.get("DATA_DIR", "")
+    if data_dir:
+        return data_dir
+    
+    # 默认使用项目根目录下的 data 文件夹
+    # api_v2.py 位于 ui/ 目录下，所以向上两级到达项目根目录
+    current_file = os.path.abspath(__file__)
+    project_root = os.path.dirname(os.path.dirname(current_file))
+    return os.path.join(project_root, "data")
+
+
 def get_client_ip() -> str:
     """Get client IP address from request."""
     if request.headers.get("X-Forwarded-For"):
@@ -246,18 +260,37 @@ def get_queue_stats():
 # =============================================================================
 
 @api_v2.route("/chat", methods=["POST"])
+@require_auth
 @handle_errors
 def chat():
     """Chat endpoint using agent pool."""
+    from flask import g
+    from gold_miner.auth.user_config_service import UserConfigService
+    from gold_miner.auth.user_store import UserStore
+
+    user = g.current_user
     data = request.json or {}
     question = data.get("question", "")
-    
+
     if not question:
         return jsonify({
             "success": False,
             "error": "missing_question",
             "message": "Question is required",
         }), 400
+
+    # 检查 ODPS 配置（必填项）
+    user_store = UserStore(get_data_dir())
+    config_service = UserConfigService(user_store)
+    odps_configured, odps_error = config_service.check_odps_required(user.id)
+
+    if not odps_configured:
+        return jsonify({
+            "success": False,
+            "error": "odps_not_configured",
+            "message": odps_error,
+            "need_config": True,
+        }), 403
 
     # Acquire agent from pool
     pool = get_agent_pool()
@@ -290,18 +323,37 @@ def chat():
 
 
 @api_v2.route("/chat/stream", methods=["POST"])
+@require_auth
 @handle_errors
 def chat_stream():
     """Streaming chat endpoint."""
+    from flask import g
+    from gold_miner.auth.user_config_service import UserConfigService
+    from gold_miner.auth.user_store import UserStore
+
+    user = g.current_user
     data = request.json or {}
     question = data.get("question", "")
-    
+
     if not question:
         return jsonify({
             "success": False,
             "error": "missing_question",
             "message": "Question is required",
         }), 400
+
+    # 检查 ODPS 配置（必填项）
+    user_store = UserStore(get_data_dir())
+    config_service = UserConfigService(user_store)
+    odps_configured, odps_error = config_service.check_odps_required(user.id)
+
+    if not odps_configured:
+        return jsonify({
+            "success": False,
+            "error": "odps_not_configured",
+            "message": odps_error,
+            "need_config": True,
+        }), 403
 
     def generate():
         import queue
@@ -1099,7 +1151,7 @@ def get_user_llm_config():
     user = g.current_user
     
     # 获取 LLM 配置服务
-    user_store = UserStore()
+    user_store = UserStore(get_data_dir())
     llm_config_service = get_llm_config_service(user_store)
     
     config = llm_config_service.get_user_llm_config_masked(user.id)
@@ -1170,7 +1222,7 @@ def save_user_llm_config():
     )
     
     # 获取 LLM 配置服务
-    user_store = UserStore()
+    user_store = UserStore(get_data_dir())
     llm_config_service = get_llm_config_service(user_store)
     
     # 保存配置（包含验证和测试）
@@ -1210,7 +1262,7 @@ def delete_user_llm_config():
     user = g.current_user
     
     # 获取 LLM 配置服务
-    user_store = UserStore()
+    user_store = UserStore(get_data_dir())
     llm_config_service = get_llm_config_service(user_store)
     
     success = llm_config_service.delete_config(user.id)
@@ -1275,7 +1327,7 @@ def test_user_llm_config():
     )
     
     # 获取 LLM 配置服务
-    user_store = UserStore()
+    user_store = UserStore(get_data_dir())
     llm_config_service = get_llm_config_service(user_store)
     
     # 验证格式
@@ -1301,3 +1353,246 @@ def test_user_llm_config():
             "error": error_type,
             "message": message,
         }), 422
+
+
+# =============================================================================
+# User Configuration Endpoints (LLM + ODPS + Tavily)
+# =============================================================================
+
+@api_v2.route("/user/config", methods=["GET"])
+@require_auth
+@handle_errors
+def get_user_config():
+    """获取当前用户的完整配置（脱敏显示）.
+    
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "llm": {
+                    "has_config": true,
+                    "base_url": "https://api.xxx.com",
+                    "model": "claude-3-5-sonnet",
+                    "provider": "anthropic",
+                    "api_key_masked": "sk-****xx12"
+                },
+                "odps": {
+                    "has_config": true,
+                    "access_id": "LTAI...",
+                    "project": "my_project",
+                    "endpoint": "http://...",
+                    "quota": "...",
+                    "access_key_masked": "****"
+                },
+                "tavily": {
+                    "has_config": true,
+                    "api_key_masked": "tvly-****"
+                },
+                "config_status": {
+                    "llm": true,
+                    "odps": true,
+                    "tavily": true,
+                    "all_required": true
+                }
+            }
+        }
+    """
+    from flask import g
+    from gold_miner.auth.user_config_service import UserConfigService
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    
+    # 获取用户配置服务
+    user_store = UserStore(get_data_dir())
+    config_service = UserConfigService(user_store)
+    
+    config = config_service.get_user_config_masked(user.id)
+    
+    if not config:
+        return jsonify({
+            "success": True,
+            "data": {
+                "llm": {"has_config": False},
+                "odps": {"has_config": False},
+                "tavily": {"has_config": False},
+                "config_status": {
+                    "llm": False,
+                    "odps": False,
+                    "tavily": False,
+                    "all_required": False
+                }
+            },
+        })
+    
+    return jsonify({
+        "success": True,
+        "data": config,
+    })
+
+
+@api_v2.route("/user/config", methods=["POST"])
+@require_auth
+@handle_errors
+def save_user_config():
+    """保存用户的完整配置（LLM + ODPS + Tavily）.
+    
+    Request Body:
+        {
+            // LLM 配置（可选，但建议配置）
+            "llm_api_key": "sk-xxxxx",
+            "llm_base_url": "https://api.xxx.com",
+            "llm_model": "claude-3-5-sonnet",
+            "llm_provider": "anthropic",
+            // ODPS 配置（必填）
+            "odps_access_id": "LTAI...",
+            "odps_access_key": "...",
+            "odps_project": "my_project",
+            "odps_endpoint": "http://...",
+            "odps_quota": "...",
+            // Tavily 配置（可选）
+            "tavily_api_key": "tvly-..."
+        }
+    
+    Returns:
+        {
+            "success": true,
+            "message": "配置保存成功",
+            "data": {
+                "config_status": {
+                    "llm": true,
+                    "odps": true,
+                    "tavily": true,
+                    "all_required": true
+                }
+            }
+        }
+    """
+    from flask import g
+    from gold_miner.auth.user_config_service import UserConfigService, UserConfigInput
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    data = request.json or {}
+    
+    # 创建配置输入
+    config_input = UserConfigInput(
+        # LLM
+        llm_api_key=data.get("llm_api_key", "").strip(),
+        llm_base_url=data.get("llm_base_url", "").strip(),
+        llm_model=data.get("llm_model", "").strip(),
+        llm_provider=data.get("llm_provider", "anthropic").strip(),
+        # ODPS
+        odps_access_id=data.get("odps_access_id", "").strip(),
+        odps_access_key=data.get("odps_access_key", "").strip(),
+        odps_project=data.get("odps_project", "").strip(),
+        odps_endpoint=data.get("odps_endpoint", "").strip(),
+        odps_quota=data.get("odps_quota", "").strip(),
+        # Tavily
+        tavily_api_key=data.get("tavily_api_key", "").strip(),
+    )
+    
+    # 获取用户配置服务
+    user_store = UserStore(get_data_dir())
+    config_service = UserConfigService(user_store)
+    
+    # 更新配置
+    result = config_service.update_user_config(user.id, config_input)
+    
+    if result.success:
+        return jsonify({
+            "success": True,
+            "message": result.message,
+            "data": {
+                "config_status": result.config,
+            },
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": result.error_type,
+            "message": result.message,
+        }), 400
+
+
+@api_v2.route("/user/config/test-odps", methods=["POST"])
+@require_auth
+@handle_errors
+def test_user_odps_config():
+    """测试用户的 ODPS 配置.
+    
+    Returns:
+        {
+            "success": true,
+            "message": "ODPS 连接成功"
+        }
+    """
+    from flask import g
+    from gold_miner.auth.user_config_service import UserConfigService
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    
+    # 获取用户配置服务
+    user_store = UserStore(get_data_dir())
+    config_service = UserConfigService(user_store)
+    
+    # 测试 ODPS 连接
+    success, message = config_service.test_odps_connection(user.id)
+    
+    if success:
+        return jsonify({
+            "success": True,
+            "message": message,
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": "connection_failed",
+            "message": message,
+        }), 422
+
+
+@api_v2.route("/user/config/status", methods=["GET"])
+@require_auth
+@handle_errors
+def get_user_config_status():
+    """获取用户配置状态（用于检查 ODPS 是否已配置）.
+    
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "llm": true,
+                "odps": true,
+                "tavily": false,
+                "all_required": true,
+                "odps_configured": true
+            }
+        }
+    """
+    from flask import g
+    from gold_miner.auth.user_store import UserStore
+    
+    user = g.current_user
+    
+    # 获取用户
+    user_store = UserStore(get_data_dir())
+    user_data = user_store.get_user_by_id(user.id)
+    
+    if not user_data:
+        return jsonify({
+            "success": False,
+            "error": "user_not_found",
+            "message": "用户不存在",
+        }), 404
+    
+    config_status = user_data.get_config_status()
+    
+    return jsonify({
+        "success": True,
+        "data": {
+            **config_status,
+            "odps_configured": user_data.is_odps_configured(),
+        },
+    })

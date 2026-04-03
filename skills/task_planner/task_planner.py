@@ -22,6 +22,17 @@ class TaskStatus(Enum):
     SKIPPED = "skipped"      # 已跳过
 
 
+def _get_plans_dir(user_id: Optional[str] = None) -> Path:
+    """获取 plans 目录，如果提供了 user_id 则使用用户特定目录"""
+    if user_id:
+        # 使用用户特定的 plans 目录: data/user_{user_id}/plans
+        data_root = Path(__file__).parent.parent.parent / "data"
+        return data_root / f"user_{user_id}" / "plans"
+    else:
+        # 默认使用全局 plans 目录
+        return Path(__file__).parent.parent.parent / "plans"
+
+
 class Task:
     """单个分析任务"""
     def __init__(
@@ -99,9 +110,8 @@ class AnalysisPlan:
             if task_id in visited:
                 return
             temp_mark.add(task_id)
-            task = self.tasks.get(task_id)
-            if task:
-                for dep_id in task.depends_on:
+            for dep_id in self.tasks[task_id].depends_on:
+                if dep_id in self.tasks:
                     visit(dep_id)
             temp_mark.remove(task_id)
             visited.add(task_id)
@@ -112,21 +122,6 @@ class AnalysisPlan:
                 visit(task_id)
 
         return order
-
-    def get_ready_tasks(self) -> List[Task]:
-        """获取当前可以执行的任务（依赖已完成）"""
-        ready = []
-        for task in self.tasks.values():
-            if task.status != TaskStatus.PENDING:
-                continue
-            # 检查所有依赖是否已完成
-            deps_satisfied = all(
-                self.tasks.get(dep_id, Task("", "", "", "")).status == TaskStatus.COMPLETED
-                for dep_id in task.depends_on
-            )
-            if deps_satisfied:
-                ready.append(task)
-        return ready
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -148,6 +143,7 @@ def run(
     analysis_depth: str = "standard",  # quick, standard, deep
     output_format: str = "markdown",   # markdown, json, html
     save_plan: bool = True,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     创建业务数据洞察分析任务计划
@@ -158,6 +154,7 @@ def run(
         analysis_depth: 分析深度 (quick-快速, standard-标准, deep-深度)
         output_format: 输出格式
         save_plan: 是否保存计划到文件
+        user_id: 用户ID (可选，如果提供则保存到用户特定的 plans 目录)
 
     返回:
         包含分析计划的任务列表和元信息
@@ -199,7 +196,7 @@ def run(
     # 保存计划
     plan_file = None
     if save_plan:
-        plan_file = _save_plan(plan, output_format)
+        plan_file = _save_plan(plan, output_format, user_id)
 
     return {
         "success": True,
@@ -212,6 +209,7 @@ def run(
         "tasks": [t.to_dict() for t in tasks],
         "plan_document": plan_document,
         "plan_file": plan_file,
+        "user_id": user_id,
         "message": f"分析计划已创建，共 {len(tasks)} 个任务，执行顺序: {' -> '.join(plan.get_execution_order())}",
     }
 
@@ -397,13 +395,15 @@ def _get_task_templates(pattern: str, depth: str) -> List[Dict[str, Any]]:
                 "name": "深度特征分析",
                 "description": "分析关键特征的分布和相关性",
                 "task_type": "analysis",
+                "depends_on": ["task_002"],
                 "parameters": {"method": "feature_analysis"},
                 "expected_output": "特征分析报告",
             },
             {
-                "name": "生成综合分析报告",
-                "description": "汇总所有分析结果生成最终报告",
+                "name": "综合分析报告",
+                "description": "生成包含洞察和建议的综合报告",
                 "task_type": "report",
+                "depends_on": ["task_003", "task_004"],
                 "parameters": {"report_type": "comprehensive"},
                 "expected_output": "综合分析报告",
             },
@@ -411,27 +411,20 @@ def _get_task_templates(pattern: str, depth: str) -> List[Dict[str, Any]]:
     }
 
     # 组合任务
-    tasks = base_tasks + pattern_tasks.get(pattern, pattern_tasks["general_analysis"])
-
-    # 更新依赖关系
-    if len(tasks) > 1:
-        for i, task in enumerate(tasks[1:], start=2):
-            task["depends_on"] = [f"task_{i-1:03d}"]
-
-    # 添加深度任务
-    deep_task_list = depth_tasks.get(depth, [])
-    for task in deep_task_list:
-        task["depends_on"] = [f"task_{len(tasks):03d}"]
-        tasks.append(task)
+    tasks = base_tasks.copy()
+    tasks.extend(pattern_tasks.get(pattern, pattern_tasks["general_analysis"]))
+    tasks.extend(depth_tasks.get(depth, []))
 
     return tasks
 
 
 def _fill_parameters(params: Dict[str, Any], question: str, tables: List[str]) -> Dict[str, Any]:
-    """填充参数"""
+    """填充参数模板"""
     filled = params.copy()
-    filled["business_question"] = question
-    filled["tables"] = tables or []
+    if "tables" not in filled and tables:
+        filled["tables"] = tables
+    if "business_question" not in filled:
+        filled["business_question"] = question
     return filled
 
 
@@ -447,48 +440,44 @@ def _generate_plan_document(plan: AnalysisPlan, format: str) -> str:
 
 def _generate_markdown_plan(plan: AnalysisPlan) -> str:
     """生成 Markdown 格式的计划文档"""
+    execution_order = plan.get_execution_order()
+
     md = f"""# {plan.title}
 
-## 分析目标
+## 业务目标
 {plan.business_goal}
 
-## 涉及数据表
-"""
-    for table in plan.tables_involved:
-        md += f"- {table}\n"
+## 分析计划概览
+- **计划ID**: {plan.plan_id}
+- **创建时间**: {plan.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+- **任务数量**: {len(plan.tasks)}
+- **涉及表**: {', '.join(plan.tables_involved) if plan.tables_involved else '待确定'}
 
-    md += f"""
-## 执行计划
-
-**计划ID**: {plan.plan_id}
-**创建时间**: {plan.created_at.strftime('%Y-%m-%d %H:%M:%S')}
-**任务总数**: {len(plan.tasks)}
-
-### 任务列表
+## 任务列表
 
 """
 
-    execution_order = plan.get_execution_order()
     for i, task_id in enumerate(execution_order, 1):
         task = plan.tasks[task_id]
-        md += f"""#### {i}. {task.name} (`{task.task_id}`)
-
+        md += f"""### {i}. {task.name} ({task.task_id})
 - **类型**: {task.task_type}
 - **描述**: {task.description}
 - **依赖**: {', '.join(task.depends_on) if task.depends_on else '无'}
 - **预期输出**: {task.expected_output}
-- **参数**:
+- **状态**: {task.status.value}
+
 """
-        for key, value in task.parameters.items():
-            md += f"  - {key}: {value}\n"
-        md += "\n"
 
-    md += """## 执行说明
+    md += f"""## 执行流程
 
-1. 任务按上述顺序依次执行
-2. 有依赖的任务需等待前置任务完成
-3. 每个任务完成后会更新状态和结果
-4. 最终生成综合分析报告
+```
+{' -> '.join(execution_order)}
+```
+
+## 说明
+1. 任务按依赖关系自动排序
+2. 每个任务完成后会更新状态和结果
+3. 最终生成综合分析报告
 
 ## 状态跟踪
 
@@ -502,9 +491,9 @@ def _generate_markdown_plan(plan: AnalysisPlan) -> str:
     return md
 
 
-def _save_plan(plan: AnalysisPlan, format: str) -> str:
+def _save_plan(plan: AnalysisPlan, format: str, user_id: Optional[str] = None) -> str:
     """保存计划到文件"""
-    plans_dir = Path(__file__).parent.parent.parent / "plans"
+    plans_dir = _get_plans_dir(user_id)
     plans_dir.mkdir(parents=True, exist_ok=True)
 
     if format == "json":
@@ -522,13 +511,14 @@ def _save_plan(plan: AnalysisPlan, format: str) -> str:
 # Skill 定义
 SKILL = {
     "name": "task_planner",
-    "description": "业务数据洞察分析任务规划器 - 自动拆解复杂分析需求为可执行的任务计划",
+    "description": "业务数据洞察分析任务规划器 - 自动拆解复杂分析需求为可执行的任务计划。支持用户隔离存储。",
     "inputs": {
         "business_question": "业务问题/分析目标（必填）",
         "tables": "涉及的表名列表（可选）",
         "analysis_depth": "分析深度: quick(快速), standard(标准), deep(深度) - 默认 standard",
         "output_format": "输出格式: markdown, json - 默认 markdown",
         "save_plan": "是否保存计划到文件 - 默认 True",
+        "user_id": "用户ID (可选，如果提供则保存到用户特定的 plans 目录)",
     },
     "run": run,
     "invisible_context": False,

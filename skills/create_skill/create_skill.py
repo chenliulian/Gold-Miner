@@ -3,7 +3,17 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-SKILLS_DIR = Path(__file__).parent.parent.parent / "skills"
+
+def _get_skills_dir(user_id: Optional[str] = None) -> Path:
+    """获取 skills 目录，如果提供了 user_id 则使用用户特定目录"""
+    if user_id:
+        # 使用用户特定的 skills 目录: data/user_{user_id}/skills
+        data_root = Path(__file__).parent.parent.parent / "data"
+        return data_root / f"user_{user_id}" / "skills"
+    else:
+        # 默认使用全局 skills 目录
+        return Path(__file__).parent.parent.parent / "skills"
+
 
 DEFAULT_TEMPLATE = '''from typing import Any, Dict
 import pandas as pd
@@ -39,6 +49,7 @@ def run(
     code_template: str = "",
     category: str = "utility",
     params: str = "dataframe: pd.DataFrame",
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     创建新的 Skill
@@ -49,6 +60,7 @@ def run(
         code_template: 代码模板
         category: 分类
         params: 函数参数
+        user_id: 用户ID (可选，如果提供则保存到用户特定的 skills 目录)
     """
     if not skill_name or not skill_description:
         return {
@@ -56,7 +68,8 @@ def run(
             "error": "skill_name and skill_description are required",
         }
 
-    skill_dir = SKILLS_DIR / category / skill_name
+    skills_dir = _get_skills_dir(user_id)
+    skill_dir = skills_dir / category / skill_name
     if skill_dir.exists():
         return {
             "success": False,
@@ -106,6 +119,7 @@ def run(
             "category": category,
             "path": str(skill_dir),
             "files": [str(py_file), str(md_file)],
+            "user_id": user_id,
             "message": f"Skill '{skill_name}' created successfully",
         }
         
@@ -118,13 +132,14 @@ def run(
 
 SKILL = {
     "name": "create_skill",
-    "description": "根据分析任务自动创建新的 Skill，沉淀为可复用的代码模块",
+    "description": "根据分析任务自动创建新的 Skill，沉淀为可复用的代码模块。支持用户隔离存储。",
     "inputs": {
         "skill_name": "str (必需) - Skill 名称",
         "skill_description": "str (必需) - Skill 描述",
         "code_template": "str (可选) - 代码模板",
         "category": "str (可选) - 分类，默认 utility",
         "params": "str (可选) - 函数参数",
+        "user_id": "str (可选) - 用户ID，如果提供则保存到用户特定的 skills 目录",
     },
     "run": run,
     "invisible_context": False,

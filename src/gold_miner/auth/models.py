@@ -96,6 +96,72 @@ class UserLLMConfig:
 
 
 @dataclass
+class UserODPSConfig:
+    """用户级 ODPS (MaxCompute) 配置"""
+    access_id: str = ""          # ODPS Access ID
+    access_key_encrypted: str = ""  # 加密的 ODPS Access Key
+    project: str = ""            # ODPS 项目名
+    endpoint: str = ""           # ODPS Endpoint
+    quota: str = ""              # ODPS Quota
+    created_at: str = ""
+    updated_at: str = ""
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "access_id": self.access_id,
+            "access_key_encrypted": self.access_key_encrypted,
+            "project": self.project,
+            "endpoint": self.endpoint,
+            "quota": self.quota,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UserODPSConfig":
+        return cls(
+            access_id=data.get("access_id", ""),
+            access_key_encrypted=data.get("access_key_encrypted", ""),
+            project=data.get("project", ""),
+            endpoint=data.get("endpoint", ""),
+            quota=data.get("quota", ""),
+            created_at=data.get("created_at", ""),
+            updated_at=data.get("updated_at", ""),
+        )
+    
+    def is_configured(self) -> bool:
+        """检查是否已配置（ODPS为必填项）"""
+        return bool(self.access_id and self.access_key_encrypted and self.project and self.endpoint)
+
+
+@dataclass
+class UserTavilyConfig:
+    """用户级 Tavily Search 配置"""
+    api_key_encrypted: str = ""  # 加密的 Tavily API Key
+    created_at: str = ""
+    updated_at: str = ""
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "api_key_encrypted": self.api_key_encrypted,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "UserTavilyConfig":
+        return cls(
+            api_key_encrypted=data.get("api_key_encrypted", ""),
+            created_at=data.get("created_at", ""),
+            updated_at=data.get("updated_at", ""),
+        )
+    
+    def is_configured(self) -> bool:
+        """检查是否已配置"""
+        return bool(self.api_key_encrypted)
+
+
+@dataclass
 class User:
     """用户模型"""
     
@@ -131,6 +197,12 @@ class User:
     # LLM 配置（用户级）
     llm_config: UserLLMConfig = field(default_factory=UserLLMConfig)
     
+    # ODPS 配置（用户级）
+    odps_config: UserODPSConfig = field(default_factory=UserODPSConfig)
+    
+    # Tavily 配置（用户级）
+    tavily_config: UserTavilyConfig = field(default_factory=UserTavilyConfig)
+    
     # 时间戳
     created_at: str = ""  # 首次注册时间
     updated_at: str = ""  # 信息更新时间
@@ -157,6 +229,8 @@ class User:
             "is_active": self.is_active,
             "permissions": self.permissions,
             "llm_config": self.llm_config.to_dict(),
+            "odps_config": self.odps_config.to_dict(),
+            "tavily_config": self.tavily_config.to_dict(),
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "last_login_at": self.last_login_at,
@@ -166,6 +240,8 @@ class User:
     def from_dict(cls, data: Dict[str, Any]) -> "User":
         """从字典创建"""
         llm_config_data = data.get("llm_config", {})
+        odps_config_data = data.get("odps_config", {})
+        tavily_config_data = data.get("tavily_config", {})
         return cls(
             id=data.get("id", ""),
             feishu_open_id=data.get("feishu_open_id", ""),
@@ -185,10 +261,25 @@ class User:
             is_active=data.get("is_active", True),
             permissions=data.get("permissions", []),
             llm_config=UserLLMConfig.from_dict(llm_config_data) if llm_config_data else UserLLMConfig(),
+            odps_config=UserODPSConfig.from_dict(odps_config_data) if odps_config_data else UserODPSConfig(),
+            tavily_config=UserTavilyConfig.from_dict(tavily_config_data) if tavily_config_data else UserTavilyConfig(),
             created_at=data.get("created_at", ""),
             updated_at=data.get("updated_at", ""),
             last_login_at=data.get("last_login_at", ""),
         )
+    
+    def is_odps_configured(self) -> bool:
+        """检查ODPS配置是否完整（必填项检查）"""
+        return self.odps_config.is_configured()
+    
+    def get_config_status(self) -> Dict[str, bool]:
+        """获取用户配置状态概览"""
+        return {
+            "llm": self.llm_config.is_configured(),
+            "odps": self.odps_config.is_configured(),
+            "tavily": self.tavily_config.is_configured(),
+            "all_required": self.odps_config.is_configured(),  # ODPS是必填项
+        }
     
     def has_permission(self, permission: str) -> bool:
         """检查是否有指定权限"""

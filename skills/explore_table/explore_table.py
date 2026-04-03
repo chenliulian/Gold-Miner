@@ -7,9 +7,16 @@ from typing import Any, Dict, List, Optional
 
 SKILLS_DIR = Path(__file__).parent.parent
 
-# knowledge/tables 目录路径
-KNOWLEDGE_DIR = Path(__file__).parent.parent.parent / "knowledge"
-TABLES_DIR = KNOWLEDGE_DIR / "tables"
+
+def _get_knowledge_dir(user_id: Optional[str] = None) -> Path:
+    """获取 knowledge 目录，如果提供了 user_id 则使用用户特定目录"""
+    if user_id:
+        # 使用用户特定的 knowledge 目录: data/user_{user_id}/knowledge
+        data_root = Path(__file__).parent.parent.parent / "data"
+        return data_root / f"user_{user_id}" / "knowledge"
+    else:
+        # 默认使用全局 knowledge 目录
+        return Path(__file__).parent.parent.parent / "knowledge"
 
 
 def run(
@@ -18,6 +25,7 @@ def run(
     sample_rows: int = 5,
     sample_date: str = "20260314",
     generate_knowledge: bool = True,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     探索新表的数据结构和业务含义
@@ -28,6 +36,7 @@ def run(
         sample_rows: 采样行数 (默认: 5)
         sample_date: 采样日期 (默认: 20260314)
         generate_knowledge: 是否自动生成知识文件到 knowledge/tables (默认: True)
+        user_id: 用户ID (可选，如果提供则保存到用户特定的 knowledge 目录)
 
     返回:
         包含表结构、字段信息、样本数据的字典
@@ -78,142 +87,103 @@ def run(
 
             # 获取字段信息和注释
             for col in table_obj.table_schema.columns:
-                col_name = col.name
-                col_type = str(col.type)
-                col_comment = col.comment if col.comment else ""
-                column_comments[col_name] = {
-                    "type": col_type,
-                    "comment": col_comment,
-                }
-            print(f"[explore_table] Found {len(column_comments)} columns with comments via SDK")
+                result["columns"].append({
+                    "name": col.name,
+                    "type": str(col.type),
+                    "comment": col.comment if col.comment else "",
+                })
+                if col.comment:
+                    column_comments[col.name] = col.comment
+
+            result["structure"]["total_columns"] = len(result["columns"])
+            print(f"[explore_table] Found {len(result['columns'])} columns via SDK")
 
         except Exception as e:
-            print(f"[explore_table] ODPS SDK get_table failed: {e}")
-            # 降级到 SHOW PARTITIONS
-            try:
-                partition_sql = f"SHOW PARTITIONS {full_table_name}"
-                print(f"[explore_table] Executing SHOW PARTITIONS: {partition_sql}")
-                partition_df, _ = client.execute_sql_with_priority(partition_sql, priority=7, enable_log=False)
-                if not partition_df.empty:
-                    first_partition = str(partition_df.iloc[0, 0])
-                    if "=" in first_partition:
-                        part_col = first_partition.split("=")[0]
-                        result["partitions"].append({
-                            "name": part_col,
-                            "type": "string",
-                        })
-                        result["structure"]["total_partitions"] = len(partition_df)
-                        print(f"[explore_table] Found partition column: {part_col}")
-            except Exception as e2:
-                print(f"[explore_table] SHOW PARTITIONS also failed: {e2}")
+            print(f"[explore_table] ODPS SDK failed: {e}, falling back to SQL")
+            # 降级方案：使用 SQL 查询
+            schema_sql = f"""
+            SELECT 
+                column_name,
+                data_type,
+                comment
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE table_name = '{table_name}'
+              AND table_schema = '{project}'
+            ORDER BY ordinal_position
+            """
+            schema_df, _ = client.execute_sql_with_priority(schema_sql, priority=7, enable_log=False)
 
-        # 使用样本查询获取样本数据
-        partition_where = ""
-        if result["partitions"]:
-            part_col = result["partitions"][0]["name"]
-            # 如果有 SDK 获取的分区信息，使用 sample_date
-            partition_where = f"WHERE {part_col} = '{sample_date}'"
-
-        sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows}"
-        print(f"[explore_table] Getting sample data: {sample_sql}")
-        sample_df, _ = client.execute_sql_with_priority(sample_sql, priority=7, enable_log=False)
-
-        if not sample_df.empty:
-            # 从 DataFrame 和 SDK 获取的注释构建列信息
-            for col_name in sample_df.columns:
-                # 检查是否是分区列
-                is_partition = any(p["name"] == col_name for p in result["partitions"])
-
-                if is_partition:
-                    continue  # 分区列已在上面处理
-
-                # 获取列信息（优先使用 SDK 获取的信息）
-                col_info = {
-                    "name": col_name,
-                    "type": "STRING",
-                    "comment": "",
-                }
-
-                if col_name in column_comments:
-                    col_info["type"] = column_comments[col_name]["type"]
-                    col_info["comment"] = column_comments[col_name]["comment"]
-                else:
-                    # 从 DataFrame 推断类型
-                    col_type = str(sample_df[col_name].dtype)
-                    type_mapping = {
-                        'int64': 'BIGINT',
-                        'float64': 'DOUBLE',
-                        'object': 'STRING',
-                        'bool': 'BOOLEAN',
-                        'datetime64[ns]': 'DATETIME',
-                    }
-                    col_info["type"] = type_mapping.get(col_type, 'STRING')
-
-                # 添加样本值
-                col_data = sample_df[col_name]
-                col_info["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
-                result["columns"].append(col_info)
+            for _, row in schema_df.iterrows():
+                result["columns"].append({
+                    "name": row['column_name'],
+                    "type": row['data_type'],
+                    "comment": row.get('comment', ''),
+                })
+                if row.get('comment'):
+                    column_comments[row['column_name']] = row['comment']
 
             result["structure"]["total_columns"] = len(result["columns"])
 
-            # 保存样本数据
+            # 获取分区信息
+            partition_sql = f"""
+            SELECT 
+                column_name,
+                data_type
+            FROM INFORMATION_SCHEMA.PARTITIONS
+            WHERE table_name = '{table_name}'
+              AND table_schema = '{project}'
+            ORDER BY ordinal_position
+            """
+            try:
+                partition_df, _ = client.execute_sql_with_priority(partition_sql, priority=7, enable_log=False)
+                for _, row in partition_df.iterrows():
+                    result["partitions"].append({
+                        "name": row['column_name'],
+                        "type": row['data_type'],
+                    })
+                result["structure"]["total_partitions"] = len(result["partitions"])
+            except Exception as pe:
+                print(f"[explore_table] Could not get partition info: {pe}")
+
+    except Exception as e:
+        result["error"] = f"获取表结构失败: {str(e)}"
+        return result
+
+    # 获取样本数据
+    try:
+        # 检查是否有分区
+        if result["partitions"]:
+            partition_col = result["partitions"][0]["name"]
+            sample_sql = f"""
+            SELECT *
+            FROM {full_table_name}
+            WHERE {partition_col} = '{sample_date}'
+            LIMIT {sample_rows * 10}
+            """
+        else:
+            sample_sql = f"""
+            SELECT *
+            FROM {full_table_name}
+            LIMIT {sample_rows * 10}
+            """
+
+        print(f"[explore_table] Executing sample query: {sample_sql}")
+        sample_df, _ = client.execute_sql_with_priority(sample_sql, priority=7, enable_log=False)
+
+        if not sample_df.empty:
             result["sample_data"] = {
                 "columns": list(sample_df.columns),
                 "rows": sample_df.head(sample_rows).to_dict(orient="records"),
             }
 
-            print(f"[explore_table] Found {len(result['columns'])} columns with {sum(1 for c in result['columns'] if c.get('comment'))} having comments")
-        else:
-            print(f"[explore_table] Sample query returned empty result")
-            # 使用 SDK 获取的字段信息填充列信息
-            if column_comments:
-                print(f"[explore_table] Using SDK column info to populate columns")
-                for col_name, col_info in column_comments.items():
-                    # 检查是否是分区列
-                    is_partition = any(p["name"] == col_name for p in result["partitions"])
-                    if is_partition:
-                        continue
-
-                    result["columns"].append({
-                        "name": col_name,
-                        "type": col_info["type"],
-                        "comment": col_info["comment"],
-                        "sample": "",
-                    })
-                result["structure"]["total_columns"] = len(result["columns"])
-                print(f"[explore_table] Populated {len(result['columns'])} columns from SDK")
-
-    except Exception as e:
-        result["error"] = f"获取表结构失败: {str(e)}"
-
-    # 样本数据查询已经在上面执行过了，这里只需要保存结果
-    # 如果需要更多行数，可以重新查询
-    try:
-        if result.get("sample_data") is None and result["columns"]:
-            # 需要获取更多样本数据
-            partition_where = ""
-            if result["partitions"]:
-                part_col = result["partitions"][0]["name"]
-                partition_where = f"WHERE {part_col} = '{sample_date}'"
-
-            sample_sql = f"SELECT * FROM {full_table_name} {partition_where} LIMIT {sample_rows}"
-            print(f"[explore_table] Executing sample query: {sample_sql}")
-            sample_df, _ = client.execute_sql_with_priority(sample_sql, priority=7, enable_log=False)
-
-            if not sample_df.empty:
-                result["sample_data"] = {
-                    "columns": list(sample_df.columns),
-                    "rows": sample_df.head(sample_rows).to_dict(orient="records"),
-                }
-
-                # 添加样本值到列信息
-                for col in sample_df.columns:
-                    if col not in [p["name"] for p in result["partitions"]]:
-                        col_data = sample_df[col]
-                        for c in result["columns"]:
-                            if c["name"] == col:
-                                c["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
-                                break
+            # 添加样本值到列信息
+            for col in sample_df.columns:
+                if col not in [p["name"] for p in result["partitions"]]:
+                    col_data = sample_df[col]
+                    for c in result["columns"]:
+                        if c["name"] == col:
+                            c["sample"] = str(col_data.iloc[0])[:50] if not col_data.empty else ""
+                            break
 
     except Exception as e:
         result["error"] = result.get("error", "") + f"\n采样失败: {str(e)}"
@@ -222,7 +192,7 @@ def run(
 
     if generate_knowledge:
         try:
-            knowledge_result = _generate_knowledge_file(table_name, result)
+            knowledge_result = _generate_knowledge_file(table_name, result, user_id)
             result["knowledge_generation"] = knowledge_result
         except Exception as e:
             result["knowledge_generation"] = {"success": False, "error": str(e)}
@@ -259,6 +229,7 @@ def _generate_business_notes(table_info: Dict) -> List[str]:
 def _generate_knowledge_file(
     table_name: str,
     table_info: Dict[str, Any],
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     根据探索结果生成或更新 knowledge/tables YAML 文件
@@ -266,6 +237,7 @@ def _generate_knowledge_file(
     参数:
         table_name: 表名
         table_info: 表信息 (来自 explore_table run 的结果)
+        user_id: 用户ID (可选，如果提供则保存到用户特定的 knowledge 目录)
 
     返回:
         生成结果
@@ -273,11 +245,14 @@ def _generate_knowledge_file(
     from datetime import datetime
     import yaml
 
+    knowledge_dir = _get_knowledge_dir(user_id)
+    tables_dir = knowledge_dir / "tables"
+
     table_name_clean = table_name.replace(".", "_").replace("-", "_")
-    knowledge_file = TABLES_DIR / f"{table_name_clean}.yaml"
+    knowledge_file = tables_dir / f"{table_name_clean}.yaml"
 
     # 确保目录存在
-    TABLES_DIR.mkdir(parents=True, exist_ok=True)
+    tables_dir.mkdir(parents=True, exist_ok=True)
 
     full_table_name = table_info.get('table_name', table_name)
     project = table_info.get('project', 'mi_ads_dmp')
@@ -450,13 +425,14 @@ def _generate_knowledge_file(
 
 SKILL = {
     "name": "explore_table",
-    "description": "探索新表的数据结构和业务含义，分析字段类型、分区、样本数据，并自动生成 knowledge/tables YAML 文件",
+    "description": "探索新表的数据结构和业务含义，分析字段类型、分区、样本数据，并自动生成 knowledge/tables YAML 文件。支持用户隔离存储。",
     "inputs": {
         "table_name": "表名 (可以是完整名称如 mi_ads_dmp.dwd_xxx 或简短名称)",
         "project": "项目名 (默认: mi_ads_dmp)",
         "sample_rows": "采样行数 (默认: 5)",
         "sample_date": "采样日期 (默认: 20260314)",
         "generate_knowledge": "是否自动生成知识文件到 knowledge/tables (默认: True)",
+        "user_id": "用户ID (可选，如果提供则保存到用户特定的 knowledge 目录)",
     },
     "run": run,
     "invisible_context": False,

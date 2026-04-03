@@ -194,8 +194,11 @@ def index():
     user = get_current_user_or_redirect()
     if not user:
         return redirect('/auth/login')
-    
-    return render_template("index.html", user=user.to_dict())
+
+    # 获取用户配置状态
+    config_status = user.get_config_status()
+
+    return render_template("index.html", user=user.to_dict(), config_status=config_status)
 
 
 @app.route("/chat", methods=["POST"])
@@ -886,12 +889,21 @@ def metrics():
 
 @app.route("/learnings/review", methods=["POST"])
 def trigger_learnings_review():
-    """Manually trigger a learnings review and append to memory."""
+    """Manually trigger a learnings review and append to memory for current user."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     try:
         from gold_miner.learning_reviewer import get_learning_reviewer
 
+        # 使用用户特定的 learnings 目录
+        user_paths = user_data_manager.get_user_paths(user.id)
         reviewer = get_learning_reviewer(
-            learnings_dir=".learnings",
+            learnings_dir=user_paths.learnings_dir,
         )
 
         report = reviewer.trigger_review()
@@ -915,7 +927,14 @@ def trigger_learnings_review():
 
 @app.route("/learnings/pending", methods=["GET"])
 def get_pending_learnings():
-    """Get pending learning records with optional filters."""
+    """Get pending learning records with optional filters for current user."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     try:
         from gold_miner.learning_reviewer import get_learning_reviewer
 
@@ -923,8 +942,10 @@ def get_pending_learnings():
         priority = request.args.get("priority")
         limit = int(request.args.get("limit", 10))
 
+        # 使用用户特定的 learnings 目录
+        user_paths = user_data_manager.get_user_paths(user.id)
         reviewer = get_learning_reviewer(
-            learnings_dir=".learnings",
+            learnings_dir=user_paths.learnings_dir,
         )
 
         records = reviewer.get_pending_records(
@@ -960,7 +981,14 @@ def get_pending_learnings():
 
 @app.route("/learnings/update/<record_id>", methods=["POST"])
 def update_learning_status(record_id):
-    """Update status of a learning record."""
+    """Update status of a learning record for current user."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     try:
         from gold_miner.learning_reviewer import get_learning_reviewer, ReviewStatus
 
@@ -968,8 +996,10 @@ def update_learning_status(record_id):
         new_status = data.get("status", "pending")
         review_notes = data.get("review_notes", "")
 
+        # 使用用户特定的 learnings 目录
+        user_paths = user_data_manager.get_user_paths(user.id)
         reviewer = get_learning_reviewer(
-            learnings_dir=".learnings",
+            learnings_dir=user_paths.learnings_dir,
         )
 
         success = reviewer.update_record_status(
@@ -997,12 +1027,21 @@ def update_learning_status(record_id):
 
 @app.route("/learnings/stats", methods=["GET"])
 def get_learnings_stats():
-    """Get learning review scheduler statistics."""
+    """Get learning review scheduler statistics for current user."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     try:
         from gold_miner.learning_reviewer import get_learning_reviewer
 
+        # 使用用户特定的 learnings 目录
+        user_paths = user_data_manager.get_user_paths(user.id)
         reviewer = get_learning_reviewer(
-            learnings_dir=".learnings",
+            learnings_dir=user_paths.learnings_dir,
         )
 
         stats = reviewer.get_stats()
@@ -1020,10 +1059,18 @@ def get_learnings_stats():
 
 @app.route("/learnings", methods=["GET"])
 def get_learnings():
-    """Get all learnings content."""
+    """Get all learnings content for current user."""
+    user = get_current_user_or_redirect()
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized"
+        }), 401
+    
     try:
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        learnings_dir = os.path.join(project_root, ".learnings")
+        # 使用用户特定的 learnings 目录
+        user_paths = user_data_manager.get_user_paths(user.id)
+        learnings_dir = user_paths.learnings_dir
         
         learnings = ""
         errors = ""

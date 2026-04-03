@@ -163,11 +163,92 @@
             justify-content: space-between;
         }
 
+        .user-info-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
         .user-info {
             display: flex;
             align-items: center;
             gap: 12px;
             flex: 1;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .user-info:hover {
+            background: var(--bg-hover);
+        }
+
+        .user-info-text {
+            flex: 1;
+        }
+
+        .dropdown-arrow {
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .user-info-dropdown.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.2s;
+            z-index: 100;
+        }
+
+        .user-info-dropdown.active .user-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .dropdown-item.logout-item {
+            color: #ef4444;
+        }
+
+        .dropdown-item.logout-item:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 4px 0;
         }
 
         .logout-btn {
@@ -305,10 +386,10 @@
 
         .quick-actions {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             justify-content: center;
             gap: 12px;
-            max-width: 600px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -909,8 +990,45 @@
         }
 
         .dialog-modal-btn:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        /* User Config Modal Styles */
+        .config-tab {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .config-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+
+        .config-tab.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .config-panel {
+            display: none;
+        }
+
+        .config-panel.active {
+            display: block;
+        }
+
+        #user-config-modal input:focus,
+        #user-config-modal select:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
         }
 
         .dialog-list {
@@ -1689,20 +1807,36 @@
             </nav>
 
             <div class="sidebar-footer">
-                <div class="user-info">
-                    <div class="user-avatar" id="user-avatar">{{ user.name[0] if user else 'U' }}</div>
-                    <div>
-                        <div class="user-name" id="user-name">{{ user.name if user else '用户' }}</div>
-                        <div class="user-status">{{ user.department_name if user and user.department_name else '在线' }}</div>
+                <div class="user-info-dropdown" id="user-dropdown">
+                    <div class="user-info" onclick="toggleUserDropdown()">
+                        <div class="user-avatar" id="user-avatar">{{ user.name[0] if user else 'U' }}</div>
+                        <div class="user-info-text">
+                            <div class="user-name" id="user-name">{{ user.name if user else '用户' }}</div>
+                            <div class="user-status">{{ user.department_name if user and user.department_name else '在线' }}</div>
+                        </div>
+                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="user-dropdown-menu" id="user-dropdown-menu">
+                        <div class="dropdown-item" onclick="openUserConfigModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span>配置参数</span>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/auth/logout" class="dropdown-item logout-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            <span>退出登录</span>
+                        </a>
                     </div>
                 </div>
-                <a href="/auth/logout" class="logout-btn" title="退出登录">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                </a>
             </div>
         </aside>
 
@@ -1732,14 +1866,14 @@
                                 <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
                                     📊 分析广告组漏斗
                                 </button>
-                                <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
-                                    📋 查看数据表
+                                <button class="quick-action-btn" onclick="fillInputBox('查询大盘消耗数据')">
+                                    📋 查询大盘消耗数据
                                 </button>
-                                <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
-                                    🔍 执行 SQL
+                                <button class="quick-action-btn" onclick="fillInputBox('记住业务背景')">
+                                    🧠 记住业务背景
                                 </button>
-                                <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
-                                    🔗 探索表血缘
+                                <button class="quick-action-btn" onclick="fillInputBox('创建 SKILL')">
+                                    ⚡ 创建 SKILL
                                 </button>
                             </div>
                         </div>
@@ -1840,6 +1974,11 @@
 
     <!-- 引入sql-formatter库 -->
     <script src="https://unpkg.com/sql-formatter@15.3.2/dist/sql-formatter.min.js"></script>
+
+    <!-- 用户配置状态数据 -->
+    <script id="user-config-status" type="application/json">
+        {{ config_status | tojson }}
+    </script>
 
     <script>
         let currentPage = 'chat';
@@ -2978,14 +3117,14 @@
                                     <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
                                         📊 分析广告组漏斗
                                     </button>
-                                    <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
-                                        📋 查看数据表
+                                    <button class="quick-action-btn" onclick="fillInputBox('查询大盘消耗数据')">
+                                        📋 查询大盘消耗数据
                                     </button>
-                                    <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
-                                        🔍 执行 SQL
+                                    <button class="quick-action-btn" onclick="fillInputBox('记住业务背景')">
+                                        🧠 记住业务背景
                                     </button>
-                                    <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
-                                        🔗 探索表血缘
+                                    <button class="quick-action-btn" onclick="fillInputBox('创建 SKILL')">
+                                        ⚡ 创建 SKILL
                                     </button>
                                 </div>
                             </div>
@@ -3039,14 +3178,14 @@
                         <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
                             📊 分析广告组漏斗
                         </button>
-                        <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
-                            📋 查看数据表
+                        <button class="quick-action-btn" onclick="fillInputBox('查询大盘消耗数据')">
+                            📋 查询大盘消耗数据
                         </button>
-                        <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
-                            🔍 执行 SQL
+                        <button class="quick-action-btn" onclick="fillInputBox('记住业务背景')">
+                            🧠 记住业务背景
                         </button>
-                        <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
-                            🔗 探索表血缘
+                        <button class="quick-action-btn" onclick="fillInputBox('创建 SKILL')">
+                            ⚡ 创建 SKILL
                         </button>
                     </div>
                 </div>
@@ -3226,14 +3365,14 @@
                                 <button class="quick-action-btn" onclick="fillInputBox('分析广告组漏斗数据')">
                                     📊 分析广告组漏斗
                                 </button>
-                                <button class="quick-action-btn" onclick="fillInputBox('查看可用数据表')">
-                                    📋 查看数据表
+                                <button class="quick-action-btn" onclick="fillInputBox('查询大盘消耗数据')">
+                                    📋 查询大盘消耗数据
                                 </button>
-                                <button class="quick-action-btn" onclick="fillInputBox('执行 SQL 查询')">
-                                    🔍 执行 SQL
+                                <button class="quick-action-btn" onclick="fillInputBox('记住业务背景')">
+                                    🧠 记住业务背景
                                 </button>
-                                <button class="quick-action-btn" onclick="fillInputBox('探索表血缘关系')">
-                                    🔗 探索表血缘
+                                <button class="quick-action-btn" onclick="fillInputBox('创建 SKILL')">
+                                    ⚡ 创建 SKILL
                                 </button>
                             </div>
                         </div>
@@ -3940,9 +4079,73 @@
             // 定期刷新历史列表（每30秒）
             setInterval(loadHistoryList, 30000);
 
-            // 检查是否需要显示 LLM 配置对话框
-            checkAndShowLLMConfigModal();
+            // 检查用户配置状态（从后端传递）
+            checkUserConfigOnLoad();
         });
+
+        // 检查用户配置状态，如未配置则弹出配置窗口
+        function checkUserConfigOnLoad() {
+            // 尝试从页面数据获取配置状态
+            const configStatusStr = document.getElementById('user-config-status')?.textContent;
+            let configStatus = null;
+
+            if (configStatusStr) {
+                try {
+                    configStatus = JSON.parse(configStatusStr);
+                } catch (e) {
+                    console.error('Parse config status error:', e);
+                }
+            }
+
+            if (!configStatus) {
+                // 如果无法获取配置状态，尝试从 API 获取
+                checkUserConfigFromAPI();
+                return;
+            }
+
+            // 检查是否需要配置
+            // ODPS 是必填项，LLM 是建议配置但非强制
+            const needODPS = !configStatus.odps;
+
+            // 只有 ODPS 未配置时才强制显示配置弹窗
+            if (needODPS) {
+                // 延迟显示配置弹窗，确保页面完全加载
+                setTimeout(() => {
+                    openUserConfigModal();
+
+                    // 显示提示信息
+                    showUserConfigError('请先配置 ODPS 参数（必填）才能使用数据查询功能');
+                }, 500);
+            }
+            // LLM 未配置时只显示提示，不强制弹窗
+            else if (!configStatus.llm) {
+                // 可选：显示一个非侵入式的提示
+                console.log('建议配置 LLM 参数以获得更好的体验');
+            }
+        }
+
+        // 从 API 获取配置状态（备用方案）
+        async function checkUserConfigFromAPI() {
+            try {
+                const response = await fetch('/api/v2/user/config/status');
+                const data = await response.json();
+
+                if (data.success) {
+                    const status = data.data;
+                    // ODPS 是必填项，LLM 是建议配置但非强制
+                    const needODPS = !status.odps;
+
+                    if (needODPS) {
+                        setTimeout(() => {
+                            openUserConfigModal();
+                            showUserConfigError('请先配置 ODPS 参数（必填）才能使用数据查询功能');
+                        }, 500);
+                    }
+                }
+            } catch (error) {
+                console.error('Check user config error:', error);
+            }
+        }
 
         // ==================== LLM Config Modal Functions ====================
 
@@ -4053,6 +4256,418 @@
         function skipLLMConfig() {
             hideLLMConfigModal();
         }
+
+        // ==================== User Config Modal Functions ====================
+
+        let currentConfigTab = 'odps';
+        let userConfigData = null;
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('user-dropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        async function openUserConfigModal() {
+            // 关闭下拉菜单
+            document.getElementById('user-dropdown').classList.remove('active');
+
+            const modal = document.getElementById('user-config-modal');
+            modal.classList.add('active');
+
+            // 重置到 ODPS 标签
+            switchConfigTab('odps');
+
+            // 清空之前的消息
+            hideUserConfigMessages();
+
+            // 加载用户配置
+            await loadUserConfig();
+        }
+
+        function closeUserConfigModal() {
+            const modal = document.getElementById('user-config-modal');
+            modal.classList.remove('active');
+            
+            // 检查配置是否完整，如果不完整则跳转到登录页
+            const configStatusStr = document.getElementById('user-config-status')?.textContent;
+            if (configStatusStr) {
+                try {
+                    const configStatus = JSON.parse(configStatusStr);
+                    const needLLM = !configStatus.llm;
+                    const needODPS = !configStatus.odps;
+                    
+                    // 如果ODPS未配置（必填项），则跳转到登录页
+                    if (needODPS) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Parse config status error:', e);
+                }
+            }
+        }
+
+        function switchConfigTab(tab) {
+            currentConfigTab = tab;
+
+            // 更新标签样式
+            document.querySelectorAll('.config-tab').forEach(el => {
+                el.classList.remove('active');
+                if (el.dataset.tab === tab) {
+                    el.classList.add('active');
+                }
+            });
+
+            // 更新面板显示
+            document.querySelectorAll('.config-panel').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = 'none';
+            });
+            const panel = document.getElementById(`config-panel-${tab}`);
+            panel.classList.add('active');
+            panel.style.display = 'block';
+
+            // 切换标签页时清除之前的消息
+            hideUserConfigMessages();
+
+            // 显示/隐藏测试按钮
+            const testBtn = document.getElementById('test-odps-btn');
+            if (tab === 'odps') {
+                testBtn.style.display = 'block';
+                testBtn.textContent = '测试 ODPS 连接';
+                testBtn.onclick = testODPSConnection;
+            } else if (tab === 'llm') {
+                testBtn.style.display = 'block';
+                testBtn.textContent = '测试 LLM 连接';
+                testBtn.onclick = testLLMConnection;
+            } else {
+                testBtn.style.display = 'none';
+            }
+        }
+
+        async function loadUserConfig() {
+            try {
+                const response = await fetch('/api/v2/user/config');
+                const data = await response.json();
+
+                if (data.success) {
+                    userConfigData = data.data;
+
+                    // 更新状态指示器
+                    updateConfigStatus(data.data.config_status);
+
+                    // 填充表单
+                    if (data.data.odps) {
+                        document.getElementById('odps-access-id').value = data.data.odps.access_id || '';
+                        document.getElementById('odps-project').value = data.data.odps.project || '';
+                        document.getElementById('odps-endpoint').value = data.data.odps.endpoint || '';
+                        document.getElementById('odps-quota').value = data.data.odps.quota || '';
+                        // Access Key 不填充（脱敏显示）
+                    }
+
+                    if (data.data.llm) {
+                        document.getElementById('user-llm-provider').value = data.data.llm.provider || 'anthropic';
+                        document.getElementById('user-llm-base-url').value = data.data.llm.base_url || '';
+                        document.getElementById('user-llm-model').value = data.data.llm.model || '';
+                        // API Key 不填充（脱敏显示）
+                        
+                        // 如果 LLM 已配置，禁用表单并显示提示
+                        if (data.data.llm.has_config) {
+                            disableLLMConfigForm();
+                        }
+                    }
+
+                    if (data.data.tavily) {
+                        // API Key 不填充（脱敏显示）
+                    }
+                }
+            } catch (error) {
+                console.error('Load user config error:', error);
+                showUserConfigError('加载配置失败，请刷新页面重试');
+            }
+        }
+
+        function updateConfigStatus(status) {
+            if (!status) return;
+
+            // LLM 状态
+            const llmStatus = document.getElementById('status-llm');
+            llmStatus.style.color = status.llm ? '#22c55e' : '#ef4444';
+
+            // ODPS 状态
+            const odpsStatus = document.getElementById('status-odps');
+            odpsStatus.style.color = status.odps ? '#22c55e' : '#ef4444';
+
+            // Tavily 状态
+            const tavilyStatus = document.getElementById('status-tavily');
+            tavilyStatus.style.color = status.tavily ? '#22c55e' : '#94a3b8';
+        }
+
+        // 禁用 LLM 配置表单（当已配置时）
+        function disableLLMConfigForm() {
+            const provider = document.getElementById('user-llm-provider');
+            const apiKey = document.getElementById('user-llm-api-key');
+            const baseUrl = document.getElementById('user-llm-base-url');
+            const model = document.getElementById('user-llm-model');
+            
+            // 禁用所有输入框
+            provider.disabled = true;
+            apiKey.disabled = true;
+            baseUrl.disabled = true;
+            model.disabled = true;
+            
+            // 添加灰色样式
+            const disabledStyle = 'background-color: #f3f4f6 !important; color: #6b7280 !important; cursor: not-allowed !important;';
+            provider.style.cssText += disabledStyle;
+            apiKey.style.cssText += disabledStyle;
+            baseUrl.style.cssText += disabledStyle;
+            model.style.cssText += disabledStyle;
+            
+            // 更新提示信息
+            const infoDiv = document.querySelector('#config-panel-llm > div:first-child');
+            if (infoDiv) {
+                infoDiv.style.background = '#f0fdf4';
+                infoDiv.style.borderLeftColor = '#22c55e';
+                infoDiv.innerHTML = `
+                    <p style="margin: 0; font-size: 13px; color: #15803d;">
+                        <strong>✓ LLM 已配置</strong><br>
+                        您已完成 LLM 配置，无需再次填写。如需修改，请联系管理员。
+                    </p>
+                `;
+            }
+        }
+
+        function hideUserConfigMessages() {
+            document.getElementById('user-config-error').style.display = 'none';
+            document.getElementById('user-config-success').style.display = 'none';
+        }
+
+        function showUserConfigError(message) {
+            const errorDiv = document.getElementById('user-config-error');
+            errorDiv.querySelector('p').textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('user-config-success').style.display = 'none';
+        }
+
+        function showUserConfigSuccess(message) {
+            const successDiv = document.getElementById('user-config-success');
+            successDiv.querySelector('p').textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('user-config-error').style.display = 'none';
+        }
+
+        function setUserConfigLoading(loading) {
+            const btn = document.getElementById('save-user-config-btn');
+            btn.disabled = loading;
+            btn.textContent = loading ? '保存中...' : '保存配置';
+        }
+
+        async function saveUserConfig() {
+            hideUserConfigMessages();
+            setUserConfigLoading(true);
+
+            // 收集所有配置数据
+            const configData = {
+                // ODPS 配置
+                odps_access_id: document.getElementById('odps-access-id').value.trim(),
+                odps_access_key: document.getElementById('odps-access-key').value.trim(),
+                odps_project: document.getElementById('odps-project').value.trim(),
+                odps_endpoint: document.getElementById('odps-endpoint').value.trim(),
+                odps_quota: document.getElementById('odps-quota').value.trim(),
+                // LLM 配置
+                llm_provider: document.getElementById('user-llm-provider').value,
+                llm_api_key: document.getElementById('user-llm-api-key').value.trim(),
+                llm_base_url: document.getElementById('user-llm-base-url').value.trim(),
+                llm_model: document.getElementById('user-llm-model').value.trim(),
+                // Tavily 配置
+                tavily_api_key: document.getElementById('tavily-api-key').value.trim(),
+            };
+
+            try {
+                const response = await fetch('/api/v2/user/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(configData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showUserConfigSuccess('配置保存成功！');
+                    updateConfigStatus(data.data.config_status);
+
+                    // 清空密码字段
+                    document.getElementById('odps-access-key').value = '';
+                    document.getElementById('user-llm-api-key').value = '';
+                    document.getElementById('tavily-api-key').value = '';
+
+                    // 延迟关闭弹窗，让用户看到成功提示
+                    setTimeout(() => {
+                        closeUserConfigModal();
+                    }, 1500);
+                } else {
+                    showUserConfigError(data.message || '配置保存失败');
+                }
+            } catch (error) {
+                showUserConfigError('网络错误，请稍后重试');
+                console.error('Save user config error:', error);
+            } finally {
+                setUserConfigLoading(false);
+            }
+        }
+
+        async function testODPSConnection() {
+            hideUserConfigMessages();
+
+            // 获取表单中的 ODPS 配置
+            const accessId = document.getElementById('odps-access-id').value.trim();
+            const accessKey = document.getElementById('odps-access-key').value.trim();
+            const project = document.getElementById('odps-project').value.trim();
+            const endpoint = document.getElementById('odps-endpoint').value.trim();
+
+            // 验证必填字段
+            if (!accessId || !accessKey || !project || !endpoint) {
+                showUserConfigError('请先填写完整的 ODPS 配置信息（Access ID、Access Key、Project、Endpoint）');
+                return;
+            }
+
+            const btn = document.getElementById('test-odps-btn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+
+            try {
+                // 只保存 ODPS 配置进行测试，不传递 LLM 参数
+                // 避免触发 LLM 验证（用户可能已有 LLM 配置，但表单中未显示）
+                const saveResponse = await fetch('/api/v2/user/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        odps_access_id: accessId,
+                        odps_access_key: accessKey,
+                        odps_project: project,
+                        odps_endpoint: endpoint,
+                        odps_quota: document.getElementById('odps-quota').value.trim(),
+                        // 不传递 LLM 参数，避免触发验证
+                        // 后端会保留用户已有的 LLM 配置
+                    })
+                });
+
+                const saveData = await saveResponse.json();
+
+                if (!saveData.success) {
+                    showUserConfigError(saveData.message || '配置保存失败');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+
+                // 保存成功，更新状态
+                updateConfigStatus(saveData.data.config_status);
+
+                // 然后测试连接
+                const response = await fetch('/api/v2/user/config/test-odps', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showUserConfigSuccess(data.message || 'ODPS 连接成功');
+                } else {
+                    showUserConfigError(data.message || 'ODPS 连接失败');
+                }
+            } catch (error) {
+                showUserConfigError('网络错误，请稍后重试');
+                console.error('Test ODPS connection error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // 测试 LLM 连接
+        async function testLLMConnection() {
+            hideUserConfigMessages();
+
+            // 获取表单中的 LLM 配置
+            const provider = document.getElementById('user-llm-provider').value;
+            const apiKey = document.getElementById('user-llm-api-key').value.trim();
+            const baseUrl = document.getElementById('user-llm-base-url').value.trim();
+            const model = document.getElementById('user-llm-model').value.trim();
+
+            // 验证必填字段
+            if (!apiKey || !baseUrl) {
+                showUserConfigError('请先填写完整的 LLM 配置信息（API Key、Base URL）');
+                return;
+            }
+
+            const btn = document.getElementById('test-odps-btn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+
+            try {
+                // 直接测试连接（不保存配置）
+                const response = await fetch('/api/v2/user/llm-config/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        provider: provider,
+                        api_key: apiKey,
+                        base_url: baseUrl,
+                        model: model,
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showUserConfigSuccess(data.message || 'LLM 连接成功');
+                } else {
+                    showUserConfigError(data.message || 'LLM 连接失败');
+                }
+            } catch (error) {
+                showUserConfigError('网络错误，请稍后重试');
+                console.error('Test LLM connection error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // 检查 ODPS 配置是否完成（在页面加载时调用）
+        async function checkODPSConfig() {
+            try {
+                const response = await fetch('/api/v2/user/config/status');
+                const data = await response.json();
+
+                if (data.success && !data.data.odps_configured) {
+                    // ODPS 未配置，显示提示
+                    showUserConfigError('请先配置 ODPS 参数才能使用数据查询功能');
+                    openUserConfigModal();
+                }
+            } catch (error) {
+                console.error('Check ODPS config error:', error);
+            }
+        }
     </script>
 
     <!-- Dialog Selection Modal -->
@@ -4137,6 +4752,177 @@
                 <div class="dialog-modal-actions">
                     <button class="dialog-modal-btn confirm" id="save-llm-config-btn" onclick="saveLLMConfig()">
                         测试并保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Config Modal -->
+    <div id="user-config-modal" class="dialog-modal-overlay">
+        <div class="dialog-modal" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
+            <div class="dialog-modal-header">
+                <div class="dialog-modal-title">⚙️ 用户参数配置</div>
+                <button class="dialog-modal-close" onclick="closeUserConfigModal()">&times;</button>
+            </div>
+            <div class="dialog-modal-body">
+                <!-- Config Status -->
+                <div id="config-status-bar" style="margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: 8px; display: flex; gap: 16px; flex-wrap: wrap;">
+                    <span style="font-size: 13px; color: var(--text-secondary);">
+                        LLM: <span id="status-llm" style="color: #ef4444;">●</span>
+                    </span>
+                    <span style="font-size: 13px; color: var(--text-secondary);">
+                        ODPS: <span id="status-odps" style="color: #ef4444;">●</span>
+                    </span>
+                    <span style="font-size: 13px; color: var(--text-secondary);">
+                        Tavily: <span id="status-tavily" style="color: #94a3b8;">●</span>
+                    </span>
+                </div>
+
+                <!-- Tabs -->
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                    <button class="config-tab active" data-tab="odps" onclick="switchConfigTab('odps')">
+                        ODPS (必填)
+                    </button>
+                    <button class="config-tab" data-tab="llm" onclick="switchConfigTab('llm')">
+                        LLM
+                    </button>
+                    <button class="config-tab" data-tab="tavily" onclick="switchConfigTab('tavily')">
+                        Tavily
+                    </button>
+                </div>
+
+                <!-- ODPS Config Panel -->
+                <div id="config-panel-odps" class="config-panel active">
+                    <div style="margin-bottom: 16px; padding: 12px; background: #fff7ed; border-radius: 8px; border-left: 4px solid #f97316;">
+                        <p style="margin: 0; font-size: 13px; color: #c2410c;">
+                            <strong>ODPS 配置为必填项</strong>，用于数据查询和分析功能。
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Access ID <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" id="odps-access-id" placeholder="LTAI..."
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Access Key <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="password" id="odps-access-key" placeholder="您的 ODPS Access Key"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                        <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--text-muted);">您的 Access Key 将被加密存储</p>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Project <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" id="odps-project" placeholder="my_project"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Endpoint <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input type="text" id="odps-endpoint" placeholder="http://service.odps.aliyun.com/api"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Quota (可选)
+                        </label>
+                        <input type="text" id="odps-quota" placeholder="默认 Quota"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    </div>
+                </div>
+
+                <!-- LLM Config Panel -->
+                <div id="config-panel-llm" class="config-panel" style="display: none;">
+                    <div style="margin-bottom: 16px; padding: 12px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                        <p style="margin: 0; font-size: 13px; color: #0369a1;">
+                            配置 LLM API 用于 Agent 对话功能。如果不配置，将使用系统默认设置。
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Provider
+                        </label>
+                        <select id="user-llm-provider"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; background: var(--bg-primary);">
+                            <option value="anthropic">Anthropic (Claude)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="openai_compatible">OpenAI Compatible</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            API Key
+                        </label>
+                        <input type="password" id="user-llm-api-key" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                        <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--text-muted);">您的 API Key 将被加密存储</p>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Base URL
+                        </label>
+                        <input type="text" id="user-llm-base-url" placeholder="https://api.modelverse.cn/v1"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            Model
+                        </label>
+                        <input type="text" id="user-llm-model" placeholder="claude-opus-4-6"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                    </div>
+                </div>
+
+                <!-- Tavily Config Panel -->
+                <div id="config-panel-tavily" class="config-panel" style="display: none;">
+                    <div style="margin-bottom: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e;">
+                        <p style="margin: 0; font-size: 13px; color: #15803d;">
+                            Tavily 用于网络搜索功能。可选配置，不配置则无法使用搜索功能。
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-primary);">
+                            API Key
+                        </label>
+                        <input type="password" id="tavily-api-key" placeholder="tvly-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                            style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; outline: none; transition: all 0.2s;">
+                        <p style="margin: 6px 0 0 0; font-size: 12px; color: var(--text-muted);">从 <a href="https://tavily.com" target="_blank" style="color: var(--accent-primary);">tavily.com</a> 获取 API Key</p>
+                    </div>
+                </div>
+
+                <!-- Message Area -->
+                <div id="user-config-error" style="display: none; margin-top: 16px; padding: 12px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #ef4444;">
+                    <p style="margin: 0; font-size: 13px; color: #dc2626;"></p>
+                </div>
+
+                <div id="user-config-success" style="display: none; margin-top: 16px; padding: 12px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #22c55e;">
+                    <p style="margin: 0; font-size: 13px; color: #16a34a;"></p>
+                </div>
+            </div>
+            <div class="dialog-modal-footer" style="justify-content: space-between;">
+                <button class="dialog-modal-btn cancel" onclick="testODPSConnection()" id="test-odps-btn" style="display: none;">
+                    测试 ODPS 连接
+                </button>
+                <div class="dialog-modal-actions">
+                    <button class="dialog-modal-btn cancel" onclick="closeUserConfigModal()">取消</button>
+                    <button class="dialog-modal-btn confirm" id="save-user-config-btn" onclick="saveUserConfig()">
+                        保存配置
                     </button>
                 </div>
             </div>
