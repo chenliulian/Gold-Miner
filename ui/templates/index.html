@@ -2358,14 +2358,17 @@
                 // 完成日志记录（折叠日志，保留供用户查看）
                 const success = hasReceivedContent;
                 finalizeLog(logContainer, success, lockedSessionId);
-                
+
                 // 显示最终结果（关联到锁定的会话）
                 if (hasReceivedContent && fullResponse) {
                     addMessage(fullResponse, 'assistant', lockedSessionId);
                 } else {
                     addMessage('任务执行完成', 'assistant', lockedSessionId);
                 }
-                
+
+                // 重置处理状态
+                setSessionProcessing(lockedSessionId, false);
+
             } catch (error) {
                 if (error.name === 'AbortError') {
                     // 用户主动取消
